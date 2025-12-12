@@ -9,6 +9,7 @@ import {
   ClientCreateRequest,
   ClientUpdateRequest,
   ClientListParams,
+  StageCounts,
   NEXT_STAGE,
 } from '@/types/client';
 import { ApiError } from '@/services/api/httpClient';
@@ -30,10 +31,13 @@ interface ClientStore {
   loading: boolean;
   error: ApiError | null;
   pagination: Pagination;
+  stageCounts: StageCounts | null;
+  stageCountsLoading: boolean;
 
   // Actions
   fetchClients: (params?: ClientListParams) => Promise<void>;
   fetchClientById: (id: number) => Promise<Client | null>;
+  fetchStageCounts: () => Promise<void>;
   addClient: (data: ClientCreateRequest) => Promise<Client | null>;
   updateClient: (id: number, data: ClientUpdateRequest) => Promise<Client | null>;
   deleteClient: (id: number) => Promise<boolean>;
@@ -57,6 +61,8 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     pageSize: 10,
     totalPages: 0,
   },
+  stageCounts: null,
+  stageCountsLoading: false,
 
   /**
    * Fetch clients with pagination and filtering
@@ -117,6 +123,23 @@ export const useClientStore = create<ClientStore>((set, get) => ({
         error: error as ApiError,
       });
       return null;
+    }
+  },
+
+  /**
+   * Fetch stage counts for all client stages
+   */
+  fetchStageCounts: async () => {
+    set({ stageCountsLoading: true });
+
+    try {
+      const counts = await clientApi.getStageCounts();
+      set({ stageCounts: counts, stageCountsLoading: false });
+    } catch (error) {
+      set({
+        stageCountsLoading: false,
+        error: error as ApiError,
+      });
     }
   },
 

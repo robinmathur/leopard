@@ -210,7 +210,7 @@ export const ClientTable = ({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {client.branch_office_name || '-'}
+                      {client.branch_name || '-'}
                     </Typography>
                   </TableCell>
                   <TableCell>

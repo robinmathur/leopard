@@ -30,8 +30,8 @@ export interface Client {
   assigned_to_name?: string;
   agent?: number;
   agent_name?: string;
-  branch_office?: number;
-  branch_office_name?: string;
+  branch?: number;
+  branch_name?: string;
   created_by?: number;
   created_by_name?: string;
   created_at: string;
@@ -98,6 +98,14 @@ export interface ClientListParams {
   email?: string;
   first_name?: string;
   last_name?: string;
+}
+
+export interface StageCounts {
+  LEAD: number;
+  FOLLOW_UP: number;
+  CLIENT: number;
+  CLOSE: number;
+  TOTAL: number;
 }
 
 export const STAGE_LABELS: Record<ClientStage, string> = {

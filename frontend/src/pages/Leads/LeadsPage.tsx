@@ -18,6 +18,8 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  Badge,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
@@ -53,6 +55,15 @@ const TABS: { label: string; stage?: ClientStage }[] = [
   { label: 'Close', stage: 'CLOSE' },
 ];
 
+// Helper to get count for a tab
+const getTabCount = (
+  stage: ClientStage | undefined,
+  stageCounts: { LEAD: number; FOLLOW_UP: number; CLIENT: number; CLOSE: number; TOTAL: number } | null
+): number | undefined => {
+  if (!stageCounts || !stage) return undefined;
+  return stageCounts[stage];
+};
+
 type DialogMode = 'add' | 'edit' | null;
 
 export const LeadsPage = () => {
@@ -78,7 +89,10 @@ export const LeadsPage = () => {
     loading,
     error,
     pagination,
+    stageCounts,
+    stageCountsLoading,
     fetchClients,
+    fetchStageCounts,
     addClient,
     updateClient,
     deleteClient,
@@ -101,6 +115,7 @@ export const LeadsPage = () => {
   // Fetch clients on mount with default tab filter and cleanup on unmount
   useEffect(() => {
     fetchWithStageFilter(TABS[tabValue].stage);
+    fetchStageCounts();
 
     // Cancel any in-flight requests on unmount to prevent memory leaks
     return () => {
@@ -172,8 +187,9 @@ export const LeadsPage = () => {
         message: `Client "${selectedClient.first_name}" deleted successfully`,
         severity: 'success',
       });
-      // Refresh current tab
+      // Refresh current tab and stage counts
       fetchWithStageFilter(TABS[tabValue].stage);
+      fetchStageCounts();
     } else {
       setSnackbar({
         open: true,
@@ -214,8 +230,9 @@ export const LeadsPage = () => {
         severity: 'success',
       });
       setSelectedClient(null);
-      // Refresh current tab
+      // Refresh current tab and stage counts
       fetchWithStageFilter(TABS[tabValue].stage);
+      fetchStageCounts();
     } else {
       setSnackbar({
         open: true,
@@ -252,8 +269,9 @@ export const LeadsPage = () => {
               message: `Client "${result.first_name}" added successfully`,
               severity: 'success',
             });
-            // Refresh current tab
+            // Refresh current tab and stage counts
             fetchWithStageFilter(TABS[tabValue].stage);
+            fetchStageCounts();
           }
         } else if (dialogMode === 'edit' && selectedClient) {
           const result = await updateClient(selectedClient.id, data as ClientUpdateRequest);
@@ -264,8 +282,9 @@ export const LeadsPage = () => {
               message: `Client "${result.first_name}" updated successfully`,
               severity: 'success',
             });
-            // Refresh current tab
+            // Refresh current tab and stage counts (in case stage changed)
             fetchWithStageFilter(TABS[tabValue].stage);
+            fetchStageCounts();
           }
         }
       } catch (err) {
@@ -283,7 +302,7 @@ export const LeadsPage = () => {
         setFormLoading(false);
       }
     },
-    [dialogMode, selectedClient, addClient, updateClient, tabValue, fetchWithStageFilter]
+    [dialogMode, selectedClient, addClient, updateClient, tabValue, fetchWithStageFilter, fetchStageCounts]
   );
 
   const handleCloseSnackbar = () => {
@@ -321,9 +340,37 @@ export const LeadsPage = () => {
           variant="scrollable"
           scrollButtons="auto"
         >
-          {TABS.map((tab, index) => (
-            <Tab key={index} label={tab.label} />
-          ))}
+          {TABS.map((tab, index) => {
+            const count = getTabCount(tab.stage, stageCounts);
+            return (
+              <Tab
+                key={index}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {tab.label}
+                    {stageCountsLoading ? (
+                      <CircularProgress size={14} />
+                    ) : count !== undefined ? (
+                      <Badge
+                        badgeContent={count}
+                        color="primary"
+                        max={999}
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            position: 'relative',
+                            transform: 'none',
+                            fontSize: '0.75rem',
+                            minWidth: '20px',
+                            height: '20px',
+                          },
+                        }}
+                      />
+                    ) : null}
+                  </Box>
+                }
+              />
+            );
+          })}
         </Tabs>
 
         {TABS.map((_tab, index) => (

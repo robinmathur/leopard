@@ -9,6 +9,7 @@ import {
   ClientUpdateRequest,
   ClientListParams,
   PaginatedResponse,
+  StageCounts,
   NEXT_STAGE,
 } from '@/types/client';
 
@@ -70,6 +71,15 @@ export const clientApi = {
       throw new Error('Client is already in the final stage');
     }
     return this.update(id, { stage: nextStage });
+  },
+
+  /**
+   * Get counts of clients by stage
+   * Returns counts for LEAD, FOLLOW_UP, CLIENT, CLOSE, and TOTAL
+   */
+  async getStageCounts(): Promise<StageCounts> {
+    const response = await httpClient.get<StageCounts>('/v1/clients/stage-counts/');
+    return response.data;
   },
 };
 

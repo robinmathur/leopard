@@ -24,6 +24,7 @@ class ClientOutputSerializer(serializers.ModelSerializer):
     agent_name = serializers.SerializerMethodField()
     assigned_to_name = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
+    branch_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Client
@@ -51,6 +52,8 @@ class ClientOutputSerializer(serializers.ModelSerializer):
             'assigned_to_name',
             'stage',
             'active',
+            'branch',
+            'branch_name',
             'created_by',
             'created_by_name',
             'created_at',
@@ -81,6 +84,12 @@ class ClientOutputSerializer(serializers.ModelSerializer):
         """Get creator name if exists."""
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}"
+        return None
+    
+    def get_branch_name(self, obj):
+        """Get branch name if exists."""
+        if obj.branch:
+            return obj.branch.name
         return None
 
 
