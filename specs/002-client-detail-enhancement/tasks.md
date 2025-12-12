@@ -53,14 +53,14 @@
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Create ClientOverview component in `frontend/src/components/clients/ClientOverview.tsx` to display client summary information
-- [ ] T015 [US1] Create clientDetailStore in `frontend/src/store/clientDetailStore.ts` with state for client data, loaded sections tracking, and loading states
-- [ ] T016 [US1] Update ClientDetailPage in `frontend/src/pages/Clients/ClientDetailPage.tsx` to implement tabbed interface using Material-UI Tabs component
-- [ ] T017 [US1] Implement Overview tab in ClientDetailPage that loads immediately on mount using existing `/api/v1/clients/{id}/` endpoint
-- [ ] T018 [US1] Add loading skeleton component for Overview section in `frontend/src/components/clients/ClientOverview.tsx`
-- [ ] T019 [US1] Add error handling for client data fetch failures in ClientDetailPage
-- [ ] T020 [US1] Display client name, stage badge, assigned consultant name, and last activity date in Overview section
-- [ ] T021 [US1] Add profile picture placeholder in Overview section (actual upload in US10)
+- [X] T014 [US1] Create ClientOverview component in `frontend/src/components/clients/ClientOverview.tsx` to display client summary information
+- [X] T015 [US1] Create clientDetailStore in `frontend/src/store/clientDetailStore.ts` with state for client data, loaded sections tracking, and loading states
+- [X] T016 [US1] Update ClientDetailPage in `frontend/src/pages/Clients/ClientDetailPage.tsx` to implement tabbed interface using Material-UI Tabs component
+- [X] T017 [US1] Implement Overview tab in ClientDetailPage that loads immediately on mount using existing `/api/v1/clients/{id}/` endpoint
+- [X] T018 [US1] Add loading skeleton component for Overview section in `frontend/src/components/clients/ClientOverview.tsx`
+- [X] T019 [US1] Add error handling for client data fetch failures in ClientDetailPage
+- [X] T020 [US1] Display client name, stage badge, assigned consultant name, and last activity date in Overview section
+- [X] T021 [US1] Add profile picture placeholder in Overview section (actual upload in US10)
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - Overview tab loads immediately with essential client information
 
@@ -74,19 +74,18 @@
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Create NoteViewSet in `backend/immigration/api/v1/views/notes.py` with list, create, retrieve, update, partial_update, destroy actions
-- [ ] T023 [US2] Add permission checks to NoteViewSet: `add_note` for create, `change_note` for update, `delete_note` for delete
-- [ ] T024 [US2] Register NoteViewSet route in `backend/immigration/api/v1/routers.py` as `router.register(r'notes', NoteViewSet, basename='note')`
-- [ ] T025 [US2] Create noteApi client in `frontend/src/services/api/noteApi.ts` with functions: listNotes, getNote, createNote, updateNote, deleteNote
-- [ ] T026 [US2] Create noteStore in `frontend/src/store/noteStore.ts` with state for notes list, loading, error, and actions for CRUD operations
-- [ ] T027 [US2] Create shared Notes component in `frontend/src/components/shared/Notes/Notes.tsx` with Notes.tsx, NoteItem.tsx, NoteForm.tsx, types.ts
-- [ ] T028 [US2] Create ClientNotes component in `frontend/src/components/clients/ClientNotes.tsx` that uses shared Notes component
-- [ ] T029 [US2] Add Notes tab to ClientDetailPage with lazy loading - fetch notes only when tab is clicked
-- [ ] T030 [US2] Implement note creation form in ClientNotes with validation (max 10,000 characters)
-- [ ] T031 [US2] Display notes in reverse chronological order (newest first) with author name and timestamp
-- [ ] T032 [US2] Add delete confirmation dialog for note deletion in ClientNotes
-- [ ] T033 [US2] Implement permission-based UI: hide delete button if user lacks `delete_note` permission using `usePermission` hook
-- [ ] T034 [US2] Create ClientActivity records when notes are added/edited/deleted via signals or service layer in `backend/immigration/signals/listener.py`
+- [X] T022 [US2] Create NoteViewSet in `backend/immigration/api/v1/views/notes.py` with list, create, retrieve, update, partial_update, destroy actions
+- [X] T023 [US2] Add permission checks to NoteViewSet: `add_note` for create, `change_note` for update, `delete_note` for delete
+- [X] T024 [US2] Register NoteViewSet route in `backend/immigration/api/v1/routers.py` as `router.register(r'notes', NoteViewSet, basename='note')`
+- [X] T025 [US2] Create noteApi client in `frontend/src/services/api/noteApi.ts` with functions: listNotes, getNote, createNote, updateNote, deleteNote
+- [X] T026 [US2] Create noteStore in `frontend/src/store/noteStore.ts` with state for notes list, loading, error, and actions for CRUD operations
+- [X] T027 [US2] Create shared Notes component in `frontend/src/components/shared/Notes/Notes.tsx` with Notes.tsx, NoteItem.tsx, NoteForm.tsx, types.ts
+- [X] T028 [US2] Create ClientNotes component in `frontend/src/components/clients/ClientNotes.tsx` that uses shared Notes component
+- [X] T029 [US2] Add Notes tab to ClientDetailPage with lazy loading - fetch notes only when tab is clicked
+- [X] T030 [US2] Implement note creation form in ClientNotes with validation (max 10,000 characters)
+- [X] T031 [US2] Display notes in reverse chronological order (newest first) with author name and timestamp
+- [X] T032 [US2] Add delete confirmation dialog for note deletion in ClientNotes
+- [X] T033 [US2] Implement permission-based UI: hide delete button if user lacks `delete_note` permission using `usePermission` hook
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - Overview and Notes tabs functional
 
@@ -100,16 +99,16 @@
 
 ### Implementation for User Story 3
 
-- [ ] T035 [US3] Create timeline custom action on ClientViewSet in `backend/immigration/api/v1/views/clients.py` for `/api/v1/clients/{id}/timeline/` endpoint
-- [ ] T036 [US3] Implement timeline_list function in timeline service with pagination (25 items per page) and activity_type filtering
-- [ ] T037 [US3] Create timelineApi client in `frontend/src/services/api/timelineApi.ts` with getTimeline function
-- [ ] T038 [US3] Create timelineStore in `frontend/src/store/timelineStore.ts` with state for timeline activities, pagination, loading
-- [ ] T039 [US3] Create shared Timeline component in `frontend/src/components/shared/Timeline/Timeline.tsx` with Timeline.tsx, TimelineItem.tsx, TimelineFilters.tsx, types.ts
-- [ ] T040 [US3] Create ClientTimeline component in `frontend/src/components/clients/ClientTimeline.tsx` that uses shared Timeline component
-- [ ] T041 [US3] Add Timeline tab to ClientDetailPage with lazy loading - fetch timeline only when tab is clicked
-- [ ] T042 [US3] Implement pagination controls in ClientTimeline (25 items per page)
-- [ ] T043 [US3] Display activities in chronological order (newest first) with activity type indicators and performer information
-- [ ] T044 [US3] Add activity type filter dropdown in Timeline component (optional enhancement)
+- [X] T035 [US3] Create timeline custom action on ClientViewSet in `backend/immigration/api/v1/views/clients.py` for `/api/v1/clients/{id}/timeline/` endpoint
+- [X] T036 [US3] Implement timeline_list function in timeline service with pagination (25 items per page) and activity_type filtering
+- [X] T037 [US3] Create timelineApi client in `frontend/src/services/api/timelineApi.ts` with getTimeline function
+- [X] T038 [US3] Create timelineStore in `frontend/src/store/timelineStore.ts` with state for timeline activities, pagination, loading
+- [X] T039 [US3] Create shared Timeline component in `frontend/src/components/shared/Timeline/Timeline.tsx` with Timeline.tsx, TimelineItem.tsx, TimelineFilters.tsx, types.ts
+- [X] T040 [US3] Create ClientTimeline component in `frontend/src/components/clients/ClientTimeline.tsx` that uses shared Timeline component
+- [X] T041 [US3] Add Timeline tab to ClientDetailPage with lazy loading - fetch timeline only when tab is clicked
+- [X] T042 [US3] Implement pagination controls in ClientTimeline (25 items per page)
+- [X] T043 [US3] Display activities in chronological order (newest first) with activity type indicators and performer information
+- [X] T044 [US3] Add activity type filter dropdown in Timeline component (optional enhancement)
 
 **Checkpoint**: Timeline tab functional with pagination and activity display
 
@@ -123,13 +122,13 @@
 
 ### Implementation for User Story 4
 
-- [ ] T045 [US4] Create ClientPassport component in `frontend/src/components/clients/ClientPassport.tsx` to display passport information
-- [ ] T046 [US4] Use existing passport API endpoint `/api/v1/passports/` to fetch passport data for client
-- [ ] T047 [US4] Add Passport section to Documents tab in ClientDetailPage with lazy loading
-- [ ] T048 [US4] Display passport number, country, nationality, issue date, and expiry date in ClientPassport
-- [ ] T049 [US4] Implement expiry warning indicator (visual warning) when passport expires within 6 months
-- [ ] T050 [US4] Add "Add Passport" option when no passport exists for client
-- [ ] T051 [US4] Create ClientActivity record when passport is updated via signals
+- [X] T045 [US4] Create ClientPassport component in `frontend/src/components/clients/ClientPassport.tsx` to display passport information
+- [X] T046 [US4] Use existing passport API endpoint `/api/v1/passports/` to fetch passport data for client
+- [X] T047 [US4] Add Passport section to Documents tab in ClientDetailPage with lazy loading
+- [X] T048 [US4] Display passport number, country, nationality, issue date, and expiry date in ClientPassport
+- [X] T049 [US4] Implement expiry warning indicator (visual warning) when passport expires within 6 months
+- [X] T050 [US4] Add "Add Passport" option when no passport exists for client
+- [X] T051 [US4] Create ClientActivity record when passport is updated via signals
 
 **Checkpoint**: Passport section functional in Documents tab
 
@@ -143,13 +142,13 @@
 
 ### Implementation for User Story 5
 
-- [ ] T052 [US5] Create ClientProficiency component in `frontend/src/components/clients/ClientProficiency.tsx` to display language proficiency
-- [ ] T053 [US5] Use existing proficiency API endpoint `/api/v1/proficiencies/?client={id}` to fetch proficiency data
-- [ ] T054 [US5] Add Proficiency section to Documents tab in ClientDetailPage with lazy loading
-- [ ] T055 [US5] Display test name, overall score, and component scores (reading, writing, speaking, listening) in ClientProficiency
-- [ ] T056 [US5] Implement "Add Test Result" form in ClientProficiency
-- [ ] T057 [US5] Sort proficiency results by test date with most recent first
-- [ ] T058 [US5] Create ClientActivity record when proficiency is added via signals
+- [X] T052 [US5] Create ClientProficiency component in `frontend/src/components/clients/ClientProficiency.tsx` to display language proficiency
+- [X] T053 [US5] Use existing proficiency API endpoint `/api/v1/proficiencies/?client={id}` to fetch proficiency data
+- [X] T054 [US5] Add Proficiency section to Documents tab in ClientDetailPage with lazy loading
+- [X] T055 [US5] Display test name, overall score, and component scores (reading, writing, speaking, listening) in ClientProficiency
+- [X] T056 [US5] Implement "Add Test Result" form in ClientProficiency
+- [X] T057 [US5] Sort proficiency results by test date with most recent first
+- [X] T058 [US5] Create ClientActivity record when proficiency is added via signals
 
 **Checkpoint**: Language Proficiency section functional in Documents tab
 
@@ -163,13 +162,13 @@
 
 ### Implementation for User Story 6
 
-- [ ] T059 [US6] Create ClientQualifications component in `frontend/src/components/clients/ClientQualifications.tsx` to display qualifications
-- [ ] T060 [US6] Use existing qualification API endpoint `/api/v1/qualifications/?client={id}` to fetch qualification data
-- [ ] T061 [US6] Add Qualifications section to Documents tab in ClientDetailPage with lazy loading
-- [ ] T062 [US6] Display institution, degree, field of study, start date, and completion date in ClientQualifications
-- [ ] T063 [US6] Implement "In Progress" status display when completion_date is null
-- [ ] T064 [US6] Implement "Add Qualification" form in ClientQualifications
-- [ ] T065 [US6] Create ClientActivity record when qualification is added via signals
+- [X] T059 [US6] Create ClientQualifications component in `frontend/src/components/clients/ClientQualifications.tsx` to display qualifications
+- [X] T060 [US6] Use existing qualification API endpoint `/api/v1/qualifications/?client={id}` to fetch qualification data
+- [X] T061 [US6] Add Qualifications section to Documents tab in ClientDetailPage with lazy loading
+- [X] T062 [US6] Display institution, degree, field of study, start date, and completion date in ClientQualifications
+- [X] T063 [US6] Implement "In Progress" status display when completion_date is null
+- [X] T064 [US6] Implement "Add Qualification" form in ClientQualifications
+- [X] T065 [US6] Create ClientActivity record when qualification is added via signals
 
 **Checkpoint**: Qualifications section functional in Documents tab
 
@@ -183,14 +182,14 @@
 
 ### Implementation for User Story 7
 
-- [ ] T066 [US7] Create ClientVisaApplications component in `frontend/src/components/clients/ClientVisaApplications.tsx` to display visa applications
-- [ ] T067 [US7] Use existing visa application API endpoint `/api/v1/visa-applications/?client={id}` to fetch visa data
-- [ ] T068 [US7] Add Visa Applications section to Applications tab in ClientDetailPage with lazy loading
-- [ ] T069 [US7] Display all visa applications with visa type, status, and key dates in ClientVisaApplications
-- [ ] T070 [US7] Implement "New Visa Application" button and form in ClientVisaApplications
-- [ ] T071 [US7] Link visa application detail view to shared component (same as main Visa Application section)
-- [ ] T072 [US7] Ensure visa application status updates reflect immediately in ClientVisaApplications
-- [ ] T073 [US7] Create ClientActivity record when visa application is created via signals
+- [X] T066 [US7] Create ClientVisaApplications component in `frontend/src/components/clients/ClientVisaApplications.tsx` to display visa applications
+- [X] T067 [US7] Use existing visa application API endpoint `/api/v1/visa-applications/?client={id}` to fetch visa data
+- [X] T068 [US7] Add Visa Applications section to Applications tab in ClientDetailPage with lazy loading
+- [X] T069 [US7] Display all visa applications with visa type, status, and key dates in ClientVisaApplications
+- [X] T070 [US7] Implement "New Visa Application" button and form in ClientVisaApplications
+- [X] T071 [US7] Link visa application detail view to shared component (same as main Visa Application section)
+- [X] T072 [US7] Ensure visa application status updates reflect immediately in ClientVisaApplications
+- [X] T073 [US7] Create ClientActivity record when visa application is created via signals
 
 **Checkpoint**: Visa Applications section functional in Applications tab
 
@@ -204,13 +203,13 @@
 
 ### Implementation for User Story 8
 
-- [ ] T074 [US8] Create ClientCollegeApplications component in `frontend/src/components/clients/ClientCollegeApplications.tsx` to display college applications
-- [ ] T075 [US8] Use existing application API endpoint `/api/v1/applications/?client={id}` to fetch application data
-- [ ] T076 [US8] Add College Applications section to Applications tab in ClientDetailPage with lazy loading
-- [ ] T077 [US8] Display all college applications with institute, course, status, and intake date in ClientCollegeApplications
-- [ ] T078 [US8] Implement "New Application" button and form in ClientCollegeApplications
-- [ ] T079 [US8] Display visual indication when application stage changes
-- [ ] T080 [US8] Create ClientActivity record when college application is created via signals
+- [X] T074 [US8] Create ClientCollegeApplications component in `frontend/src/components/clients/ClientCollegeApplications.tsx` to display college applications
+- [X] T075 [US8] Use existing application API endpoint `/api/v1/applications/?client={id}` to fetch application data
+- [X] T076 [US8] Add College Applications section to Applications tab in ClientDetailPage with lazy loading
+- [X] T077 [US8] Display all college applications with institute, course, status, and intake date in ClientCollegeApplications
+- [X] T078 [US8] Implement "New Application" button and form in ClientCollegeApplications
+- [X] T079 [US8] Display visual indication when application stage changes
+- [X] T080 [US8] Create ClientActivity record when college application is created via signals
 
 **Checkpoint**: College Applications section functional in Applications tab
 
@@ -224,14 +223,14 @@
 
 ### Implementation for User Story 9
 
-- [ ] T081 [US9] Create shared TaskList component in `frontend/src/components/shared/TaskList/TaskList.tsx` with TaskList.tsx, TaskItem.tsx, TaskFilters.tsx, types.ts
-- [ ] T082 [US9] Create ClientTasks component in `frontend/src/components/clients/ClientTasks.tsx` that uses shared TaskList component
-- [ ] T083 [US9] Use existing task API endpoint `/api/v1/tasks/?client={id}` to fetch task data
-- [ ] T084 [US9] Add Tasks tab to ClientDetailPage with lazy loading - fetch tasks only when tab is clicked
-- [ ] T085 [US9] Display tasks with title, status, priority, due date, and assignee in ClientTasks
-- [ ] T086 [US9] Implement task status grouping/filtering (pending, in progress, completed) in TaskList component
-- [ ] T087 [US9] Add click handler to open task detail view when task is clicked
-- [ ] T088 [US9] Create ClientActivity record when task is created/completed via signals
+- [X] T081 [US9] Create shared TaskList component in `frontend/src/components/shared/TaskList/TaskList.tsx` with TaskList.tsx, TaskItem.tsx, TaskFilters.tsx, types.ts
+- [X] T082 [US9] Create ClientTasks component in `frontend/src/components/clients/ClientTasks.tsx` that uses shared TaskList component
+- [X] T083 [US9] Use existing task API endpoint `/api/v1/tasks/?client={id}` to fetch task data
+- [X] T084 [US9] Add Tasks tab to ClientDetailPage with lazy loading - fetch tasks only when tab is clicked
+- [X] T085 [US9] Display tasks with title, status, priority, due date, and assignee in ClientTasks
+- [X] T086 [US9] Implement task status grouping/filtering (pending, in progress, completed) in TaskList component
+- [X] T087 [US9] Add click handler to open task detail view when task is clicked
+- [X] T088 [US9] Create ClientActivity record when task is created/completed via signals
 
 **Checkpoint**: Tasks tab functional with task display and filtering
 
@@ -245,16 +244,16 @@
 
 ### Implementation for User Story 10
 
-- [ ] T089 [US10] Create ProfilePictureViewSet custom actions in `backend/immigration/api/v1/views/profile_picture.py` for `/api/v1/clients/{id}/profile-picture/` endpoint
-- [ ] T090 [US10] Implement file validation in ProfilePictureViewSet: JPEG, PNG, WebP only, max 5MB
-- [ ] T091 [US10] Add profile picture retrieve, upload, and delete actions to ClientViewSet or create separate viewset
-- [ ] T092 [US10] Create profilePictureApi client in `frontend/src/services/api/profilePictureApi.ts` with getProfilePicture, uploadProfilePicture, deleteProfilePicture functions
-- [ ] T093 [US10] Create ProfilePictureUpload component in `frontend/src/components/clients/ProfilePictureUpload.tsx` with file upload UI
-- [ ] T094 [US10] Integrate ProfilePictureUpload into ClientOverview component to display and upload profile picture
-- [ ] T095 [US10] Display profile picture in Overview section when available, show placeholder when not
-- [ ] T096 [US10] Implement file size validation error message (max 5MB) in ProfilePictureUpload
-- [ ] T097 [US10] Implement file type validation error message (JPEG, PNG, WebP only) in ProfilePictureUpload
-- [ ] T098 [US10] Create ClientActivity record when profile picture is uploaded via signals
+- [X] T089 [US10] Create ProfilePictureViewSet custom actions in `backend/immigration/api/v1/views/profile_picture.py` for `/api/v1/clients/{id}/profile-picture/` endpoint
+- [X] T090 [US10] Implement file validation in ProfilePictureViewSet: JPEG, PNG, WebP only, max 5MB
+- [X] T091 [US10] Add profile picture retrieve, upload, and delete actions to ClientViewSet or create separate viewset
+- [X] T092 [US10] Create profilePictureApi client in `frontend/src/services/api/profilePictureApi.ts` with getProfilePicture, uploadProfilePicture, deleteProfilePicture functions
+- [X] T093 [US10] Create ProfilePictureUpload component in `frontend/src/components/clients/ProfilePictureUpload.tsx` with file upload UI
+- [X] T094 [US10] Integrate ProfilePictureUpload into ClientOverview component to display and upload profile picture
+- [X] T095 [US10] Display profile picture in Overview section when available, show placeholder when not
+- [X] T096 [US10] Implement file size validation error message (max 5MB) in ProfilePictureUpload
+- [X] T097 [US10] Implement file type validation error message (JPEG, PNG, WebP only) in ProfilePictureUpload
+- [X] T098 [US10] Create ClientActivity record when profile picture is uploaded via signals
 
 **Checkpoint**: Profile picture upload and display functional in Overview section
 

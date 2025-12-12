@@ -34,10 +34,10 @@ desktop.ini
 # ------------------------------------------
 # Environment Variables (All Projects)
 # ------------------------------------------
-.env
-.env.*
-.env.local
-.env.*.local
+#.env
+#.env.*
+#.env.local
+#.env.*.local
 !.env.example
 !.env.sample
 

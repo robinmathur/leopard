@@ -67,9 +67,9 @@ class Command(BaseCommand):
         
         try:
             # Temporarily disable signals that expect middleware context
-            from immigration import signals as immigration_signals
-            post_save.disconnect(immigration_signals.client_events, sender=Client)
-            post_save.disconnect(immigration_signals.visa_application_events, sender=VisaApplication)
+            # from immigration import signals as immigration_signals
+            # post_save.disconnect(immigration_signals.client_events, sender=Client)
+            # post_save.disconnect(immigration_signals.visa_application_events, sender=VisaApplication)
             
             with transaction.atomic():
                 # Seed in order of dependencies
@@ -93,8 +93,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f'  ⚠  Skipping tasks (User Story 3 not implemented): {str(e)}'))
             
             # Re-enable signals
-            post_save.connect(immigration_signals.client_events, sender=Client)
-            post_save.connect(immigration_signals.visa_application_events, sender=VisaApplication)
+            # post_save.connect(immigration_signals.client_events, sender=Client)
+            # post_save.connect(immigration_signals.visa_application_events, sender=VisaApplication)
             
             self.stdout.write(self.style.SUCCESS(f'\n✅ Database seeded successfully in {elapsed:.2f} seconds!'))
             self.stdout.write(self.style.SUCCESS(f'\n📊 Summary:'))
