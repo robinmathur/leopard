@@ -18,9 +18,9 @@
 
 **Purpose**: Project initialization and OpenAPI spec updates
 
-- [ ] T001 Merge API contracts from `specs/002-client-detail-enhancement/contracts/openapi.yaml` into `frontend/dev/openapi-spec.yaml`
-- [ ] T002 [P] Update backend OpenAPI schema generation to include new endpoints in `backend/openapi-schema.yaml`
-- [ ] T003 [P] Create permissions for new models: `immigration.add_note`, `immigration.change_note`, `immigration.view_clientactivity` in `backend/immigration/management/commands/setup_role_permissions.py`
+- [X] T001 Merge API contracts from `specs/002-client-detail-enhancement/contracts/openapi.yaml` into `frontend/dev/openapi-spec.yaml`
+- [X] T002 [P] Update backend OpenAPI schema generation to include new endpoints in `backend/openapi-schema.yaml`
+- [X] T003 [P] Create permissions for new models: `immigration.add_note`, `immigration.change_note`, `immigration.view_clientactivity` in `backend/immigration/management/commands/setup_role_permissions.py`
 
 ---
 
@@ -30,16 +30,16 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create Note model in `backend/immigration/models/note.py` with fields: client (ForeignKey), author (ForeignKey), content (TextField), created_at, updated_at
-- [ ] T005 Create ClientActivity model in `backend/immigration/models/client_activity.py` with fields: client (ForeignKey), activity_type (CharField), performed_by (ForeignKey), description (TextField), metadata (JSONField), created_at
-- [ ] T006 Create ProfilePicture model in `backend/immigration/models/profile_picture.py` with fields: client (OneToOneField), file (ImageField), file_size (IntegerField), file_type (CharField), uploaded_by (ForeignKey), created_at, updated_at
-- [ ] T007 Create database migrations for Note, ClientActivity, ProfilePicture models in `backend/immigration/migrations/`
-- [ ] T008 Run migrations: `python manage.py migrate` to create new tables
-- [ ] T009 [P] Create Note serializer in `backend/immigration/api/v1/serializers/note.py` with NoteCreateRequest, NoteUpdateRequest, NoteOutput serializers
-- [ ] T010 [P] Create ClientActivity serializer in `backend/immigration/api/v1/serializers/client_activity.py` with ClientActivityOutput serializer
-- [ ] T011 [P] Create ProfilePicture serializer in `backend/immigration/api/v1/serializers/profile_picture.py` with ProfilePictureOutput serializer
-- [ ] T012 Create note service in `backend/immigration/services/notes.py` with note_list, note_create, note_update, note_delete functions
-- [ ] T013 Create timeline service in `backend/immigration/services/timeline.py` with timeline_list function for ClientActivity queries
+- [X] T004 Create Note model in `backend/immigration/models/note.py` with fields: client (ForeignKey), author (ForeignKey), content (TextField), created_at, updated_at
+- [X] T005 Create ClientActivity model in `backend/immigration/models/client_activity.py` with fields: client (ForeignKey), activity_type (CharField), performed_by (ForeignKey), description (TextField), metadata (JSONField), created_at
+- [X] T006 Create ProfilePicture model in `backend/immigration/models/profile_picture.py` with fields: client (OneToOneField), file (ImageField), file_size (IntegerField), file_type (CharField), uploaded_by (ForeignKey), created_at, updated_at
+- [X] T007 Create database migrations for Note, ClientActivity, ProfilePicture models in `backend/immigration/migrations/`
+- [X] T008 Run migrations: `python manage.py migrate` to create new tables
+- [X] T009 [P] Create Note serializer in `backend/immigration/api/v1/serializers/note.py` with NoteCreateRequest, NoteUpdateRequest, NoteOutput serializers
+- [X] T010 [P] Create ClientActivity serializer in `backend/immigration/api/v1/serializers/client_activity.py` with ClientActivityOutput serializer
+- [X] T011 [P] Create ProfilePicture serializer in `backend/immigration/api/v1/serializers/profile_picture.py` with ProfilePictureOutput serializer
+- [X] T012 Create note service in `backend/immigration/services/notes.py` with note_list, note_create, note_update, note_delete functions
+- [X] T013 Create timeline service in `backend/immigration/services/timeline.py` with timeline_list function for ClientActivity queries
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

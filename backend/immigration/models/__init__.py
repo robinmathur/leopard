@@ -19,6 +19,9 @@ from immigration.models.visa import VisaCategory, VisaType, VisaApplication
 from immigration.models.notification import Notification
 from immigration.models.task import Task
 from immigration.models.profile import LPE, Proficiency, Qualification, Passport
+from immigration.models.note import Note
+from immigration.models.client_activity import ClientActivity
+from immigration.models.profile_picture import ProfilePicture
 
 __all__ = [
     'SoftDeletionManager',
@@ -39,4 +42,7 @@ __all__ = [
     'Proficiency',
     'Qualification',
     'Passport',
+    'Note',
+    'ClientActivity',
+    'ProfilePicture',
 ]
