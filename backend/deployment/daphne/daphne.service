@@ -1,14 +1,17 @@
 [Unit]
-Description=daphne daemon
-Requires=daphne.socket
+Description=Daphne ASGI Server for Leopard
 After=network.target
 
 [Service]
 User=ubuntu
 Group=www-data
-WorkingDirectory=/home/ubuntu/leopard
-ExecStart=/home/ubuntu/leopard/venv/bin/daphne \
+WorkingDirectory=/home/ubuntu/leopard/backend
+Environment="PATH=/home/ubuntu/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/ubuntu/.cargo/bin/uv run daphne \
           -u unix:/home/ubuntu/leopard/daphne.sock \
           leopard.asgi:application
+Restart=on-failure
+RestartSec=5
+
 [Install]
 WantedBy=multi-user.target

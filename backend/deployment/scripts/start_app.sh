@@ -12,16 +12,19 @@ fi
 # Change ownership to ubuntu user
 sudo chown -R ubuntu:ubuntu "/home/ubuntu/$PROJECT_MAIN_DIR_NAME"
 
-# Change directory to the project main directory
-cd "/home/ubuntu/$PROJECT_MAIN_DIR_NAME"
+# Change directory to the project backend directory
+cd "/home/ubuntu/$PROJECT_MAIN_DIR_NAME/backend"
 
-# Activate virtual environment
-echo "Activating virtual environment..."
-source "/home/ubuntu/$PROJECT_MAIN_DIR_NAME/venv/bin/activate"
+# Ensure uv is in PATH
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# Run migrations
+echo "Running migrations..."
+uv run python manage.py migrate --noinput
 
 # Run collectstatic command
 echo "Running collectstatic command..."
-python manage.py collectstatic --noinput
+uv run python manage.py collectstatic --noinput
 
 # Restart Daphne and Nginx services
 echo "Restarting Daphne and Nginx services..."

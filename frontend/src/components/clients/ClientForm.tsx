@@ -70,7 +70,7 @@ const initialFormData: FormData = {
   suburb: '',
   state: '',
   postcode: '',
-  stage: 'LE',
+  stage: 'LEAD',
   description: '',
   referred_by: '',
 };

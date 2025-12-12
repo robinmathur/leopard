@@ -15,7 +15,7 @@ interface AuthStore {
   error: string | null;
   
   // Actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
   setTokens: (tokens: AuthTokens | null) => void;
@@ -120,12 +120,12 @@ function mapRoleToUserRole(backendRole: string): User['role'] {
  * Login using real API - calls backend endpoints
  */
 async function loginWithApi(
-  email: string,
+  username: string,
   password: string,
   set: (state: Partial<AuthStore>) => void
 ): Promise<void> {
   // Call login API
-  const tokens = await authApi.login(email, password);
+  const tokens = await authApi.login(username, password);
 
   // Store tokens
   localStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(tokens));
@@ -139,8 +139,9 @@ async function loginWithApi(
   // Create user object from profile response
   const user: User = {
     id: String(profileResponse.id),
+    username: profileResponse.username,
     email: profileResponse.email,
-    firstName: profileResponse.first_name || email.split('@')[0].split('.')[0] || 'User',
+    firstName: profileResponse.first_name || username.split('@')[0].split('.')[0] || 'User',
     lastName: profileResponse.last_name || '',
     role: mapRoleToUserRole(profileResponse.primary_group || ''),
     tenantId: profileResponse.tenant ? String(profileResponse.tenant) : 'tenant-1',
@@ -169,14 +170,14 @@ async function loginWithApi(
  * Login using mock data - for development/testing without backend
  */
 async function loginWithMock(
-  email: string,
+  username: string,
   password: string,
   set: (state: Partial<AuthStore>) => void
 ): Promise<void> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const mockUser = Object.values(MOCK_USERS).find(u => u.email === email);
+  const mockUser = Object.values(MOCK_USERS).find(u => u.username === username);
 
   if (!mockUser || password !== 'password123') {
     throw new Error('Invalid credentials');
@@ -271,7 +272,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   /**
    * Login with API - calls backend, stores tokens, fetches profile with permissions
    */
-  login: async (email: string, password: string) => {
+  login: async (username: string, password: string) => {
     set({ isLoading: true, error: null });
 
     try {
@@ -281,17 +282,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (isMockEnabled) {
         // In mock mode: Try real API first, fallback to mock users if API fails
         try {
-          await loginWithApi(email, password, set);
+          await loginWithApi(username, password, set);
           return;
         } catch {
           // If API fails in dev/mock mode, fallback to mock users
           console.warn('API login failed, using mock users');
-          await loginWithMock(email, password, set);
+          await loginWithMock(username, password, set);
           return;
         }
       } else {
         // In production/non-mock mode: Only call real API, no fallback
-        await loginWithApi(email, password, set);
+        await loginWithApi(username, password, set);
       }
     } catch (error) {
       // Extract error message from ApiError or Error

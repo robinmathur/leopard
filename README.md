@@ -23,11 +23,12 @@ leopard/
 ## Tech Stack
 
 ### Backend
-- **Python 3.x** with Django
+- **Python 3.11+** with Django 4.2
 - **Django REST Framework** for API
 - **Django Channels** for WebSocket support
 - **PostgreSQL** for database
 - **Daphne** for ASGI server
+- **uv** for fast package management
 
 ### Frontend
 - **React 18** with TypeScript
@@ -40,9 +41,23 @@ leopard/
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - Node.js 18+ and npm
+- [uv](https://docs.astral.sh/uv/) - Fast Python package manager
 - PostgreSQL (or use Docker)
+
+### Install uv (Python Package Manager)
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or with Homebrew
+brew install uv
+
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
 ### Quick Start with Docker
 
@@ -52,10 +67,10 @@ docker-compose up -d
 
 # Setup backend
 cd backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser --username admin --email admin@example.com
-python manage.py runserver
+uv sync
+uv run python manage.py migrate
+uv run python manage.py createsuperuser --username admin --email admin@example.com
+uv run python manage.py runserver
 
 # In another terminal, setup frontend
 cd frontend
@@ -68,22 +83,17 @@ npm run dev
 ```bash
 cd backend
 
-# Create virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies with uv
+uv sync
 
 # Run migrations
-python manage.py makemigrations
-python manage.py migrate
+uv run python manage.py migrate
 
 # Create admin user
-python manage.py createsuperuser --username admin --email admin@example.com
+uv run python manage.py createsuperuser --username admin --email admin@example.com
 
 # Run development server
-python manage.py runserver
+uv run python manage.py runserver
 ```
 
 Backend will be available at `http://localhost:8000`
@@ -113,6 +123,8 @@ Frontend will be available at `http://localhost:5173`
 - REST API: `http://localhost:8000/api/`
 - Admin Panel: `http://localhost:8000/admin/`
 - API Auth: `http://localhost:8000/api-auth/login`
+- OpenAPI Schema: `http://localhost:8000/api/schema/`
+- Swagger UI: `http://localhost:8000/api/docs/`
 
 ## RBAC Roles
 
@@ -126,14 +138,35 @@ Frontend will be available at `http://localhost:5173`
 ### Backend Commands
 
 ```bash
+# Install dependencies
+uv sync
+
+# Add a package
+uv add <package-name>
+
+# Add a dev dependency
+uv add --dev <package-name>
+
+# Run Django commands
+uv run python manage.py <command>
+
 # Create new Django app
-python manage.py startapp <app-name>
+uv run python manage.py startapp <app-name>
 
 # Make migrations
-python manage.py makemigrations
+uv run python manage.py makemigrations
 
 # Apply migrations
-python manage.py migrate
+uv run python manage.py migrate
+
+# Format code
+uv run black .
+
+# Lint code
+uv run ruff check .
+
+# Run tests
+uv run pytest
 ```
 
 ### Frontend Commands
