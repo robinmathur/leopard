@@ -1,0 +1,542 @@
+openapi: 3.0.3
+info:
+  title: Enhanced Client Detail Page API Contracts
+  version: 1.0.0
+  description: |
+    API contracts for new endpoints required for the enhanced client detail page feature.
+    These endpoints should be added to the main OpenAPI spec at `frontend/dev/openapi-spec.yaml`.
+
+paths:
+  # Notes Endpoints
+  /api/v1/notes/:
+    get:
+      operationId: v1_notes_list
+      summary: List notes
+      description: |
+        List all notes for clients accessible by the authenticated user.
+        Results are filtered by user's role and scope (branch, region, tenant).
+      tags:
+        - notes
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: client
+          schema:
+            type: integer
+          description: Filter by client ID
+        - in: query
+          name: author
+          schema:
+            type: integer
+          description: Filter by author user ID
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+          description: Results per page
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  next:
+                    type: string
+                    nullable: true
+                  previous:
+                    type: string
+                    nullable: true
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NoteOutput'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+    post:
+      operationId: v1_notes_create
+      summary: Create note
+      description: Create a new note for a client. Requires `add_note` permission.
+      tags:
+        - notes
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Missing add_note permission
+
+  /api/v1/notes/{id}/:
+    get:
+      operationId: v1_notes_retrieve
+      summary: Get note details
+      tags:
+        - notes
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+
+    put:
+      operationId: v1_notes_update
+      summary: Update note (full)
+      description: Update a note. Requires `change_note` permission and note must be authored by user or user must have edit permission.
+      tags:
+        - notes
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteUpdateRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+
+    patch:
+      operationId: v1_notes_partial_update
+      summary: Update note (partial)
+      description: Partially update a note. Requires `change_note` permission.
+      tags:
+        - notes
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteUpdateRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+
+    delete:
+      operationId: v1_notes_destroy
+      summary: Delete note
+      description: Hard delete a note. Requires `delete_note` permission.
+      tags:
+        - notes
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+
+  # Timeline/Activity Endpoints
+  /api/v1/clients/{id}/timeline/:
+    get:
+      operationId: v1_clients_timeline_list
+      summary: Get client timeline
+      description: |
+        Get chronological timeline of activities for a client.
+        Results are paginated and ordered by created_at (newest first).
+      tags:
+        - clients
+        - timeline
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Client ID
+        - in: query
+          name: activity_type
+          schema:
+            type: string
+            enum: [NOTE_ADDED, NOTE_EDITED, NOTE_DELETED, STAGE_CHANGED, ASSIGNED, PROFILE_PICTURE_UPLOADED, PASSPORT_UPDATED, PROFICIENCY_ADDED, QUALIFICATION_ADDED, VISA_APPLICATION_CREATED, COLLEGE_APPLICATION_CREATED, TASK_CREATED, TASK_COMPLETED]
+          description: Filter by activity type
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+          description: Results per page
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  next:
+                    type: string
+                    nullable: true
+                  previous:
+                    type: string
+                    nullable: true
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClientActivityOutput'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Client not found
+
+  # Profile Picture Endpoints
+  /api/v1/clients/{id}/profile-picture/:
+    get:
+      operationId: v1_clients_profile_picture_retrieve
+      summary: Get client profile picture
+      description: Retrieve the profile picture for a client.
+      tags:
+        - clients
+        - profile-picture
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Client ID
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilePictureOutput'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Client or profile picture not found
+
+    post:
+      operationId: v1_clients_profile_picture_create
+      summary: Upload client profile picture
+      description: |
+        Upload or replace a client's profile picture.
+        Accepts JPEG, PNG, or WebP images up to 5MB.
+        Requires `change_client` permission.
+      tags:
+        - clients
+        - profile-picture
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Client ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file (JPEG, PNG, WebP, max 5MB)
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilePictureOutput'
+        '400':
+          description: Validation error (invalid file type or size)
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Client not found
+
+    delete:
+      operationId: v1_clients_profile_picture_destroy
+      summary: Delete client profile picture
+      description: Delete a client's profile picture. Requires `change_client` permission.
+      tags:
+        - clients
+        - profile-picture
+      security:
+        - jwtAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Client ID
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Client or profile picture not found
+
+components:
+  schemas:
+    NoteCreateRequest:
+      type: object
+      required:
+        - client
+        - content
+      properties:
+        client:
+          type: integer
+          description: Client ID
+        content:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: Note content
+
+    NoteUpdateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: Note content
+
+    NoteOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        client:
+          type: integer
+          readOnly: true
+        author:
+          type: integer
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+          description: Author's full name or username
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+
+    ClientActivityOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        client:
+          type: integer
+          readOnly: true
+        activity_type:
+          type: string
+          enum: [NOTE_ADDED, NOTE_EDITED, NOTE_DELETED, STAGE_CHANGED, ASSIGNED, PROFILE_PICTURE_UPLOADED, PASSPORT_UPDATED, PROFICIENCY_ADDED, QUALIFICATION_ADDED, VISA_APPLICATION_CREATED, COLLEGE_APPLICATION_CREATED, TASK_CREATED, TASK_COMPLETED]
+          readOnly: true
+        performed_by:
+          type: integer
+          readOnly: true
+        performed_by_name:
+          type: string
+          readOnly: true
+          description: Performer's full name or username
+        description:
+          type: string
+          readOnly: true
+        metadata:
+          type: object
+          additionalProperties: true
+          readOnly: true
+          description: Activity-specific metadata (JSON object)
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ProfilePictureOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        client:
+          type: integer
+          readOnly: true
+        file:
+          type: string
+          format: uri
+          readOnly: true
+          description: URL to the profile picture file
+        file_size:
+          type: integer
+          readOnly: true
+          description: File size in bytes
+        file_type:
+          type: string
+          readOnly: true
+          description: MIME type (image/jpeg, image/png, image/webp)
+        uploaded_by:
+          type: integer
+          readOnly: true
+        uploaded_by_name:
+          type: string
+          readOnly: true
+          description: Uploader's full name or username
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
