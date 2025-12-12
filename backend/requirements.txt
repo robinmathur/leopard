@@ -1,3 +1,7 @@
+# NOTE: This file is kept for compatibility with systems that don't support uv.
+# Primary package management is done via pyproject.toml with uv.
+# To regenerate this file: uv export > requirements.txt
+
 anyio==4.4.0
 asgiref==3.7.2
 attrs==23.2.0

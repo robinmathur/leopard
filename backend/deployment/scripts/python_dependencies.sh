@@ -12,16 +12,18 @@ fi
 # Change ownership to ubuntu user
 sudo chown -R ubuntu:ubuntu "/home/ubuntu/$PROJECT_MAIN_DIR_NAME"
 
-# Create virtual environment
-echo "Creating virtual environment..."
-virtualenv "/home/ubuntu/$PROJECT_MAIN_DIR_NAME/venv"
+# Change to project directory
+cd "/home/ubuntu/$PROJECT_MAIN_DIR_NAME/backend"
 
-# Activate virtual environment
-echo "Activating virtual environment..."
-source "/home/ubuntu/$PROJECT_MAIN_DIR_NAME/venv/bin/activate"
+# Install uv if not present
+if ! command -v uv &> /dev/null; then
+    echo "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
 
-# Install dependencies
-echo "Installing Python dependencies..."
-pip install -r "/home/ubuntu/$PROJECT_MAIN_DIR_NAME/requirements.txt"
+# Install dependencies with uv
+echo "Installing Python dependencies with uv..."
+uv sync --no-dev
 
 echo "Dependencies installed successfully."

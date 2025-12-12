@@ -20,13 +20,17 @@ from django.contrib.auth.models import Group
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-from immigration.models import Tenant, Region, Branch
-from immigration.client.client import Client
-from immigration.visa.visa_category import VisaCategory
-from immigration.visa.visa_type import VisaType
-from immigration.visa.visa_application import VisaApplication
-from immigration.models.agent import Agent
-from immigration.task import Task
+from immigration.models import (
+    Tenant,
+    Region,
+    Branch,
+    Client,
+    VisaCategory,
+    VisaType,
+    VisaApplication,
+    Agent,
+    Task,
+)
 from immigration.constants import (
     ClientStage,
     AgentType,
@@ -340,7 +344,8 @@ class Command(BaseCommand):
         for name, code, desc in categories_data:
             category = VisaCategory.objects.create(
                 name=name,
-                created_by=created_by,
+                code=code,
+                description=desc,
             )
             categories.append(category)
             self.stdout.write(f'  ✓ Created visa category: {category.name}')
@@ -384,10 +389,8 @@ class Command(BaseCommand):
             types_data = visa_types_data.get(category.name, [])
             for visa_type_name, sub_class, imm_fee, service_fee in types_data:
                 visa_type = VisaType.objects.create(
-                    visa_type=visa_type_name,
-                    sub_class=sub_class,
-                    immigration_fee=imm_fee,
-                    visa_service_fee=service_fee,
+                    name=visa_type_name,
+                    code=sub_class,
                     visa_category=category,
                     checklist=[
                         'Identity documents',
@@ -396,7 +399,6 @@ class Command(BaseCommand):
                         'Financial evidence',
                         'Health examination',
                     ],
-                    created_by=created_by,
                 )
                 visa_types.append(visa_type)
             
@@ -471,20 +473,19 @@ class Command(BaseCommand):
                 gender=random.choice(['MALE', 'FEMALE']),
                 dob=datetime.now().date() - timedelta(days=random.randint(8000, 18000)),  # 22-49 years old
                 phone_number=f'+1-555-{random.randint(6000, 9999)}',
-                email=f'{first_name.lower()}.{last_name.lower()}@email.com',
+                email=f'{first_name.lower()}.{last_name.lower()}{i}@email.com',
                 street=f'{random.randint(1, 999)} {random.choice(["Main", "Oak", "Pine", "Maple"])} St',
                 suburb=random.choice(['Downtown', 'Midtown', 'Uptown', 'Suburbs']),
                 state=random.choice(['NY', 'CA', 'TX', 'FL', 'IL']),
                 postcode=f'{random.randint(10000, 99999)}',
                 country=random.choice(['US', 'GB', 'CA', 'AU', 'IN', 'CN']),
+                branch=branch,
                 visa_category=random.choice(visa_categories) if random.random() > 0.2 else None,
                 agent=random.choice(agents) if random.random() > 0.6 else None,
                 assigned_to=assigned_to,
                 stage=random.choice(['LEAD', 'FOLLOW_UP', 'CLIENT', 'CLOSE']),
                 active=random.random() > 0.3,  # 70% active
                 description=f'Client interested in {random.choice(["work", "study", "family", "business"])} visa',
-                # Note: branch field doesn't exist in current Client model - multi-tenant refactoring pending
-                created_by=assigned_to or branch_consultants[0] if branch_consultants else users[0],
             )
             clients.append(client)
             
@@ -526,10 +527,9 @@ class Command(BaseCommand):
                     date_granted=decision_date if status == 'GRANTED' else None,
                     date_rejected=decision_date if status == 'REJECTED' else None,
                     assigned_to=client.assigned_to,
-                    immigration_fee=visa_type.immigration_fee,
-                    service_fee=visa_type.visa_service_fee,
-                    notes=f'Application for {visa_type.visa_type} ({visa_type.sub_class})',
-                    created_by=client.assigned_to or users[0],
+                    immigration_fee=random.randint(500, 5000),
+                    service_fee=random.randint(200, 2000),
+                    notes=f'Application for {visa_type.name} ({visa_type.code})',
                 )
                 applications.append(application)
         
