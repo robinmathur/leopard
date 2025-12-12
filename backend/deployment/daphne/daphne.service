@@ -1,0 +1,14 @@
+[Unit]
+Description=daphne daemon
+Requires=daphne.socket
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/leopard
+ExecStart=/home/ubuntu/leopard/venv/bin/daphne \
+          -u unix:/home/ubuntu/leopard/daphne.sock \
+          leopard.asgi:application
+[Install]
+WantedBy=multi-user.target

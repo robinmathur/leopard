@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Notification Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: 0 auto; }
+        #notifications { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; background: #f9f9f9; }
+        .notification { padding: 10px; margin: 5px 0; background: white; border-radius: 4px; border-left: 4px solid #ccc; }
+        .notification.new { border-left-color: #28a745; background: #d4edda; }
+        .notification.info { border-left-color: #17a2b8; background: #d1ecf1; }
+        .notification.error { border-left-color: #dc3545; background: #f8d7da; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type="text"] { padding: 8px; width: 500px; }
+        .stats { background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Real-Time Notifications Test</h1>
+    
+    <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+        <strong>Instructions:</strong>
+        <ol>
+            <li>Get your JWT token from: <code>curl -X POST http://localhost:8000/api/token/ -H "Content-Type: application/json" -d '{"username":"your_username","password":"your_password"}'</code></li>
+            <li>Paste the <code>access</code> token below</li>
+            <li>Click "Connect" to establish SSE connection</li>
+            <li>Create a task to trigger a notification</li>
+        </ol>
+    </div>
+    
+    <div>
+        <label><strong>JWT Token:</strong></label><br>
+        <input type="text" id="token" placeholder="Paste your JWT access token here">
+        <button id="connectBtn" onclick="connect()">Connect</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+    </div>
+    
+    <div class="stats">
+        <strong>Status:</strong> <span id="status" class="info">Not connected</span><br>
+        <strong>Notifications Received:</strong> <span id="count">0</span>
+    </div>
+    
+    <h2>Notifications Feed:</h2>
+    <div id="notifications">
+        <div style="text-align: center; color: #999; padding: 20px;">
+            No notifications yet. Connect and create a task to see real-time updates!
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let notificationCount = 0;
+
+        function connect() {
+            const token = document.getElementById('token').value.trim();
+            
+            if (!token) {
+                alert('Please enter a JWT token');
+                return;
+            }
+
+            // Disconnect if already connected
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            // Clear notifications
+            notificationCount = 0;
+            updateCount();
+            document.getElementById('notifications').innerHTML = '';
+
+            // Connect to SSE endpoint with token as query parameter
+            const url = `http://localhost:8000/api/v1/notifications/stream/?token=${encodeURIComponent(token)}`;
+            
+            try {
+                eventSource = new EventSource(url);
+                
+                eventSource.onopen = function() {
+                    updateStatus('Connected ✓', 'success');
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    addNotification('System', 'Connected to SSE stream', 'info');
+                };
+
+                eventSource.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('Received:', data);
+                        
+                        if (data.type === 'heartbeat') {
+                            // Just update status timestamp, don't show all heartbeats
+                            updateStatus('Connected ✓ (heartbeat at ' + new Date().toLocaleTimeString() + ')', 'success');
+                        } else if (data.type === 'connection_established') {
+                            addNotification('System', data.message + ' (User ID: ' + data.user_id + ')', 'info');
+                        } else if (data.type === 'error') {
+                            addNotification('Error', data.message, 'error');
+                        } else {
+                            // Actual notification
+                            notificationCount++;
+                            updateCount();
+                            addNotification(
+                                data.notification_type || 'Notification', 
+                                data.title || data.message || JSON.stringify(data), 
+                                'new',
+                                data
+                            );
+                        }
+                    } catch (e) {
+                        console.error('Parse error:', e, 'Data:', event.data);
+                        addNotification('Parse Error', event.data, 'error');
+                    }
+                };
+
+                eventSource.onerror = function(error) {
+                    console.error('SSE error:', error);
+                    updateStatus('Error or Disconnected ✗', 'error');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    
+                    if (eventSource.readyState === EventSource.CLOSED) {
+                        addNotification('Error', 'Connection closed. Check if server is running and token is valid.', 'error');
+                    }
+                };
+
+            } catch (error) {
+                alert('Error connecting: ' + error.message);
+                updateStatus('Connection failed ✗', 'error');
+            }
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                updateStatus('Disconnected', 'info');
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                addNotification('System', 'Disconnected from SSE stream', 'info');
+            }
+        }
+
+        function updateStatus(text, className) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = text;
+            statusEl.className = className;
+        }
+
+        function updateCount() {
+            document.getElementById('count').textContent = notificationCount;
+        }
+
+        function addNotification(type, message, className, data = null) {
+            const div = document.createElement('div');
+            div.className = 'notification ' + className;
+            
+            let html = `<strong>${type}</strong>: ${message}<br>`;
+            html += `<small>${new Date().toLocaleString()}</small>`;
+            
+            if (data && Object.keys(data).length > 2) {
+                html += `<br><details><summary>View details</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;
+            }
+            
+            div.innerHTML = html;
+            document.getElementById('notifications').prepend(div);
+        }
+
+        // Auto-disconnect on page unload
+        window.addEventListener('beforeunload', disconnect);
+    </script>
+</body>
+</html>
+

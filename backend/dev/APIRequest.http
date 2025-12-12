@@ -1,0 +1,23 @@
+### GET Consultant Access Token
+POST http://localhost:8000/api/token/
+accept: application/json
+X-CSRFTOKEN: 9Z20Gl2SYVLX616MK5e4RyUDqRBUpdSK4BvBvqUNmGOmKLcT9C0xymyaUklx1jJH
+Content-Type: application/json
+
+{
+  "username": "consultant_100_1",
+  "password": "password123"
+}
+
+### Get Branch Admin Access token
+POST http://localhost:8000/api/token/
+accept: application/json
+X-CSRFTOKEN: 9Z20Gl2SYVLX616MK5e4RyUDqRBUpdSK4BvBvqUNmGOmKLcT9C0xymyaUklx1jJH
+Content-Type: application/json
+
+{
+  "username": "branch_106@a.com",
+  "password": "password123"
+}
+
+###

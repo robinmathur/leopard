@@ -1,0 +1,17 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: leopard-postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: leopard
+      POSTGRES_PASSWORD: leopard
+      POSTGRES_DB: leopard
+    volumes:
+      - leopard-data:/var/lib/postgresql/data
+
+volumes:
+  leopard-data:
+    driver: local

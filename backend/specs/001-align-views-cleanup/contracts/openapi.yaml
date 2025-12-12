@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: Align Views & Cleanup Contracts (Task/Notification)
+  version: 0.1.0
+paths:
+  /api/v1/tasks/:
+    get:
+      summary: List tasks
+      responses:
+        '200':
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+    post:
+      summary: Create task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+  /api/v1/notifications/:
+    get:
+      summary: List notifications
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+    post:
+      summary: Create notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreate'
+      responses:
+        '201':
+          description: Notification created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+components:
+  schemas:
+    Task:
+      type: object
+      required: [id, title, status]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, DONE]
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        due_date:
+          type: string
+          format: date-time
+        assignee_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TaskCreate:
+      allOf:
+        - $ref: '#/components/schemas/Task'
+      required: [title, status]
+      description: Uses centralized task schema definitions
+    Notification:
+      type: object
+      required: [id, message, channel]
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        channel:
+          type: string
+          enum: [EMAIL, SMS, PUSH, IN_APP]
+        recipient_id:
+          type: string
+        payload:
+          type: object
+        read_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    NotificationCreate:
+      allOf:
+        - $ref: '#/components/schemas/Notification'
+      required: [message, channel]
+      description: Uses centralized notification schema definitions

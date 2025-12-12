@@ -1,0 +1,13 @@
+Get token
+curl -H "Content-Type: application/json" -X POST http://127.0.0.1:8000/api/token/ -d '{"username":"admin", "password":"leopard123"}'
+
+Call API with JWT token
+curl -X GET http://127.0.0.1:8000/api/clients/ -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIwMzc5NDg0LCJpYXQiOjE3MjAzNzU4ODQsImp0aSI6IjQ3YjM4NGY4N2U0YTQxZmM5YWZhZDk1ZTcwZjIwMDQ1IiwidXNlcl9pZCI6NH0.-W4wE97uobfYWUGd_HTX_pyLYaHUf9XZWo0GFze3DcI'
+
+Logout(payload {"refresh_token":"<refresh token>"})
+
+curl -H "Content-Type: application/json" -X POST http://127.0.0.1:8000/auth/logout/ -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIwNDY0ODE2LCJpYXQiOjE3MjA0NjEyMTYsImp0aSI6ImQyOTJiMzkyMGEzMjQzMThiMGQxM2UyY2E0NmY2NTEwIiwidXNlcl9pZCI6NH0.tyufQI6ydlcrDg9qPx3TmayPPVpnyALLYtBmKOMgctc' -d '{"refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyMDU0NzYxNiwiaWF0IjoxNzIwNDYxMjE2LCJqdGkiOiIyYjJmZWFhOWNiMzA0YjgzYTQzZmVjNmRkZjYyNzQ1MyIsInVzZXJfaWQiOjR9.Ar5krp7fg67BN4IYX7Kts9yplWmBMvHU2iao9z-DFkw"}'
+
+
+{"refresh":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyMDQ2MjI4NCwiaWF0IjoxNzIwMzc1ODg0LCJqdGkiOiI3ZmQ4ODc5MGU5MTE0MTZjYTRlZGE0MTAxYzY0NmRlYyIsInVzZXJfaWQiOjR9.YEdT7C8d-tN_kUBfQKAciAD2yR9sx_eW2RacI6TAINI",
+"access":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIwMzc5NDg0LCJpYXQiOjE3MjAzNzU4ODQsImp0aSI6IjQ3YjM4NGY4N2U0YTQxZmM5YWZhZDk1ZTcwZjIwMDQ1IiwidXNlcl9pZCI6NH0.-W4wE97uobfYWUGd_HTX_pyLYaHUf9XZWo0GFze3DcI"}

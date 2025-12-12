@@ -1,0 +1,33 @@
+# leopard Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-12-09
+
+## Active Technologies
+- Python 3.8+, Django 4.2.6 (per project baseline) + Django, Django REST Framework (current API stack), ruff for linting (001-align-views-cleanup)
+- Relational DB (assume PostgreSQL as current deployment default) (001-align-views-cleanup)
+
+- Python 3.8+ (Django 4.2.x) + Django + Django REST Framework (existing stack) (001-align-views-cleanup)
+
+## Project Structure
+
+```text
+backend/
+frontend/
+tests/
+```
+
+## Commands
+
+cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] pytest [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] ruff check .
+
+## Code Style
+
+Python 3.8+ (Django 4.2.x): Follow standard conventions
+
+## Recent Changes
+- 001-align-views-cleanup: Added Python 3.8+, Django 4.2.6 (per project baseline) + Django, Django REST Framework (current API stack), ruff for linting
+
+- 001-align-views-cleanup: Added Python 3.8+ (Django 4.2.x) + Django + Django REST Framework (existing stack)
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
