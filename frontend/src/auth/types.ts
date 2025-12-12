@@ -119,6 +119,7 @@ export interface ProfileResponse {
  */
 export interface User {
   id: string;
+  username: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -245,16 +246,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 export const MOCK_USERS: Record<string, User> = {
   admin: {
     id: '1',
+    username: 'admin_global_imm',
     email: 'admin@immigrationcrm.com',
-    firstName: 'Super',
+    firstName: 'Tenant',
     lastName: 'Admin',
     role: 'super_admin',
-    tenantId: 'tenant-1',
+    tenantId: 'tenant-7',
     permissions: ROLE_PERMISSIONS.super_admin,
     createdAt: new Date().toISOString(),
   },
   manager: {
     id: '2',
+    username: 'branch_34',
     email: 'branch_106@a.com',
     firstName: 'Branch',
     lastName: 'Manager',
@@ -266,24 +269,14 @@ export const MOCK_USERS: Record<string, User> = {
   },
   agent: {
     id: '3',
+    username: 'consultant_33_2',
     email: 'agent@immigrationcrm.com',
-    firstName: 'Jane',
-    lastName: 'Agent',
+    firstName: 'Consultant',
+    lastName: '33',
     role: 'agent',
     branchId: 'branch-1',
     tenantId: 'tenant-1',
     permissions: ROLE_PERMISSIONS.agent,
-    createdAt: new Date().toISOString(),
-  },
-  intern: {
-    id: '4',
-    email: 'intern@immigrationcrm.com',
-    firstName: 'John',
-    lastName: 'Intern',
-    role: 'intern',
-    branchId: 'branch-1',
-    tenantId: 'tenant-1',
-    permissions: ROLE_PERMISSIONS.intern,
     createdAt: new Date().toISOString(),
   },
 };

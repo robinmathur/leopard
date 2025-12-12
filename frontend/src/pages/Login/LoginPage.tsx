@@ -17,7 +17,7 @@ import { MOCK_USERS } from '@/auth/types';
 export const LoginPage = () => {
   const navigate = useNavigate();
   const { login, error, isLoading, isAuthenticated, initializeFromStorage } = useAuthStore();
-  const [email, setEmail] = useState('admin@immigrationcrm.com');
+  const [username, setUsername] = useState('superadmin');
   const [password, setPassword] = useState('password123');
 
   // Initialize auth state from storage on mount
@@ -34,11 +34,11 @@ export const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password);
+    await login(username, password);
   };
 
-  const handleQuickLogin = (userEmail: string) => {
-    setEmail(userEmail);
+  const handleQuickLogin = (loginUsername: string) => {
+    setUsername(loginUsername);
     setPassword('password123');
   };
 
@@ -71,15 +71,15 @@ export const LoginPage = () => {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               size="small"
               sx={{ mb: 2 }}
               required
               disabled={isLoading}
-              autoComplete="email"
+              autoComplete="username"
             />
             <TextField
               fullWidth
@@ -116,7 +116,7 @@ export const LoginPage = () => {
                 key={key}
                 variant="outlined"
                 size="small"
-                onClick={() => handleQuickLogin(user.email)}
+                onClick={() => handleQuickLogin(user.username)}
                 disabled={isLoading}
                 sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
               >
