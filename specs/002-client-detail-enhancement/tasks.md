@@ -267,16 +267,16 @@
 
 ### Implementation for User Story 11
 
-- [ ] T099 [US11] Enhance Reminder model in `backend/immigration/reminder/reminder.py` with reminder_time (TimeField) and notification_created (BooleanField) fields
-- [ ] T100 [US11] Create migration for Reminder model enhancements in `backend/immigration/migrations/`
-- [ ] T101 [US11] Create reminderApi client in `frontend/src/services/api/reminderApi.ts` with listReminders, createReminder, updateReminder, deleteReminder functions
-- [ ] T102 [US11] Create ClientReminders component in `frontend/src/components/clients/ClientReminders.tsx` to display and manage reminders
-- [ ] T103 [US11] Use existing reminder API endpoint `/api/v1/reminders/?content_type=client&object_id={id}` to fetch reminder data
-- [ ] T104 [US11] Add Reminders tab to ClientDetailPage with lazy loading - fetch reminders only when tab is clicked
-- [ ] T105 [US11] Implement "Add Reminder" form in ClientReminders with date, time, and message fields
-- [ ] T106 [US11] Display upcoming and past reminders in ClientReminders with visual distinction
-- [ ] T107 [US11] Create reminder notification service in `backend/immigration/services/reminders.py` to create notifications when reminder date/time arrives
-- [ ] T108 [US11] Create scheduled task/celery job to process reminders and create notifications (or use Django management command)
+- [X] T099 [US11] Enhance Reminder model in `backend/immigration/reminder/reminder.py` with reminder_time (TimeField) and notification_created (BooleanField) fields
+- [X] T100 [US11] Create migration for Reminder model enhancements in `backend/immigration/migrations/`
+- [X] T101 [US11] Create reminderApi client in `frontend/src/services/api/reminderApi.ts` with listReminders, createReminder, updateReminder, deleteReminder functions
+- [X] T102 [US11] Create ClientReminders component in `frontend/src/components/clients/ClientReminders.tsx` to display and manage reminders
+- [X] T103 [US11] Use existing reminder API endpoint `/api/v1/reminders/?content_type=client&object_id={id}` to fetch reminder data
+- [X] T104 [US11] Add Reminders tab to ClientDetailPage with lazy loading - fetch reminders only when tab is clicked
+- [X] T105 [US11] Implement "Add Reminder" form in ClientReminders with date, time, and message fields
+- [X] T106 [US11] Display upcoming and past reminders in ClientReminders with visual distinction
+- [X] T107 [US11] Create reminder notification service in `backend/immigration/services/reminders.py` to create notifications when reminder date/time arrives
+- [X] T108 [US11] Create scheduled task/celery job to process reminders and create notifications (or use Django management command)
 
 **Checkpoint**: Reminders tab functional with reminder creation and notification integration
 

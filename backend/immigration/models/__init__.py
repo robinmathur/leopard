@@ -22,6 +22,7 @@ from immigration.models.profile import LPE, Proficiency, Qualification, Passport
 from immigration.models.note import Note
 from immigration.models.client_activity import ClientActivity
 from immigration.models.profile_picture import ProfilePicture
+from immigration.reminder.reminder import Reminder
 
 __all__ = [
     'SoftDeletionManager',
@@ -45,4 +46,5 @@ __all__ = [
     'Note',
     'ClientActivity',
     'ProfilePicture',
+    'Reminder',
 ]

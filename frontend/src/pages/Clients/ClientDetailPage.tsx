@@ -31,6 +31,7 @@ import { ClientQualifications } from '@/components/clients/ClientQualifications'
 import { ClientVisaApplications } from '@/components/clients/ClientVisaApplications';
 import { ClientCollegeApplications } from '@/components/clients/ClientCollegeApplications';
 import { ClientTasks } from '@/components/clients/ClientTasks';
+import { ClientReminders } from '@/components/clients/ClientReminders';
 
 /**
  * Tab value type
@@ -66,7 +67,7 @@ export const ClientDetailPage = () => {
   const fromPath = (location.state as { from?: string })?.from || '/clients';
   const backLabel = fromPath === '/leads' ? 'Back to Leads' : 'Back to Clients';
   const { selectedClient, loading, error, fetchClientById, clearError } = useClientStore();
-  const { currentTab, setCurrentTab, markSectionLoaded, loadedSections, resetStore } = useClientDetailStore();
+  const { setCurrentTab, markSectionLoaded, loadedSections, resetStore } = useClientDetailStore();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
 
   // Fetch client on mount
@@ -257,7 +258,11 @@ export const ClientDetailPage = () => {
       </TabPanel>
 
       <TabPanel value="reminders" currentValue={activeTab}>
-        <Alert severity="info">Reminders section - Coming soon (User Story 11)</Alert>
+        {loadedSections.reminders ? (
+          <ClientReminders clientId={client.id} />
+        ) : (
+          <Alert severity="info">Click on Reminders tab to load reminders</Alert>
+        )}
       </TabPanel>
     </Box>
   );
