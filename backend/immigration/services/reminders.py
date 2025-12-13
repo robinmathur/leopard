@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from immigration.reminder.reminder import Reminder
 from immigration.models.notification import Notification
+from immigration.constants import NotificationType
 
 User = get_user_model()
 
@@ -74,17 +75,37 @@ def create_reminder_notification(reminder: Reminder) -> Optional[Notification]:
         return None
     
     try:
+        # Get the user to assign notification to (from reminder's linked entity or created_by)
+        assigned_to = reminder.created_by
+        if not assigned_to and reminder.content_type and reminder.object_id:
+            # Try to get user from linked entity (e.g., client's assigned consultant)
+            from django.contrib.contenttypes.models import ContentType
+            from immigration.models.client import Client
+            try:
+                client_content_type = ContentType.objects.get(app_label='immigration', model='client')
+                if reminder.content_type == client_content_type:
+                    client = Client.objects.get(id=reminder.object_id)
+                    assigned_to = client.assigned_to if hasattr(client, 'assigned_to') else None
+            except (ContentType.DoesNotExist, Client.DoesNotExist):
+                pass
+        
+        if not assigned_to:
+            # Can't create notification without a user
+            return None
+        
         # Create notification
         notification = Notification.objects.create(
-            user=reminder.created_by,
-            notification_type='REMINDER_DUE',
+            assigned_to=assigned_to,
+            notification_type=NotificationType.REMINDER_DUE.value,
+            title=f"Reminder: {reminder.title}",
             message=f"Reminder: {reminder.title}",
+            due_date=reminder.reminder_date if reminder.reminder_date else None,
             meta_info={
                 'reminder_id': reminder.id,
                 'reminder_title': reminder.title,
                 'reminder_date': reminder.reminder_date.isoformat() if reminder.reminder_date else None,
                 'reminder_time': reminder.reminder_time.isoformat() if reminder.reminder_time else None,
-                'content_type': reminder.content_type.id,
+                'content_type': reminder.content_type.id if reminder.content_type else None,
                 'object_id': reminder.object_id,
             }
         )

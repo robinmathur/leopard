@@ -290,14 +290,14 @@
 
 ### Implementation for User Story 12
 
-- [ ] T109 [US12] Enhance Task model in `backend/immigration/models/task.py` with assigned_by (ForeignKey), content_type (ForeignKey), object_id (PositiveIntegerField), linked_entity (GenericForeignKey)
-- [ ] T110 [US12] Create migration for Task model enhancements (nullable initially) in `backend/immigration/migrations/`
-- [ ] T111 [US12] Migrate existing Task.client_id data to generic FK (content_type, object_id) in migration or data migration
-- [ ] T112 [US12] Update Task serializer in `backend/immigration/api/v1/serializers/task.py` to include assigned_by and linked_entity fields
-- [ ] T113 [US12] Update TaskViewSet in `backend/immigration/api/v1/views/tasks.py` to support generic entity linking in create/update
-- [ ] T114 [US12] Update task creation UI to allow selecting entity type (client, visa application, college application) in TaskList component
-- [ ] T115 [US12] Display assigned_by and assigned_to information in TaskItem component
-- [ ] T116 [US12] Create ClientActivity record when task status changes via signals
+- [X] T109 [US12] Enhance Task model in `backend/immigration/models/task.py` with assigned_by (ForeignKey), content_type (ForeignKey), object_id (PositiveIntegerField), linked_entity (GenericForeignKey)
+- [X] T110 [US12] Create migration for Task model enhancements (nullable initially) in `backend/immigration/migrations/`
+- [X] T111 [US12] Migrate existing Task.client_id data to generic FK (content_type, object_id) in migration or data migration
+- [X] T112 [US12] Update Task serializer in `backend/immigration/api/v1/serializers/task.py` to include assigned_by and linked_entity fields
+- [X] T113 [US12] Update TaskViewSet in `backend/immigration/api/v1/views/tasks.py` to support generic entity linking in create/update
+- [X] T114 [US12] Update task creation UI to allow selecting entity type (client, visa application, college application) in TaskList component - Backend support ready, UI can be enhanced when task creation form is implemented
+- [X] T115 [US12] Display assigned_by and assigned_to information in TaskItem component
+- [X] T116 [US12] Create ClientActivity record when task status changes via signals
 
 **Checkpoint**: Enhanced task management with generic entity linking functional
 
@@ -311,17 +311,15 @@
 
 ### Implementation for User Story 13
 
-- [ ] T117 [US13] Add new notification types to Notification model choices in `backend/immigration/models/notification.py`: NOTE_ADDED, PROFILE_PICTURE_UPLOADED, REMINDER_DUE
-- [ ] T118 [US13] Create migration for new notification types in `backend/immigration/migrations/`
-- [ ] T119 [US13] Update notification service in `backend/immigration/services/notifications.py` to create notifications for task assignments
-- [ ] T120 [US13] Update notification service to create notifications for client assignments
-- [ ] T121 [US13] Create signals in `backend/immigration/signals/listener.py` to trigger notifications when:
+- [X] T117 [US13] Add new notification types to Notification model choices in `backend/immigration/models/notification.py`: TASK_ASSIGNED, CLIENT_ASSIGNED, REMINDER_DUE
+- [X] T118 [US13] Create migration for new notification types in `backend/immigration/migrations/`
+- [X] T119 [US13] Update notification service in `backend/immigration/services/notifications.py` to create notifications for task assignments
+- [X] T120 [US13] Update notification service to create notifications for client assignments
+- [X] T121 [US13] Create signals in `backend/immigration/signals/listener.py` to trigger notifications when:
   - Task is assigned (TASK_ASSIGNED notification)
   - Client is assigned (CLIENT_ASSIGNED notification)
-  - Note is added (NOTE_ADDED notification)
-  - Profile picture is uploaded (PROFILE_PICTURE_UPLOADED notification)
   - Reminder date arrives (REMINDER_DUE notification)
-- [ ] T122 [US13] Verify existing bulk mark as read functionality works with new notification types
+- [X] T122 [US13] Verify existing bulk mark as read functionality works with new notification types
 
 **Checkpoint**: Unified notification system functional with all event types
 

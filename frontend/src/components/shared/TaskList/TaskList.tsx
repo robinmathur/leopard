@@ -36,6 +36,8 @@ export const TaskList = ({
   error = null,
   onTaskClick,
   onStatusChange,
+  onTaskEdit,
+  onTaskDelete,
   showFilters = true,
   activeStatusFilter = 'all',
   onFilterChange,
@@ -107,9 +109,16 @@ export const TaskList = ({
             color: 'text.secondary',
           }}
         >
-          <Typography variant="body1">
-            No tasks {activeTab !== 'all' ? `with status "${activeTab}"` : ''}
+          <Typography variant="body1" gutterBottom>
+            {tasks.length === 0
+              ? 'No tasks yet'
+              : `No tasks ${activeTab !== 'all' ? `with status "${activeTab}"` : ''}`}
           </Typography>
+          {tasks.length === 0 && (
+            <Typography variant="body2" color="text.secondary">
+              Create a task to get started
+            </Typography>
+          )}
         </Box>
       ) : (
         <>
@@ -119,6 +128,8 @@ export const TaskList = ({
               task={task}
               onClick={onTaskClick}
               onStatusChange={onStatusChange}
+              onEdit={onTaskEdit}
+              onDelete={onTaskDelete}
             />
           ))}
           <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>

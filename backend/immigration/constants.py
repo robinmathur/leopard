@@ -143,6 +143,7 @@ class NotificationType(BaseEnum):
     VISA_REJECTED = "VISA_REJECTED"
     VISA_STATUS_UPDATE = "VISA_STATUS_UPDATE"
     CLIENT_ASSIGNED = "CLIENT_ASSIGNED"
+    REMINDER_DUE = "REMINDER_DUE"
     SYSTEM_ALERT = "SYSTEM_ALERT"
     # Legacy/custom event types still used by signals/manager
     LEAD_ASSIGNED = "LEAD_ASSIGNED"

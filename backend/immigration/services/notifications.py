@@ -64,6 +64,10 @@ def get_default_notification_title_and_message(notification_type: str) -> Tuple[
             'Client Assigned',
             'A client has been assigned to you.'
         ),
+        NotificationType.REMINDER_DUE.value: (
+            'Reminder Due',
+            'You have a reminder that is due.'
+        ),
         NotificationType.SYSTEM_ALERT.value: (
             'System Alert',
             'There is a system alert.'

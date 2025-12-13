@@ -19,6 +19,7 @@ class UserOutputSerializer(serializers.ModelSerializer):
     No role field - uses groups instead.
     """
     
+    full_name = serializers.SerializerMethodField(read_only=True)
     tenant_name = serializers.CharField(source='tenant.name', read_only=True, allow_null=True)
     groups_list = serializers.SerializerMethodField(read_only=True)
     primary_group = serializers.SerializerMethodField(read_only=True)
@@ -26,6 +27,12 @@ class UserOutputSerializer(serializers.ModelSerializer):
     # Multiple branches and regions
     branches_data = serializers.SerializerMethodField(read_only=True)
     regions_data = serializers.SerializerMethodField(read_only=True)
+    
+    def get_full_name(self, obj):
+        """Get user's full name."""
+        if obj.first_name and obj.last_name:
+            return f"{obj.first_name} {obj.last_name}"
+        return obj.username
     
     def get_groups_list(self, obj):
         """Get all groups user belongs to."""
@@ -52,6 +59,7 @@ class UserOutputSerializer(serializers.ModelSerializer):
             'email',
             'first_name',
             'last_name',
+            'full_name',
             'groups_list',
             'primary_group',
             'tenant',

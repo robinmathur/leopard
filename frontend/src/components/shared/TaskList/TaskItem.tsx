@@ -2,8 +2,10 @@
  * TaskItem Component
  * Displays a single task
  */
-import { Box, Paper, Typography, Chip, IconButton } from '@mui/material';
+import { Box, Paper, Typography, Chip, IconButton, Tooltip } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { TaskItemProps, STATUS_COLORS, PRIORITY_COLORS } from './types';
 
 /**
@@ -27,12 +29,22 @@ const formatDate = (dateString: string): string => {
   }
 };
 
-export const TaskItem = ({ task, onClick, onStatusChange }: TaskItemProps) => {
+export const TaskItem = ({ task, onClick, onStatusChange, onEdit, onDelete }: TaskItemProps) => {
   const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onStatusChange && task.status !== 'COMPLETED') {
       onStatusChange(task.id, 'COMPLETED');
     }
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.(task);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(task.id);
   };
 
   return (
@@ -77,18 +89,47 @@ export const TaskItem = ({ task, onClick, onStatusChange }: TaskItemProps) => {
                 • Assigned to: {task.assigned_to_full_name}
               </Typography>
             )}
+            {task.assigned_by_full_name && (
+              <Typography variant="caption" color="text.secondary">
+                • Assigned by: {task.assigned_by_full_name}
+              </Typography>
+            )}
           </Box>
         </Box>
-        {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && onStatusChange && (
-          <IconButton
-            size="small"
-            color="success"
-            onClick={handleComplete}
-            title="Mark as complete"
-          >
-            <CheckCircleIcon />
-          </IconButton>
-        )}
+        <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+          {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && onStatusChange && (
+            <Tooltip title="Mark as complete">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={handleComplete}
+              >
+                <CheckCircleIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onEdit && (
+            <Tooltip title="Edit task">
+              <IconButton
+                size="small"
+                onClick={handleEdit}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onDelete && (
+            <Tooltip title="Delete task">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={handleDelete}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
       </Box>
     </Paper>
   );

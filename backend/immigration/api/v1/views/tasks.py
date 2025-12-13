@@ -7,6 +7,9 @@ Business logic lives in services - views are thin wrappers.
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import models
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -50,18 +53,56 @@ class TaskViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Get tasks for the authenticated user based on filters.
+        Supports filtering by content_type and object_id for generic FK queries.
         """
+        from immigration.models.task import Task
+        from django.contrib.contenttypes.models import ContentType
+        
+        # Start with tasks assigned to the user
+        queryset = Task.objects.filter(assigned_to=self.request.user)
+        
+        # Filter by status if provided
         status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by priority if provided
         priority = self.request.query_params.get('priority')
+        if priority:
+            queryset = queryset.filter(priority=priority)
+        
+        # Filter by content_type and object_id if provided (for generic FK)
+        content_type = self.request.query_params.get('content_type')
+        object_id = self.request.query_params.get('object_id')
+        if content_type and object_id:
+            try:
+                ct = ContentType.objects.get(id=int(content_type))
+                queryset = queryset.filter(content_type=ct, object_id=int(object_id))
+            except (ContentType.DoesNotExist, ValueError):
+                pass
+        
+        # Also support legacy client_id filter for backward compatibility
+        client_id = self.request.query_params.get('client')
+        if client_id:
+            try:
+                client_content_type = ContentType.objects.get(app_label='immigration', model='client')
+                queryset = queryset.filter(
+                    Q(client_id=int(client_id)) |
+                    Q(content_type=client_content_type, object_id=int(client_id))
+                )
+            except (ContentType.DoesNotExist, ValueError):
+                pass
+        
+        # Filter overdue tasks if needed
         include_overdue_default = str(settings.TASKS_INCLUDE_OVERDUE_DEFAULT).lower() == 'true'
         include_overdue = self.request.query_params.get('include_overdue', str(include_overdue_default)).lower() == 'true'
+        if not include_overdue:
+            queryset = queryset.filter(
+                Q(due_date__gte=timezone.now()) |
+                Q(status__in=['COMPLETED', 'CANCELLED'])
+            )
         
-        return task_list(
-            user=self.request.user,
-            status=status_filter,
-            priority=priority,
-            include_overdue=include_overdue
-        )
+        return queryset.order_by('-due_date', '-created_at')
     
     def get_serializer_class(self):
         """
@@ -75,7 +116,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     
     @extend_schema(
         summary="List tasks",
-        description="Get all tasks for the authenticated user. Can filter by status, priority, and overdue.",
+        description="Get all tasks for the authenticated user. Can filter by status, priority, content_type, object_id, and overdue.",
         parameters=[
             OpenApiParameter(
                 name='status',
@@ -89,6 +130,27 @@ class TaskViewSet(viewsets.ModelViewSet):
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 description=f"Filter by priority ({', '.join(TaskPriority.values())})",
+                required=False,
+            ),
+            OpenApiParameter(
+                name='content_type',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter by ContentType ID (for generic foreign key queries)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='object_id',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter by object ID (for generic foreign key queries, use with content_type)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='client',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter by client ID (legacy, prefer using content_type + object_id)',
                 required=False,
             ),
             OpenApiParameter(
@@ -135,9 +197,31 @@ class TaskViewSet(viewsets.ModelViewSet):
         """Create a new task."""
         serializer = TaskCreateSerializer(data=request.data)
         if serializer.is_valid():
+            validated_data = serializer.validated_data.copy()
+            
+            # Extract User objects from IDs
+            assigned_to_id = validated_data.pop('assigned_to')
+            assigned_to = User.objects.get(id=assigned_to_id)
+            
+            assigned_by = None
+            if 'assigned_by' in validated_data and validated_data['assigned_by']:
+                assigned_by_id = validated_data.pop('assigned_by')
+                assigned_by = User.objects.get(id=assigned_by_id)
+            else:
+                # Default to request.user if not provided
+                assigned_by = request.user
+            
+            # Extract generic FK fields
+            content_type = validated_data.pop('content_type', None)
+            object_id = validated_data.pop('object_id', None)
+            
             task_obj = task_create(
-                **serializer.validated_data,
-                created_by=request.user
+                assigned_to=assigned_to,
+                assigned_by=assigned_by,
+                content_type=content_type,
+                object_id=object_id,
+                created_by=request.user,
+                **validated_data
             )
             output_serializer = TaskOutputSerializer(task_obj)
             return Response(output_serializer.data, status=status.HTTP_201_CREATED)
@@ -237,7 +321,20 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         serializer = TaskUpdateSerializer(data=request.data, partial=partial)
         if serializer.is_valid():
-            updated_task = task_update(task_id, request.user, **serializer.validated_data)
+            validated_data = serializer.validated_data.copy()
+            
+            # Handle assigned_by if provided
+            if 'assigned_by' in validated_data and validated_data['assigned_by']:
+                assigned_by_id = validated_data.pop('assigned_by')
+                validated_data['assigned_by'] = User.objects.get(id=assigned_by_id)
+            
+            # Handle content_type/object_id if provided
+            if 'content_type' in validated_data and validated_data['content_type']:
+                from django.contrib.contenttypes.models import ContentType
+                content_type_id = validated_data.pop('content_type')
+                validated_data['content_type'] = ContentType.objects.get(id=content_type_id)
+            
+            updated_task = task_update(task_id, request.user, **validated_data)
             if updated_task:
                 output_serializer = TaskOutputSerializer(updated_task)
                 return Response(output_serializer.data)

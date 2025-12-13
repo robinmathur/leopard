@@ -28,6 +28,14 @@ class TaskOutputSerializer(serializers.ModelSerializer):
     # Computed field for full name
     assigned_to_full_name = serializers.SerializerMethodField()
     
+    # Assigned by fields
+    assigned_by_name = serializers.SerializerMethodField()
+    assigned_by_full_name = serializers.SerializerMethodField()
+    
+    # Linked entity fields
+    linked_entity_type = serializers.SerializerMethodField()
+    linked_entity_id = serializers.IntegerField(source='object_id', read_only=True)
+    
     # Status and priority display
     priority_display = serializers.CharField(
         source='get_priority_display',
@@ -52,8 +60,15 @@ class TaskOutputSerializer(serializers.ModelSerializer):
             'assigned_to',
             'assigned_to_name',
             'assigned_to_full_name',
+            'assigned_by',
+            'assigned_by_name',
+            'assigned_by_full_name',
             'tags',
             'comments',
+            'content_type',
+            'object_id',
+            'linked_entity_type',
+            'linked_entity_id',
             'client_id',
             'visa_application_id',
             'completed_at',
@@ -71,6 +86,24 @@ class TaskOutputSerializer(serializers.ModelSerializer):
         """Get assigned user's full name if exists."""
         if obj.assigned_to:
             return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}".strip()
+        return None
+    
+    def get_assigned_by_name(self, obj):
+        """Get assigned_by user's username if exists."""
+        if obj.assigned_by:
+            return obj.assigned_by.username
+        return None
+    
+    def get_assigned_by_full_name(self, obj):
+        """Get assigned_by user's full name if exists."""
+        if obj.assigned_by:
+            return f"{obj.assigned_by.first_name} {obj.assigned_by.last_name}".strip()
+        return None
+    
+    def get_linked_entity_type(self, obj):
+        """Get the type of linked entity (e.g., 'client', 'visaapplication')."""
+        if obj.content_type:
+            return obj.content_type.model
         return None
 
 
@@ -112,16 +145,35 @@ class TaskCreateSerializer(serializers.Serializer):
         help_text="Tags for categorization"
     )
     
+    # Generic entity linking
+    content_type = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="ContentType ID of the linked entity"
+    )
+    object_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="ID of the linked entity"
+    )
+    
+    assigned_by = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="User ID who assigned this task"
+    )
+    
+    # Legacy fields (for backward compatibility)
     client_id = serializers.IntegerField(
         required=False,
         allow_null=True,
-        help_text="Related client ID"
+        help_text="Related client ID (deprecated - use content_type/object_id)"
     )
     
     visa_application_id = serializers.IntegerField(
         required=False,
         allow_null=True,
-        help_text="Related visa application ID"
+        help_text="Related visa application ID (deprecated - use content_type/object_id)"
     )
 
 
@@ -164,4 +216,22 @@ class TaskUpdateSerializer(serializers.Serializer):
         child=serializers.CharField(),
         required=False,
         help_text="Tags for categorization"
+    )
+    
+    # Generic entity linking
+    content_type = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="ContentType ID of the linked entity"
+    )
+    object_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="ID of the linked entity"
+    )
+    
+    assigned_by = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="User ID who assigned this task"
     )

@@ -4,6 +4,8 @@ Task model for task management and assignment.
 
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from immigration.models.base import LifeCycleModel
 from immigration.constants import TaskPriority, TaskStatus
 
@@ -60,6 +62,15 @@ class Task(LifeCycleModel):
         help_text="User this task is assigned to"
     )
 
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name='tasks_assigned',
+        null=True,
+        blank=True,
+        help_text="User who assigned this task"
+    )
+
     tags = models.JSONField(
         default=list,
         blank=True,
@@ -72,17 +83,32 @@ class Task(LifeCycleModel):
         help_text="Comments and updates on the task"
     )
 
-    # Related entities (optional)
+    # Generic foreign key for linking to any entity
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="Type of entity this task is linked to"
+    )
+    object_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="ID of the entity this task is linked to"
+    )
+    linked_entity = GenericForeignKey('content_type', 'object_id')
+
+    # Legacy fields (deprecated - kept for backward compatibility during migration)
     client_id = models.IntegerField(
         null=True,
         blank=True,
-        help_text="Related client ID"
+        help_text="Related client ID (deprecated - use linked_entity instead)"
     )
 
     visa_application_id = models.IntegerField(
         null=True,
         blank=True,
-        help_text="Related visa application ID"
+        help_text="Related visa application ID (deprecated - use linked_entity instead)"
     )
 
     completed_at = models.DateTimeField(
@@ -100,6 +126,8 @@ class Task(LifeCycleModel):
             models.Index(fields=['status', 'due_date']),
             models.Index(fields=['priority']),
             models.Index(fields=['due_date']),
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['assigned_by']),
         ]
 
     def __str__(self):

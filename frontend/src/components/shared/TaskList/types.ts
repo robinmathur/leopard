@@ -22,6 +22,12 @@ export interface TaskListProps {
   /** Callback when task status changes */
   onStatusChange?: (taskId: number, status: TaskStatus) => void;
   
+  /** Callback when task is edited */
+  onTaskEdit?: (task: Task) => void;
+  
+  /** Callback when task is deleted */
+  onTaskDelete?: (taskId: number) => void;
+  
   /** Whether to show status filter */
   showFilters?: boolean;
   
@@ -41,6 +47,12 @@ export interface TaskItemProps {
   
   /** Callback when status changes */
   onStatusChange?: (taskId: number, status: TaskStatus) => void;
+  
+  /** Callback when task is edited */
+  onEdit?: (task: Task) => void;
+  
+  /** Callback when task is deleted */
+  onDelete?: (taskId: number) => void;
 }
 
 /**
