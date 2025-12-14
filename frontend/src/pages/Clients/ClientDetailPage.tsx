@@ -28,6 +28,7 @@ import { ClientTimeline } from '@/components/clients/ClientTimeline';
 import { ClientPassport } from '@/components/clients/ClientPassport';
 import { ClientProficiency } from '@/components/clients/ClientProficiency';
 import { ClientQualifications } from '@/components/clients/ClientQualifications';
+import { ClientEmployment } from '@/components/clients/ClientEmployment';
 import { ClientVisaApplications } from '@/components/clients/ClientVisaApplications';
 import { ClientCollegeApplications } from '@/components/clients/ClientCollegeApplications';
 import { ClientTasks } from '@/components/clients/ClientTasks';
@@ -229,6 +230,9 @@ export const ClientDetailPage = () => {
             </Box>
             <Box sx={{ mt: 3 }}>
               <ClientQualifications clientId={client.id} />
+            </Box>
+            <Box sx={{ mt: 3 }}>
+              <ClientEmployment clientId={client.id} />
             </Box>
           </Box>
         ) : (

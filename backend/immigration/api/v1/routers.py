@@ -17,6 +17,7 @@ from immigration.api.v1.views.client_profiles import (
     PassportViewSet,
     ProficiencyViewSet,
     QualificationViewSet,
+    EmploymentViewSet,
 )
 from immigration.reminder.reminder import ReminderViewSet
 
@@ -32,5 +33,6 @@ router.register(r"language-exams", LanguageExamViewSet, basename="language-exam"
 router.register(r"language-proficiencies", ProficiencyViewSet, basename="language-proficiency")
 router.register(r"qualifications", QualificationViewSet, basename="qualification")
 router.register(r"passports", PassportViewSet, basename="passport")
+router.register(r"employments", EmploymentViewSet, basename="employment")
 
 __all__ = ["router"]

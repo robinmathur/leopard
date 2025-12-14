@@ -168,3 +168,43 @@ class Passport(LifeCycleModel):
             return self.client.branch.tenant
         return None
 
+
+class Employment(LifeCycleModel):
+    """
+    Employment history for a client.
+    """
+
+    client = models.ForeignKey(
+        "Client",
+        on_delete=models.CASCADE,
+        related_name="employments",
+    )
+    employer_name = models.CharField(max_length=200)
+    position = models.CharField(max_length=200)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    country = CountryField()
+
+    class Meta:
+        db_table = "immigration_employment"
+        ordering = ["-end_date", "-start_date"]
+        indexes = [
+            models.Index(fields=["client", "end_date"]),
+        ]
+        verbose_name = "employment"
+
+    def __str__(self) -> str:  # pragma: no cover - simple display helper
+        return f"{self.employer_name} - {self.position}"
+
+    @property
+    def branch(self):
+        """Expose branch for scoping."""
+        return self.client.branch if self.client else None
+
+    @property
+    def tenant(self):
+        """Expose tenant for scoping."""
+        if self.client and self.client.branch:
+            return self.client.branch.tenant
+        return None
+

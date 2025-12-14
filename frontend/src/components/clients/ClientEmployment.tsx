@@ -1,6 +1,6 @@
 /**
- * ClientQualifications Component
- * Displays and manages educational qualifications for a client with full CRUD operations
+ * ClientEmployment Component
+ * Displays and manages employment history for a client with full CRUD operations
  */
 import { useEffect, useState } from 'react';
 import {
@@ -11,7 +11,6 @@ import {
   Alert,
   Skeleton,
   Button,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -23,19 +22,19 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SchoolIcon from '@mui/icons-material/School';
+import WorkIcon from '@mui/icons-material/Work';
 import {
-  getQualifications,
-  createQualification,
-  updateQualification,
-  deleteQualification,
-  Qualification,
-  QualificationCreateRequest,
-  QualificationUpdateRequest
-} from '@/services/api/qualificationApi';
+  getEmployments,
+  createEmployment,
+  updateEmployment,
+  deleteEmployment,
+  Employment,
+  EmploymentCreateRequest,
+  EmploymentUpdateRequest,
+} from '@/services/api/employmentApi';
 import { COUNTRIES } from '@/types/client';
 
-export interface ClientQualificationsProps {
+export interface ClientEmploymentProps {
   /** Client ID */
   clientId: number;
 }
@@ -78,7 +77,7 @@ const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) 
 /**
  * Loading skeleton
  */
-const QualificationsSkeleton = () => (
+const EmploymentSkeleton = () => (
   <Box>
     {[...Array(2)].map((_, index) => (
       <Box key={index} sx={{ mb: 2 }}>
@@ -89,17 +88,15 @@ const QualificationsSkeleton = () => (
 );
 
 /**
- * Qualification card
+ * Employment card
  */
-interface QualificationCardProps {
-  qualification: Qualification;
+interface EmploymentCardProps {
+  employment: Employment;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-const QualificationCard = ({ qualification, onEdit, onDelete }: QualificationCardProps) => {
-  const isInProgress = !qualification.completion_date;
-
+const EmploymentCard = ({ employment, onEdit, onDelete }: EmploymentCardProps) => {
   return (
     <Paper
       variant="outlined"
@@ -113,22 +110,17 @@ const QualificationCard = ({ qualification, onEdit, onDelete }: QualificationCar
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-          <SchoolIcon color="primary" />
+          <WorkIcon color="primary" />
           <Box>
             <Typography variant="subtitle1" fontWeight={600}>
-              {qualification.course}
+              {employment.position}
             </Typography>
-            {qualification.institute && (
-              <Typography variant="body2" color="text.secondary">
-                {qualification.institute}
-              </Typography>
-            )}
+            <Typography variant="body2" color="text.secondary">
+              {employment.employer_name}
+            </Typography>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-          {isInProgress && (
-            <Chip label="In Progress" color="info" size="small" sx={{ mr: 1 }} />
-          )}
           <IconButton size="small" onClick={onEdit} color="primary">
             <EditIcon fontSize="small" />
           </IconButton>
@@ -139,33 +131,14 @@ const QualificationCard = ({ qualification, onEdit, onDelete }: QualificationCar
       </Box>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        {qualification.degree && (
-          <Grid item xs={6} sm={4}>
-            <DetailRow label="Degree" value={qualification.degree} />
-          </Grid>
-        )}
-        {qualification.field_of_study && (
-          <Grid item xs={6} sm={4}>
-            <DetailRow label="Field of Study" value={qualification.field_of_study} />
-          </Grid>
-        )}
         <Grid item xs={6} sm={4}>
-          <DetailRow label="Country" value={getCountryName(qualification.country)} />
+          <DetailRow label="Start Date" value={formatDate(employment.start_date)} />
         </Grid>
         <Grid item xs={6} sm={4}>
-          <DetailRow label="Start Date" value={formatDate(qualification.enroll_date)} />
+          <DetailRow label="End Date" value={formatDate(employment.end_date)} />
         </Grid>
         <Grid item xs={6} sm={4}>
-          <DetailRow
-            label="Completion Date"
-            value={
-              isInProgress ? (
-                <Chip label="In Progress" size="small" color="info" variant="outlined" />
-              ) : (
-                formatDate(qualification.completion_date)
-              )
-            }
-          />
+          <DetailRow label="Country" value={getCountryName(employment.country)} />
         </Grid>
       </Grid>
     </Paper>
@@ -173,79 +146,73 @@ const QualificationCard = ({ qualification, onEdit, onDelete }: QualificationCar
 };
 
 /**
- * ClientQualifications Component
+ * ClientEmployment Component
  */
-export const ClientQualifications = ({ clientId }: ClientQualificationsProps) => {
-  const [qualifications, setQualifications] = useState<Qualification[]>([]);
+export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
+  const [employments, setEmployments] = useState<Employment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingQualification, setEditingQualification] = useState<Qualification | null>(null);
-  const [qualificationToDelete, setQualificationToDelete] = useState<number | null>(null);
+  const [editingEmployment, setEditingEmployment] = useState<Employment | null>(null);
+  const [employmentToDelete, setEmploymentToDelete] = useState<number | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState<QualificationCreateRequest>({
+  const [formData, setFormData] = useState<EmploymentCreateRequest>({
     client_id: clientId,
-    course: '',
-    institute: '',
-    degree: '',
-    field_of_study: '',
-    enroll_date: '',
-    completion_date: '',
+    employer_name: '',
+    position: '',
+    start_date: '',
+    end_date: '',
     country: '',
   });
 
-  // Fetch qualifications
-  const fetchQualifications = async () => {
+  // Fetch employments
+  const fetchEmployments = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await getQualifications(clientId);
-      // Sort by start date (most recent first)
+      const data = await getEmployments(clientId);
+      // Sort by end date (most recent first)
       const sorted = data.sort((a, b) => {
-        if (!a.enroll_date) return 1;
-        if (!b.enroll_date) return -1;
-        return new Date(b.enroll_date).getTime() - new Date(a.enroll_date).getTime();
+        if (!a.end_date) return 1;
+        if (!b.end_date) return -1;
+        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
       });
-      setQualifications(sorted);
+      setEmployments(sorted);
     } catch (err) {
-      setError((err as Error).message || 'Failed to load qualifications');
+      setError((err as Error).message || 'Failed to load employment history');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchQualifications();
+    fetchEmployments();
   }, [clientId]);
 
   // Open form dialog
-  const handleOpenForm = (qualification?: Qualification) => {
-    if (qualification) {
-      setEditingQualification(qualification);
+  const handleOpenForm = (employment?: Employment) => {
+    if (employment) {
+      setEditingEmployment(employment);
       setFormData({
         client_id: clientId,
-        course: qualification.course,
-        institute: qualification.institute || '',
-        degree: qualification.degree || '',
-        field_of_study: qualification.field_of_study || '',
-        enroll_date: qualification.enroll_date || '',
-        completion_date: qualification.completion_date || '',
-        country: qualification.country || '',
+        employer_name: employment.employer_name,
+        position: employment.position,
+        start_date: employment.start_date,
+        end_date: employment.end_date,
+        country: employment.country,
       });
     } else {
-      setEditingQualification(null);
+      setEditingEmployment(null);
       setFormData({
         client_id: clientId,
-        course: '',
-        institute: '',
-        degree: '',
-        field_of_study: '',
-        enroll_date: '',
-        completion_date: '',
+        employer_name: '',
+        position: '',
+        start_date: '',
+        end_date: '',
         country: '',
       });
     }
@@ -259,49 +226,40 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
     setError(null);
 
     try {
-      if (editingQualification) {
-        const updateData: QualificationUpdateRequest = {
-          client_id: formData.client_id,
-          course: formData.course,
-          institute: formData.institute,
-          degree: formData.degree,
-          field_of_study: formData.field_of_study,
-          enroll_date: formData.enroll_date || undefined,
-          completion_date: formData.completion_date || undefined,
-          country: formData.country,
-        };
-        await updateQualification(editingQualification.id, updateData);
+      if (editingEmployment) {
+        const updateData: EmploymentUpdateRequest = formData;
+        await updateEmployment(editingEmployment.id, updateData);
       } else {
-        await createQualification(formData);
+        await createEmployment(formData);
       }
       setFormDialogOpen(false);
-      await fetchQualifications(); // Refresh
+      await fetchEmployments(); // Refresh
     } catch (err) {
-      setError((err as Error).message || 'Failed to save qualification');
+      setError((err as Error).message || 'Failed to save employment');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // Handle delete
-  const handleDeleteClick = (qualificationId: number) => {
-    setQualificationToDelete(qualificationId);
+  const handleDeleteClick = (employmentId: number) => {
+    setEmploymentToDelete(employmentId);
     setDeleteDialogOpen(true);
   };
 
   const handleDelete = async () => {
-    if (!qualificationToDelete) return;
+    if (!employmentToDelete) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await deleteQualification(qualificationToDelete);
+      await deleteEmployment(employmentToDelete);
       setDeleteDialogOpen(false);
-      setQualificationToDelete(null);
-      await fetchQualifications(); // Refresh
+      setEmploymentToDelete(null);
+      await fetchEmployments(); // Refresh
     } catch (err) {
-      setError((err as Error).message || 'Failed to delete qualification');
+      setError((err as Error).message || 'Failed to delete employment');
     } finally {
       setIsSubmitting(false);
     }
@@ -312,9 +270,9 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
     return (
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Educational Qualifications
+          Employment History
         </Typography>
-        <QualificationsSkeleton />
+        <EmploymentSkeleton />
       </Paper>
     );
   }
@@ -324,7 +282,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
     return (
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Educational Qualifications
+          Employment History
         </Typography>
         <Alert severity="error">{error}</Alert>
       </Paper>
@@ -334,19 +292,19 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
   return (
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">Educational Qualifications</Typography>
+        <Typography variant="h6">Employment History</Typography>
         <Button
           variant="contained"
           size="small"
           startIcon={<AddIcon />}
           onClick={() => handleOpenForm()}
         >
-          Add Qualification
+          Add Employment
         </Button>
       </Box>
 
-      {/* Qualifications List */}
-      {qualifications.length === 0 ? (
+      {/* Employment List */}
+      {employments.length === 0 ? (
         <Box
           sx={{
             py: 4,
@@ -355,24 +313,24 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
           }}
         >
           <Typography variant="body1" gutterBottom>
-            No qualifications recorded
+            No employment history recorded
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Click "Add Qualification" button above to add educational qualifications for this client
+            Click "Add Employment" button above to add employment details for this client
           </Typography>
         </Box>
       ) : (
         <>
           <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-            Showing {qualifications.length} qualification
-            {qualifications.length !== 1 ? 's' : ''} (most recent first)
+            Showing {employments.length} employment record
+            {employments.length !== 1 ? 's' : ''} (most recent first)
           </Typography>
-          {qualifications.map((qualification) => (
-            <QualificationCard
-              key={qualification.id}
-              qualification={qualification}
-              onEdit={() => handleOpenForm(qualification)}
-              onDelete={() => handleDeleteClick(qualification.id)}
+          {employments.map((employment) => (
+            <EmploymentCard
+              key={employment.id}
+              employment={employment}
+              onEdit={() => handleOpenForm(employment)}
+              onDelete={() => handleDeleteClick(employment.id)}
             />
           ))}
         </>
@@ -381,47 +339,51 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
       {/* Add/Edit Form Dialog */}
       <Dialog open={formDialogOpen} onClose={() => setFormDialogOpen(false)} maxWidth="md" fullWidth>
         <form onSubmit={handleSubmit}>
-          <DialogTitle>{editingQualification ? 'Edit Qualification' : 'Add Qualification'}</DialogTitle>
+          <DialogTitle>
+            {editingEmployment ? 'Edit Employment' : 'Add Employment'}
+          </DialogTitle>
           <DialogContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
               {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
 
               <TextField
-                label="Course"
-                value={formData.course}
-                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                label="Employer Name"
+                value={formData.employer_name}
+                onChange={(e) => setFormData({ ...formData, employer_name: e.target.value })}
                 required
                 fullWidth
               />
 
               <TextField
-                label="Institute"
-                value={formData.institute}
-                onChange={(e) => setFormData({ ...formData, institute: e.target.value })}
+                label="Position"
+                value={formData.position}
+                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                 required
                 fullWidth
               />
 
               <TextField
-                label="Degree"
-                value={formData.degree}
-                onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+                label="Start Date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 required
                 fullWidth
-                placeholder="e.g., Bachelor's, Master's, PhD"
+                InputLabelProps={{ shrink: true }}
               />
 
               <TextField
-                label="Field of Study"
-                value={formData.field_of_study}
-                onChange={(e) => setFormData({ ...formData, field_of_study: e.target.value })}
+                label="End Date"
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 required
                 fullWidth
-                placeholder="e.g., Computer Science, Business Administration"
+                InputLabelProps={{ shrink: true }}
               />
 
               <TextField
-                label="Country"
+                label="Country of Employment"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 select
@@ -435,26 +397,6 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                   </MenuItem>
                 ))}
               </TextField>
-
-              <TextField
-                label="Enrollment Date"
-                type="date"
-                value={formData.enroll_date}
-                onChange={(e) => setFormData({ ...formData, enroll_date: e.target.value })}
-                required
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-
-              <TextField
-                label="Completion Date"
-                type="date"
-                value={formData.completion_date}
-                onChange={(e) => setFormData({ ...formData, completion_date: e.target.value })}
-                required
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
             </Box>
           </DialogContent>
           <DialogActions>
@@ -470,10 +412,10 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm">
-        <DialogTitle>Delete Qualification</DialogTitle>
+        <DialogTitle>Delete Employment</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this qualification? This action cannot be undone.
+            Are you sure you want to delete this employment record? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -489,4 +431,4 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
   );
 };
 
-export default ClientQualifications;
+export default ClientEmployment;

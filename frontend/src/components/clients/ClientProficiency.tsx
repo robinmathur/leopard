@@ -405,6 +405,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                 type="date"
                 value={formData.test_date}
                 onChange={(e) => setFormData({ ...formData, test_date: e.target.value })}
+                required
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -414,6 +415,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                 type="number"
                 value={formData.overall_score || ''}
                 onChange={(e) => setFormData({ ...formData, overall_score: e.target.value ? parseFloat(e.target.value) : undefined })}
+                required
                 fullWidth
                 inputProps={{ step: 0.5, min: 0, max: 100 }}
               />
@@ -425,6 +427,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     type="number"
                     value={formData.reading_score || ''}
                     onChange={(e) => setFormData({ ...formData, reading_score: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    required
                     fullWidth
                     inputProps={{ step: 0.5, min: 0, max: 100 }}
                   />
@@ -435,6 +438,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     type="number"
                     value={formData.writing_score || ''}
                     onChange={(e) => setFormData({ ...formData, writing_score: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    required
                     fullWidth
                     inputProps={{ step: 0.5, min: 0, max: 100 }}
                   />
@@ -445,6 +449,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     type="number"
                     value={formData.speaking_score || ''}
                     onChange={(e) => setFormData({ ...formData, speaking_score: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    required
                     fullWidth
                     inputProps={{ step: 0.5, min: 0, max: 100 }}
                   />
@@ -455,6 +460,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     type="number"
                     value={formData.listening_score || ''}
                     onChange={(e) => setFormData({ ...formData, listening_score: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    required
                     fullWidth
                     inputProps={{ step: 0.5, min: 0, max: 100 }}
                   />

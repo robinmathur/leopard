@@ -18,6 +18,8 @@ from immigration.api.v1.serializers.client_profiles import (
     ProficiencyOutputSerializer,
     QualificationCreateUpdateSerializer,
     QualificationOutputSerializer,
+    EmploymentCreateUpdateSerializer,
+    EmploymentOutputSerializer,
 )
 from immigration.pagination import StandardResultsSetPagination
 from immigration.selectors.client_profiles import (
@@ -28,12 +30,15 @@ from immigration.selectors.client_profiles import (
     proficiency_list,
     qualification_get,
     qualification_list,
+    employment_get,
+    employment_list,
 )
 from immigration.services.client_profiles import (
     LPEInput,
     PassportInput,
     ProficiencyInput,
     QualificationInput,
+    EmploymentInput,
     lpe_create,
     lpe_delete,
     lpe_update,
@@ -44,8 +49,11 @@ from immigration.services.client_profiles import (
     qualification_create,
     qualification_delete,
     qualification_update,
+    employment_create,
+    employment_delete,
+    employment_update,
 )
-from immigration.models import LPE, Passport, Proficiency, Qualification
+from immigration.models import LPE, Passport, Proficiency, Qualification, Employment
 
 
 class LanguageExamViewSet(ViewSet):
@@ -276,5 +284,66 @@ class PassportViewSet(ViewSet):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
         passport.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmploymentViewSet(ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [CanManageClients]
+    pagination_class = StandardResultsSetPagination
+
+    def list(self, request):
+        filters = {
+            "client_id": request.query_params.get("client_id"),
+        }
+        employments = employment_list(user=request.user, filters=filters)
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(employments, request)
+        serializer = EmploymentOutputSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        try:
+            employment = employment_get(user=request.user, employment_id=pk)
+        except PermissionError:
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        except Employment.DoesNotExist:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(EmploymentOutputSerializer(employment).data)
+
+    def create(self, request):
+        serializer = EmploymentCreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        input_data = EmploymentInput(**serializer.validated_data)
+        employment = employment_create(data=input_data, user=request.user)
+        return Response(EmploymentOutputSerializer(employment).data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        try:
+            employment = employment_get(user=request.user, employment_id=pk)
+        except PermissionError:
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        except Employment.DoesNotExist:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EmploymentCreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        input_data = EmploymentInput(**serializer.validated_data)
+        employment = employment_update(employment=employment, data=input_data, user=request.user)
+        return Response(EmploymentOutputSerializer(employment).data)
+
+    def partial_update(self, request, pk=None):
+        return self.update(request, pk)
+
+    def destroy(self, request, pk=None):
+        try:
+            employment = employment_get(user=request.user, employment_id=pk)
+        except PermissionError:
+            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+        except Employment.DoesNotExist:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        employment_delete(employment=employment, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
