@@ -12,7 +12,7 @@ paths:
         Takes a set of user credentials and returns an access and refresh JSON web
         token pair to prove the authentication of those credentials.
       tags:
-        - token
+      - token
       requestBody:
         content:
           application/json:
@@ -26,7 +26,7 @@ paths:
               $ref: '#/components/schemas/TokenObtainPairRequest'
         required: true
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -41,7 +41,7 @@ paths:
         Takes a refresh type JSON web token and returns an access type JSON web
         token if the refresh token is valid.
       tags:
-        - token
+      - token
       requestBody:
         content:
           application/json:
@@ -55,7 +55,7 @@ paths:
               $ref: '#/components/schemas/TokenRefreshRequest'
         required: true
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -66,72 +66,72 @@ paths:
   /api/v1/clients/:
     get:
       operationId: v1_clients_list
-      description: "\n        Returns a paginated list of clients filtered by user's\
-        \ role and scope.\n        \n        Role-based filtering:\n        - Consultant/Branch\
-        \ Admin: Only clients in their branch\n        - Region Manager: Clients in\
-        \ all branches within their region\n        - Country Manager/Super Admin:\
-        \ All clients in their tenant\n        - Super Super Admin: System-wide access\n\
-        \        \n        Query parameters allow additional filtering by email, stage,\
-        \ active status, etc.\n        "
+      description: "\n        Returns a paginated list of clients filtered by user's
+        role and scope.\n        \n        Role-based filtering:\n        - Consultant/Branch
+        Admin: Only clients in their branch\n        - Region Manager: Clients in
+        all branches within their region\n        - Country Manager/Super Admin: All
+        clients in their tenant\n        - Super Super Admin: System-wide access\n
+        \       \n        Query parameters allow additional filtering by email, stage,
+        active status, etc.\n        "
       summary: List all clients
       parameters:
-        - in: query
-          name: active
-          schema:
-            type: boolean
-          description: Filter by active status
-        - in: query
-          name: email
-          schema:
-            type: string
-          description: Filter by email (partial match, case-insensitive)
-        - in: query
-          name: first_name
-          schema:
-            type: string
-          description: Filter by first name (partial match)
-        - in: query
-          name: include_deleted
-          schema:
-            type: boolean
-          description: Include soft-deleted clients in the result set
-        - in: query
-          name: last_name
-          schema:
-            type: string
-          description: Filter by last name (partial match)
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
-        - in: query
-          name: stage
-          schema:
-            type: string
-            enum:
-              - CL
-              - CT
-              - FU
-              - LE
-          description: Filter by client stage (LE, FU, CT, CL)
-        - in: query
-          name: visa_category
-          schema:
-            type: integer
-          description: Filter by visa category ID
+      - in: query
+        name: active
+        schema:
+          type: boolean
+        description: Filter by active status
+      - in: query
+        name: email
+        schema:
+          type: string
+        description: Filter by email (partial match, case-insensitive)
+      - in: query
+        name: first_name
+        schema:
+          type: string
+        description: Filter by first name (partial match)
+      - in: query
+        name: include_deleted
+        schema:
+          type: boolean
+        description: Include soft-deleted clients in the result set
+      - in: query
+        name: last_name
+        schema:
+          type: string
+        description: Filter by last name (partial match)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: stage
+        schema:
+          type: string
+          enum:
+          - CL
+          - CT
+          - FU
+          - LE
+        description: Filter by client stage (LE, FU, CT, CL)
+      - in: query
+        name: visa_category
+        schema:
+          type: integer
+        description: Filter by visa category ID
       tags:
-        - clients
+      - clients
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -153,15 +153,15 @@ paths:
           description: ''
     post:
       operationId: v1_clients_create
-      description: "\n        Creates a new client with proper scope validation.\n\
-        \        \n        Business rules:\n        - Created_by is automatically\
-        \ set to the requesting user\n        - Assigned user must be within the creator's\
-        \ scope (branch/region/tenant)\n        - Branch Admin can only assign to\
-        \ users in their branch\n        - Defaults active=False, requires explicit\
-        \ activation\n        "
+      description: "\n        Creates a new client with proper scope validation.\n
+        \       \n        Business rules:\n        - Created_by is automatically set
+        to the requesting user\n        - Assigned user must be within the creator's
+        scope (branch/region/tenant)\n        - Branch Admin can only assign to users
+        in their branch\n        - Defaults active=False, requires explicit activation\n
+        \       "
       summary: Create a new client
       tags:
-        - clients
+      - clients
       requestBody:
         content:
           application/json:
@@ -175,8 +175,8 @@ paths:
               $ref: '#/components/schemas/ClientCreateRequest'
         required: true
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           content:
@@ -205,21 +205,20 @@ paths:
   /api/v1/clients/stage-counts/:
     get:
       operationId: v1_clients_stage_counts_retrieve
-      description: "\n        Returns the count of clients grouped by their stage.\n\
-        \        \n        Stage values:\n        - LEAD: Lead\n        - FOLLOW_UP:\
-        \ Follow Up\n        - CLIENT: Client\n        - CLOSE: Close\n        \n\
-        \        The counts respect role-based filtering:\n        - Consultant/Branch\
-        \ Admin: Only clients in their branch\n        - Region Manager: Clients in\
-        \ all branches within their region\n        - Super Admin: All clients in\
-        \ their tenant\n        - Super Super Admin: System-wide access\n        \n\
-        \        All stages are included in the response, even if the count is 0.\n\
-        \        "
+      description: "\n        Returns the count of clients grouped by their stage.\n
+        \       \n        Stage values:\n        - LEAD: Lead\n        - FOLLOW_UP:
+        Follow Up\n        - CLIENT: Client\n        - CLOSE: Close\n        \n        The
+        counts respect role-based filtering:\n        - Consultant/Branch Admin: Only
+        clients in their branch\n        - Region Manager: Clients in all branches
+        within their region\n        - Super Admin: All clients in their tenant\n
+        \       - Super Super Admin: System-wide access\n        \n        All stages
+        are included in the response, even if the count is 0.\n        "
       summary: Get client counts by stage
       tags:
-        - clients
+      - clients
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -246,16 +245,16 @@ paths:
         to this client based on their role and scope.
       summary: Get client details
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - clients
+      - clients
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -281,33 +280,32 @@ paths:
               schema:
                 description: Not Found - Client does not exist
           description: ''
-    put:
-      operationId: v1_clients_update
-      description: Update all fields of a client. User must have access to this client
-        based on their role and scope.
-      summary: Update client (full update)
+    patch:
+      operationId: v1_clients_partial_update
+      description: Update specific fields of a client. Only provided fields are updated.
+      summary: Partial update client
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - clients
+      - clients
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClientUpdateRequest'
+              $ref: '#/components/schemas/PatchedClientUpdateRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ClientUpdateRequest'
+              $ref: '#/components/schemas/PatchedClientUpdateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ClientUpdateRequest'
+              $ref: '#/components/schemas/PatchedClientUpdateRequest'
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -339,32 +337,33 @@ paths:
               schema:
                 description: Not Found
           description: ''
-    patch:
-      operationId: v1_clients_partial_update
-      description: Update specific fields of a client. Only provided fields are updated.
-      summary: Partial update client
+    put:
+      operationId: v1_clients_update
+      description: Update all fields of a client. User must have access to this client
+        based on their role and scope.
+      summary: Update client (full update)
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - clients
+      - clients
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedClientUpdateRequest'
+              $ref: '#/components/schemas/ClientUpdateRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedClientUpdateRequest'
+              $ref: '#/components/schemas/ClientUpdateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedClientUpdateRequest'
+              $ref: '#/components/schemas/ClientUpdateRequest'
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -402,16 +401,16 @@ paths:
         from database.
       summary: Delete client (soft delete)
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - clients
+      - clients
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '204':
           content:
@@ -437,6 +436,100 @@ paths:
               schema:
                 description: Not Found
           description: ''
+  /api/v1/clients/{id}/profile-picture/:
+    get:
+      operationId: v1_clients_profile_picture_retrieve
+      description: "\n        Get the profile picture for a client.\n        \n        GET
+        /api/v1/clients/{id}/profile-picture/\n        "
+      summary: Get client profile picture
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - clients
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Profile picture not found
+          description: ''
+    delete:
+      operationId: v1_clients_profile_picture_destroy
+      description: "\n        Get the profile picture for a client.\n        \n        GET
+        /api/v1/clients/{id}/profile-picture/\n        "
+      summary: Get client profile picture
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - clients
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Profile picture not found
+          description: ''
+    post:
+      operationId: v1_clients_profile_picture_create
+      description: "\n        Get the profile picture for a client.\n        \n        GET
+        /api/v1/clients/{id}/profile-picture/\n        "
+      summary: Get client profile picture
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - clients
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Profile picture not found
+          description: ''
   /api/v1/clients/{id}/restore/:
     post:
       operationId: v1_clients_restore_create
@@ -444,16 +537,16 @@ paths:
         restore clients.
       summary: Restore soft-deleted client
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - clients
+      - clients
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -485,46 +578,78 @@ paths:
               schema:
                 description: Not Found - Client does not exist or not soft-deleted
           description: ''
+  /api/v1/clients/{id}/timeline/:
+    get:
+      operationId: v1_clients_timeline_retrieve
+      description: "\n        Get chronological timeline of activities for a client.\n
+        \       Returns paginated list of activities ordered by created_at (newest
+        first).\n        \n        GET /api/v1/clients/{id}/timeline/\n        "
+      summary: Get client timeline
+      parameters:
+      - in: query
+        name: activity_type
+        schema:
+          type: string
+        description: Filter by activity type
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - clients
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
   /api/v1/visa-applications/:
     get:
       operationId: v1_visa_applications_list
       description: Returns visa applications filtered by user's role and scope.
       summary: List all visa applications
       parameters:
-        - in: query
-          name: client_id
-          schema:
-            type: integer
-          description: Filter by client ID
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
-        - in: query
-          name: status
-          schema:
-            type: string
-            enum:
-              - CASE_OPENED
-              - GRANTED
-              - REJECTED
-              - TO_BE_APPLIED
-              - VISA_APPLIED
-              - WITHDRAWN
-          description: Filter by application status
+      - in: query
+        name: client_id
+        schema:
+          type: integer
+        description: Filter by client ID
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CASE_OPENED
+          - GRANTED
+          - REJECTED
+          - TO_BE_APPLIED
+          - VISA_APPLIED
+          - WITHDRAWN
+        description: Filter by application status
       tags:
-        - visa-applications
+      - visa-applications
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -537,7 +662,7 @@ paths:
       description: Creates a visa application with scope validation.
       summary: Create a new visa application
       tags:
-        - visa-applications
+      - visa-applications
       requestBody:
         content:
           application/json:
@@ -551,8 +676,8 @@ paths:
               $ref: '#/components/schemas/VisaApplicationCreateRequest'
         required: true
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           content:
@@ -566,16 +691,16 @@ paths:
       description: Retrieve a specific visa application by ID.
       summary: Get visa application details
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - visa-applications
+      - visa-applications
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -588,13 +713,13 @@ paths:
       description: Update specific fields of a visa application.
       summary: Update visa application
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - visa-applications
+      - visa-applications
       requestBody:
         content:
           application/json:
@@ -607,8 +732,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedVisaApplicationUpdateRequest'
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -619,59 +744,58 @@ paths:
   /api/v1/users/:
     get:
       operationId: v1_users_list
-      description: "\n        Returns a paginated list of users filtered by requesting\
-        \ user's role and scope.\n        \n        Role-based filtering:\n      \
-        \  - Super Super Admin: All users across all tenants\n        - Super Admin/Country\
-        \ Manager: All users in their tenant\n        - Region Manager: Users in branches\
-        \ within their region\n        - Branch Admin: Only users in their branch\n\
-        \        - Consultant: No access (403 Forbidden)\n        \n        Query\
-        \ parameters allow filtering by role, email, branch, region, etc.\n      \
-        \  "
+      description: "\n        Returns a paginated list of users filtered by requesting
+        user's role and scope.\n        \n        Role-based filtering:\n        -
+        Super Super Admin: All users across all tenants\n        - Super Admin/Country
+        Manager: All users in their tenant\n        - Region Manager: Users in branches
+        within their region\n        - Branch Admin: Only users in their branch\n
+        \       - Consultant: No access (403 Forbidden)\n        \n        Query parameters
+        allow filtering by role, email, branch, region, etc.\n        "
       summary: List all users
       parameters:
-        - in: query
-          name: branch_id
-          schema:
-            type: integer
-          description: Filter by branch ID
-        - in: query
-          name: email
-          schema:
-            type: string
-          description: Filter by email (partial match)
-        - in: query
-          name: group
-          schema:
-            type: string
-            enum:
-              - BRANCH_ADMIN
-              - CONSULTANT
-              - REGION_MANAGER
-              - SUPER_ADMIN
-              - SUPER_SUPER_ADMIN
-          description: Filter by user group
-        - in: query
-          name: is_active
-          schema:
-            type: boolean
-          description: Filter by active status
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
+      - in: query
+        name: branch_id
+        schema:
+          type: integer
+        description: Filter by branch ID
+      - in: query
+        name: email
+        schema:
+          type: string
+        description: Filter by email (partial match)
+      - in: query
+        name: group
+        schema:
+          type: string
+          enum:
+          - BRANCH_ADMIN
+          - CONSULTANT
+          - REGION_MANAGER
+          - SUPER_ADMIN
+          - SUPER_SUPER_ADMIN
+        description: Filter by user group
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
-        - users
+      - users
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -693,21 +817,20 @@ paths:
           description: ''
     post:
       operationId: v1_users_create
-      description: "\n        Creates a new user with strict hierarchical validation.\n\
-        \        \n        Role Hierarchy Rules:\n        - Super Super Admin → Can\
-        \ create any role\n        - Super Admin → Can create Country Manager and\
-        \ below\n        - Country Manager → Can create Region Manager and below\n\
-        \        - Region Manager → Can create Branch Admin and below\n        - Branch\
-        \ Admin → Can only create Consultant\n        - Consultant → Cannot create\
-        \ users (403 Forbidden)\n        \n        Scope Rules:\n        - Branch\
-        \ Admin: Can only create users in their branch (auto-assigned)\n        -\
-        \ Region Manager: Can only create users in their region\n        - Country\
-        \ Manager/Super Admin: Can only create users in their tenant\n        \n \
-        \       The creator's scope is automatically inherited by the new user.\n\
-        \        "
+      description: "\n        Creates a new user with strict hierarchical validation.\n
+        \       \n        Role Hierarchy Rules:\n        - Super Super Admin → Can
+        create any role\n        - Super Admin → Can create Country Manager and below\n
+        \       - Country Manager → Can create Region Manager and below\n        -
+        Region Manager → Can create Branch Admin and below\n        - Branch Admin
+        → Can only create Consultant\n        - Consultant → Cannot create users (403
+        Forbidden)\n        \n        Scope Rules:\n        - Branch Admin: Can only
+        create users in their branch (auto-assigned)\n        - Region Manager: Can
+        only create users in their region\n        - Country Manager/Super Admin:
+        Can only create users in their tenant\n        \n        The creator's scope
+        is automatically inherited by the new user.\n        "
       summary: Create a new user
       tags:
-        - users
+      - users
       requestBody:
         content:
           application/json:
@@ -721,8 +844,8 @@ paths:
               $ref: '#/components/schemas/UserCreateRequest'
         required: true
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           content:
@@ -752,24 +875,24 @@ paths:
   /api/v1/users/profile/:
     get:
       operationId: v1_users_profile_retrieve
-      description: "\n        Returns the authenticated user's basic information along\
-        \ with all their permissions.\n        \n        This endpoint combines user\
-        \ profile data and permissions in a single response,\n        eliminating\
-        \ the need for frontend to make separate API calls.\n        \n        User\
-        \ information includes:\n        - Basic profile: id, username, email, first_name,\
-        \ last_name\n        - Role/Group information: primary_group, groups_list\n\
-        \        - Tenant and scope: tenant, tenant_name, branches_data, regions_data\n\
-        \        - Status: is_active\n        \n        Permissions include:\n   \
-        \     - Direct permissions assigned to the user\n        - Permissions inherited\
-        \ from role-based groups\n        \n        Each permission includes:\n  \
-        \      - Permission codename\n        - Permission name (human-readable)\n\
-        \        - Content type (app_label.model)\n        "
+      description: "\n        Returns the authenticated user's basic information along
+        with all their permissions.\n        \n        This endpoint combines user
+        profile data and permissions in a single response,\n        eliminating the
+        need for frontend to make separate API calls.\n        \n        User information
+        includes:\n        - Basic profile: id, username, email, first_name, last_name\n
+        \       - Role/Group information: primary_group, groups_list\n        - Tenant
+        and scope: tenant, tenant_name, branches_data, regions_data\n        - Status:
+        is_active\n        \n        Permissions include:\n        - Direct permissions
+        assigned to the user\n        - Permissions inherited from role-based groups\n
+        \       \n        Each permission includes:\n        - Permission codename\n
+        \       - Permission name (human-readable)\n        - Content type (app_label.model)\n
+        \       "
       summary: Get current user profile and permissions
       tags:
-        - users
+      - users
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -845,16 +968,16 @@ paths:
         have access based on their role and scope.
       summary: Get user details
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - users
+      - users
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -882,21 +1005,20 @@ paths:
           description: ''
     patch:
       operationId: v1_users_partial_update
-      description: "\n        Update specific fields of a user. Only provided fields\
-        \ are updated.\n        \n        Role Change Rules:\n        - Must follow\
-        \ same hierarchy rules as creation\n        - Cannot change own role\n   \
-        \     - Role changes require authorization for the target role\n        \n\
-        \        Scope changes are validated against updater's permissions.\n    \
-        \    "
+      description: "\n        Update specific fields of a user. Only provided fields
+        are updated.\n        \n        Role Change Rules:\n        - Must follow
+        same hierarchy rules as creation\n        - Cannot change own role\n        -
+        Role changes require authorization for the target role\n        \n        Scope
+        changes are validated against updater's permissions.\n        "
       summary: Update user
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - users
+      - users
       requestBody:
         content:
           application/json:
@@ -909,8 +1031,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedUserUpdateRequest'
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -949,35 +1071,35 @@ paths:
         read status and type.
       summary: List notifications
       parameters:
-        - in: query
-          name: include_read
-          schema:
-            type: boolean
-          description: 'Include read notifications (default: true)'
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
-        - in: query
-          name: type
-          schema:
-            type: string
-          description: Filter by notification type (TASK_ASSIGNED, TASK_DUE_SOON, TASK_OVERDUE,
-            VISA_APPROVED, VISA_REJECTED, VISA_STATUS_UPDATE, CLIENT_ASSIGNED, SYSTEM_ALERT,
-            LEAD_ASSIGNED, APPLICATION_ASSIGNED, VISA_APPLICATION_ASSIGNED, REMINDER)
+      - in: query
+        name: include_read
+        schema:
+          type: boolean
+        description: 'Include read notifications (default: true)'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: Filter by notification type (TASK_ASSIGNED, TASK_DUE_SOON, TASK_OVERDUE,
+          VISA_APPROVED, VISA_REJECTED, VISA_STATUS_UPDATE, CLIENT_ASSIGNED, SYSTEM_ALERT,
+          LEAD_ASSIGNED, APPLICATION_ASSIGNED, VISA_APPLICATION_ASSIGNED, REMINDER)
       tags:
-        - notifications
+      - notifications
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -991,7 +1113,7 @@ paths:
       description: Mark multiple notifications as read at once.
       summary: Bulk mark notifications as read
       tags:
-        - notifications
+      - notifications
       requestBody:
         content:
           type:
@@ -1012,8 +1134,8 @@ paths:
               additionalProperties: {}
               description: Unspecified request body
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1037,23 +1159,23 @@ paths:
       description: Get all overdue notifications for the authenticated user.
       summary: Get overdue notifications
       parameters:
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
-        - notifications
+      - notifications
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1067,10 +1189,10 @@ paths:
       description: Get the count of unread notifications for the authenticated user.
       summary: Get unread count
       tags:
-        - notifications
+      - notifications
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1087,16 +1209,16 @@ paths:
       description: Retrieve a specific notification by ID.
       summary: Get notification details
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - notifications
+      - notifications
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1117,16 +1239,16 @@ paths:
       description: Mark a specific notification as read.
       summary: Mark notification as read
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - notifications
+      - notifications
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1142,23 +1264,23 @@ paths:
                 additionalProperties: {}
           description: ''
   /api/v1/notifications/{id}/update_notification/:
-    put:
-      operationId: v1_notifications_update_notification_update
+    patch:
+      operationId: v1_notifications_update_notification_partial_update
       description: Update notification fields (typically to mark as read or completed).
       summary: Update notification
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - notifications
+      - notifications
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NotificationUpdateRequest'
+              $ref: '#/components/schemas/PatchedNotificationUpdateRequest'
             examples:
               MarkAsRead:
                 value:
@@ -1171,13 +1293,13 @@ paths:
                 summary: Mark as completed
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/NotificationUpdateRequest'
+              $ref: '#/components/schemas/PatchedNotificationUpdateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/NotificationUpdateRequest'
+              $ref: '#/components/schemas/PatchedNotificationUpdateRequest'
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1199,23 +1321,23 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-    patch:
-      operationId: v1_notifications_update_notification_partial_update
+    put:
+      operationId: v1_notifications_update_notification_update
       description: Update notification fields (typically to mark as read or completed).
       summary: Update notification
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - notifications
+      - notifications
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedNotificationUpdateRequest'
+              $ref: '#/components/schemas/NotificationUpdateRequest'
             examples:
               MarkAsRead:
                 value:
@@ -1228,13 +1350,13 @@ paths:
                 summary: Mark as completed
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedNotificationUpdateRequest'
+              $ref: '#/components/schemas/NotificationUpdateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedNotificationUpdateRequest'
+              $ref: '#/components/schemas/NotificationUpdateRequest'
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1263,39 +1385,39 @@ paths:
         priority, and overdue.
       summary: List tasks
       parameters:
-        - in: query
-          name: include_overdue
-          schema:
-            type: boolean
-          description: 'Include overdue tasks (default: true)'
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
-        - in: query
-          name: priority
-          schema:
-            type: string
-          description: Filter by priority (LOW, MEDIUM, HIGH, URGENT)
-        - in: query
-          name: status
-          schema:
-            type: string
-          description: Filter by task status (PENDING, IN_PROGRESS, COMPLETED, CANCELLED,
-            OVERDUE)
+      - in: query
+        name: include_overdue
+        schema:
+          type: boolean
+        description: 'Include overdue tasks (default: true)'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: priority
+        schema:
+          type: string
+        description: Filter by priority (LOW, MEDIUM, HIGH, URGENT)
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by task status (PENDING, IN_PROGRESS, COMPLETED, CANCELLED,
+          OVERDUE)
       tags:
-        - tasks
+      - tasks
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1308,7 +1430,7 @@ paths:
       description: Create a new task and optionally assign it to a user.
       summary: Create task
       tags:
-        - tasks
+      - tasks
       requestBody:
         content:
           application/json:
@@ -1323,8 +1445,8 @@ paths:
                   due_date: '2025-12-15T17:00:00Z'
                   assigned_to: 1
                   tags:
-                    - document-review
-                    - urgent
+                  - document-review
+                  - urgent
                   client_id: 5
                 summary: Create high priority task
           application/x-www-form-urlencoded:
@@ -1335,8 +1457,8 @@ paths:
               $ref: '#/components/schemas/TaskCreateRequest'
         required: true
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           content:
@@ -1357,28 +1479,28 @@ paths:
       description: 'Get tasks due within a specified number of days (default: 3 days).'
       summary: Get tasks due soon
       parameters:
-        - in: query
-          name: days
-          schema:
-            type: integer
-          description: 'Number of days to look ahead (default: 3)'
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: 'Number of days to look ahead (default: 3)'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
-        - tasks
+      - tasks
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1392,23 +1514,23 @@ paths:
       description: Get all overdue tasks for the authenticated user.
       summary: Get overdue tasks
       parameters:
-        - name: page
-          required: false
-          in: query
-          description: A page number within the paginated result set.
-          schema:
-            type: integer
-        - name: page_size
-          required: false
-          in: query
-          description: Number of results to return per page.
-          schema:
-            type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
-        - tasks
+      - tasks
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1422,85 +1544,22 @@ paths:
       description: Retrieve a specific task by ID.
       summary: Get task details
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - tasks
+      - tasks
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskOutput'
-          description: ''
-        '404':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-    put:
-      operationId: v1_tasks_update
-      description: Update task fields. Use PUT for full update or PATCH for partial
-        update.
-      summary: Update task
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-      tags:
-        - tasks
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TaskUpdateRequest'
-            examples:
-              UpdateTaskPriorityAndStatus:
-                value:
-                  priority: URGENT
-                  status: IN_PROGRESS
-                summary: Update task priority and status
-              UpdateTaskDetails:
-                value:
-                  title: Updated task title
-                  detail: Updated task description
-                  due_date: '2025-12-20T17:00:00Z'
-                  tags:
-                    - updated
-                    - in-progress
-                summary: Update task details
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TaskUpdateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TaskUpdateRequest'
-      security:
-        - jwtAuth: []
-        - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskOutput'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
           description: ''
         '404':
           content:
@@ -1514,13 +1573,13 @@ paths:
       description: Update specific task fields without providing all fields.
       summary: Partially update task
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - tasks
+      - tasks
       requestBody:
         content:
           application/json:
@@ -1542,8 +1601,71 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedTaskUpdateRequest'
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskOutput'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    put:
+      operationId: v1_tasks_update
+      description: Update task fields. Use PUT for full update or PATCH for partial
+        update.
+      summary: Update task
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateRequest'
+            examples:
+              UpdateTaskPriorityAndStatus:
+                value:
+                  priority: URGENT
+                  status: IN_PROGRESS
+                summary: Update task priority and status
+              UpdateTaskDetails:
+                value:
+                  title: Updated task title
+                  detail: Updated task description
+                  due_date: '2025-12-20T17:00:00Z'
+                  tags:
+                  - updated
+                  - in-progress
+                summary: Update task details
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1570,16 +1692,16 @@ paths:
       description: Soft delete a task.
       summary: Delete task
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - tasks
+      - tasks
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '204':
           description: No response body
@@ -1596,13 +1718,13 @@ paths:
       description: Add a comment to a task.
       summary: Add comment to task
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - tasks
+      - tasks
       requestBody:
         content:
           type:
@@ -1621,8 +1743,8 @@ paths:
               additionalProperties: {}
               description: Unspecified request body
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1650,16 +1772,16 @@ paths:
       description: Mark a specific task as cancelled.
       summary: Mark task as cancelled
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - tasks
+      - tasks
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1680,16 +1802,16 @@ paths:
       description: Mark a specific task as completed.
       summary: Mark task as completed
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - tasks
+      - tasks
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           content:
@@ -1704,24 +1826,277 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/notes/:
+    get:
+      operationId: v1_notes_list
+      description: Get all notes accessible by the authenticated user. Can filter
+        by client or author.
+      summary: List notes
+      parameters:
+      - in: query
+        name: author
+        schema:
+          type: integer
+        description: Filter by author user ID
+      - in: query
+        name: client
+        schema:
+          type: integer
+        description: Filter by client ID
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNoteOutputList'
+          description: ''
+    post:
+      operationId: v1_notes_create
+      description: Create a new note for a client. Requires 'add_note' permission.
+      summary: Create note
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteCreateRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoteCreateRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoteCreateRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Validation error
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Missing add_note permission
+          description: ''
+  /api/v1/notes/{id}/:
+    get:
+      operationId: v1_notes_retrieve
+      description: Retrieve a specific note by ID.
+      summary: Get note details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Note.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Note not found
+          description: ''
+    patch:
+      operationId: v1_notes_partial_update
+      description: Partially update a note. Requires 'change_note' permission or being
+        the note author.
+      summary: Update note (partial)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Note.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNoteUpdateRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedNoteUpdateRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedNoteUpdateRequestRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Validation error
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Missing change_note permission
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Note not found
+          description: ''
+    put:
+      operationId: v1_notes_update
+      description: Update a note. Requires 'change_note' permission or being the note
+        author.
+      summary: Update note (full)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Note.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteUpdateRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NoteUpdateRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NoteUpdateRequestRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteOutput'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Validation error
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Missing change_note permission
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Note not found
+          description: ''
+    delete:
+      operationId: v1_notes_destroy
+      description: Delete a note (hard delete). Requires 'delete_note' permission
+        or being the note author.
+      summary: Delete note
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Note.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                description: Note deleted successfully
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Missing delete_note permission
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Note not found
+          description: ''
   /api/v1/language-exams/:
     get:
       operationId: v1_language_exams_retrieve
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     post:
       operationId: v1_language_exams_create
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           description: No response body
@@ -1729,64 +2104,64 @@ paths:
     get:
       operationId: v1_language_exams_retrieve_2
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: v1_language_exams_update
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-      tags:
-        - v1
-      security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     patch:
       operationId: v1_language_exams_partial_update
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: v1_language_exams_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     delete:
       operationId: v1_language_exams_destroy
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '204':
           description: No response body
@@ -1794,20 +2169,20 @@ paths:
     get:
       operationId: v1_language_proficiencies_retrieve
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     post:
       operationId: v1_language_proficiencies_create
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           description: No response body
@@ -1815,64 +2190,64 @@ paths:
     get:
       operationId: v1_language_proficiencies_retrieve_2
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: v1_language_proficiencies_update
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-      tags:
-        - v1
-      security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     patch:
       operationId: v1_language_proficiencies_partial_update
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: v1_language_proficiencies_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     delete:
       operationId: v1_language_proficiencies_destroy
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '204':
           description: No response body
@@ -1880,20 +2255,20 @@ paths:
     get:
       operationId: v1_qualifications_retrieve
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     post:
       operationId: v1_qualifications_create
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           description: No response body
@@ -1901,64 +2276,64 @@ paths:
     get:
       operationId: v1_qualifications_retrieve_2
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: v1_qualifications_update
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-      tags:
-        - v1
-      security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     patch:
       operationId: v1_qualifications_partial_update
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: v1_qualifications_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     delete:
       operationId: v1_qualifications_destroy
       parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '204':
           description: No response body
@@ -1966,20 +2341,20 @@ paths:
     get:
       operationId: v1_passports_retrieve
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     post:
       operationId: v1_passports_create
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '201':
           description: No response body
@@ -1988,10 +2363,10 @@ paths:
       operationId: v1_passports_upsert_create
       description: Create or update a passport in a single endpoint.
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
@@ -1999,64 +2374,64 @@ paths:
     get:
       operationId: v1_passports_retrieve_2
       parameters:
-        - in: path
-          name: client_id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: client_id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: v1_passports_update
-      parameters:
-        - in: path
-          name: client_id
-          schema:
-            type: string
-          required: true
-      tags:
-        - v1
-      security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     patch:
       operationId: v1_passports_partial_update
       parameters:
-        - in: path
-          name: client_id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: client_id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: v1_passports_update
+      parameters:
+      - in: path
+        name: client_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: No response body
     delete:
       operationId: v1_passports_destroy
       parameters:
-        - in: path
-          name: client_id
-          schema:
-            type: string
-          required: true
+      - in: path
+        name: client_id
+        schema:
+          type: string
+        required: true
       tags:
-        - v1
+      - v1
       security:
-        - jwtAuth: []
-        - BearerAuth: []
+      - jwtAuth: []
+      - BearerAuth: []
       responses:
         '204':
           description: No response body
@@ -2064,7 +2439,7 @@ components:
   schemas:
     BlankEnum:
       enum:
-        - ''
+      - ''
     ClientCreateRequest:
       type: object
       description: |-
@@ -2089,7 +2464,7 @@ components:
           type: string
           maxLength: 15
         gender:
-          $ref: '#/components/schemas/Gender571Enum'
+          $ref: '#/components/schemas/Gender06cEnum'
         dob:
           type: string
           format: date
@@ -2121,8 +2496,8 @@ components:
           nullable: true
         stage:
           oneOf:
-            - $ref: '#/components/schemas/Stage664Enum'
-            - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/Stage5daEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         referred_by:
           type: string
           maxLength: 20
@@ -2132,9 +2507,9 @@ components:
           type: boolean
           default: false
       required:
-        - country
-        - first_name
-        - gender
+      - country
+      - first_name
+      - gender
     ClientOutput:
       type: object
       description: |-
@@ -2156,8 +2531,8 @@ components:
           maxLength: 100
         gender:
           oneOf:
-            - $ref: '#/components/schemas/ClientOutputGenderEnum'
-            - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/ClientOutputGenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         dob:
           type: string
           format: date
@@ -2221,11 +2596,18 @@ components:
             * `CLIENT` - Client
             * `CLOSE` - Close
           oneOf:
-            - $ref: '#/components/schemas/ClientOutputStageEnum'
-            - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/ClientOutputStageEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         active:
           type: boolean
           description: Whether client is actively being serviced
+        branch:
+          type: integer
+          nullable: true
+          description: Branch managing this client
+        branch_name:
+          type: string
+          readOnly: true
         created_by:
           type: integer
           readOnly: true
@@ -2250,22 +2632,23 @@ components:
           readOnly: true
           description: Timestamp when record was last updated
       required:
-        - agent_name
-        - assigned_to_name
-        - country
-        - created_at
-        - created_by
-        - created_by_name
-        - first_name
-        - id
-        - updated_at
-        - updated_by
-        - visa_category_name
+      - agent_name
+      - assigned_to_name
+      - branch_name
+      - country
+      - created_at
+      - created_by
+      - created_by_name
+      - first_name
+      - id
+      - updated_at
+      - updated_by
+      - visa_category_name
     ClientOutputGenderEnum:
       enum:
-        - MALE
-        - FEMALE
-        - OTHER
+      - MALE
+      - FEMALE
+      - OTHER
       type: string
       description: |-
         * `MALE` - Male
@@ -2273,10 +2656,10 @@ components:
         * `OTHER` - Other
     ClientOutputStageEnum:
       enum:
-        - LEAD
-        - FOLLOW_UP
-        - CLIENT
-        - CLOSE
+      - LEAD
+      - FOLLOW_UP
+      - CLIENT
+      - CLOSE
       type: string
       description: |-
         * `LEAD` - Lead
@@ -2318,11 +2701,11 @@ components:
           default: 0
           description: Total client count
       required:
-        - CLIENT
-        - CLOSE
-        - FOLLOW_UP
-        - LEAD
-        - TOTAL
+      - CLIENT
+      - CLOSE
+      - FOLLOW_UP
+      - LEAD
+      - TOTAL
     ClientUpdateRequest:
       type: object
       description: |-
@@ -2347,7 +2730,7 @@ components:
           type: string
           maxLength: 15
         gender:
-          $ref: '#/components/schemas/Gender571Enum'
+          $ref: '#/components/schemas/Gender06cEnum'
         dob:
           type: string
           format: date
@@ -2379,8 +2762,8 @@ components:
           nullable: true
         stage:
           oneOf:
-            - $ref: '#/components/schemas/Stage664Enum'
-            - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/Stage5daEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         referred_by:
           type: string
           maxLength: 20
@@ -2390,255 +2773,255 @@ components:
           type: boolean
     CountryEnum:
       enum:
-        - AF
-        - AX
-        - AL
-        - DZ
-        - AS
-        - AD
-        - AO
-        - AI
-        - AQ
-        - AG
-        - AR
-        - AM
-        - AW
-        - AU
-        - AT
-        - AZ
-        - BS
-        - BH
-        - BD
-        - BB
-        - BY
-        - BE
-        - BZ
-        - BJ
-        - BM
-        - BT
-        - BO
-        - BQ
-        - BA
-        - BW
-        - BV
-        - BR
-        - IO
-        - BN
-        - BG
-        - BF
-        - BI
-        - CV
-        - KH
-        - CM
-        - CA
-        - KY
-        - CF
-        - TD
-        - CL
-        - CN
-        - CX
-        - CC
-        - CO
-        - KM
-        - CG
-        - CD
-        - CK
-        - CR
-        - CI
-        - HR
-        - CU
-        - CW
-        - CY
-        - CZ
-        - DK
-        - DJ
-        - DM
-        - DO
-        - EC
-        - EG
-        - SV
-        - GQ
-        - ER
-        - EE
-        - SZ
-        - ET
-        - FK
-        - FO
-        - FJ
-        - FI
-        - FR
-        - GF
-        - PF
-        - TF
-        - GA
-        - GM
-        - GE
-        - DE
-        - GH
-        - GI
-        - GR
-        - GL
-        - GD
-        - GP
-        - GU
-        - GT
-        - GG
-        - GN
-        - GW
-        - GY
-        - HT
-        - HM
-        - VA
-        - HN
-        - HK
-        - HU
-        - IS
-        - IN
-        - ID
-        - IR
-        - IQ
-        - IE
-        - IM
-        - IL
-        - IT
-        - JM
-        - JP
-        - JE
-        - JO
-        - KZ
-        - KE
-        - KI
-        - KW
-        - KG
-        - LA
-        - LV
-        - LB
-        - LS
-        - LR
-        - LY
-        - LI
-        - LT
-        - LU
-        - MO
-        - MG
-        - MW
-        - MY
-        - MV
-        - ML
-        - MT
-        - MH
-        - MQ
-        - MR
-        - MU
-        - YT
-        - MX
-        - FM
-        - MD
-        - MC
-        - MN
-        - ME
-        - MS
-        - MA
-        - MZ
-        - MM
-        - NA
-        - NR
-        - NP
-        - NL
-        - NC
-        - NZ
-        - NI
-        - NE
-        - NG
-        - NU
-        - NF
-        - KP
-        - MK
-        - MP
-        - 'NO'
-        - OM
-        - PK
-        - PW
-        - PS
-        - PA
-        - PG
-        - PY
-        - PE
-        - PH
-        - PN
-        - PL
-        - PT
-        - PR
-        - QA
-        - RE
-        - RO
-        - RU
-        - RW
-        - BL
-        - SH
-        - KN
-        - LC
-        - MF
-        - PM
-        - VC
-        - WS
-        - SM
-        - ST
-        - SA
-        - SN
-        - RS
-        - SC
-        - SL
-        - SG
-        - SX
-        - SK
-        - SI
-        - SB
-        - SO
-        - ZA
-        - GS
-        - KR
-        - SS
-        - ES
-        - LK
-        - SD
-        - SR
-        - SJ
-        - SE
-        - CH
-        - SY
-        - TW
-        - TJ
-        - TZ
-        - TH
-        - TL
-        - TG
-        - TK
-        - TO
-        - TT
-        - TN
-        - TR
-        - TM
-        - TC
-        - TV
-        - UG
-        - UA
-        - AE
-        - GB
-        - UM
-        - US
-        - UY
-        - UZ
-        - VU
-        - VE
-        - VN
-        - VG
-        - VI
-        - WF
-        - EH
-        - YE
-        - ZM
-        - ZW
+      - AF
+      - AX
+      - AL
+      - DZ
+      - AS
+      - AD
+      - AO
+      - AI
+      - AQ
+      - AG
+      - AR
+      - AM
+      - AW
+      - AU
+      - AT
+      - AZ
+      - BS
+      - BH
+      - BD
+      - BB
+      - BY
+      - BE
+      - BZ
+      - BJ
+      - BM
+      - BT
+      - BO
+      - BQ
+      - BA
+      - BW
+      - BV
+      - BR
+      - IO
+      - BN
+      - BG
+      - BF
+      - BI
+      - CV
+      - KH
+      - CM
+      - CA
+      - KY
+      - CF
+      - TD
+      - CL
+      - CN
+      - CX
+      - CC
+      - CO
+      - KM
+      - CG
+      - CD
+      - CK
+      - CR
+      - CI
+      - HR
+      - CU
+      - CW
+      - CY
+      - CZ
+      - DK
+      - DJ
+      - DM
+      - DO
+      - EC
+      - EG
+      - SV
+      - GQ
+      - ER
+      - EE
+      - SZ
+      - ET
+      - FK
+      - FO
+      - FJ
+      - FI
+      - FR
+      - GF
+      - PF
+      - TF
+      - GA
+      - GM
+      - GE
+      - DE
+      - GH
+      - GI
+      - GR
+      - GL
+      - GD
+      - GP
+      - GU
+      - GT
+      - GG
+      - GN
+      - GW
+      - GY
+      - HT
+      - HM
+      - VA
+      - HN
+      - HK
+      - HU
+      - IS
+      - IN
+      - ID
+      - IR
+      - IQ
+      - IE
+      - IM
+      - IL
+      - IT
+      - JM
+      - JP
+      - JE
+      - JO
+      - KZ
+      - KE
+      - KI
+      - KW
+      - KG
+      - LA
+      - LV
+      - LB
+      - LS
+      - LR
+      - LY
+      - LI
+      - LT
+      - LU
+      - MO
+      - MG
+      - MW
+      - MY
+      - MV
+      - ML
+      - MT
+      - MH
+      - MQ
+      - MR
+      - MU
+      - YT
+      - MX
+      - FM
+      - MD
+      - MC
+      - MN
+      - ME
+      - MS
+      - MA
+      - MZ
+      - MM
+      - NA
+      - NR
+      - NP
+      - NL
+      - NC
+      - NZ
+      - NI
+      - NE
+      - NG
+      - NU
+      - NF
+      - KP
+      - MK
+      - MP
+      - 'NO'
+      - OM
+      - PK
+      - PW
+      - PS
+      - PA
+      - PG
+      - PY
+      - PE
+      - PH
+      - PN
+      - PL
+      - PT
+      - PR
+      - QA
+      - RE
+      - RO
+      - RU
+      - RW
+      - BL
+      - SH
+      - KN
+      - LC
+      - MF
+      - PM
+      - VC
+      - WS
+      - SM
+      - ST
+      - SA
+      - SN
+      - RS
+      - SC
+      - SL
+      - SG
+      - SX
+      - SK
+      - SI
+      - SB
+      - SO
+      - ZA
+      - GS
+      - KR
+      - SS
+      - ES
+      - LK
+      - SD
+      - SR
+      - SJ
+      - SE
+      - CH
+      - SY
+      - TW
+      - TJ
+      - TZ
+      - TH
+      - TL
+      - TG
+      - TK
+      - TO
+      - TT
+      - TN
+      - TR
+      - TM
+      - TC
+      - TV
+      - UG
+      - UA
+      - AE
+      - GB
+      - UM
+      - US
+      - UY
+      - UZ
+      - VU
+      - VE
+      - VN
+      - VG
+      - VI
+      - WF
+      - EH
+      - YE
+      - ZM
+      - ZW
       type: string
       description: |-
         * `AF` - Afghanistan
@@ -2890,11 +3273,11 @@ components:
         * `YE` - Yemen
         * `ZM` - Zambia
         * `ZW` - Zimbabwe
-    Gender571Enum:
+    Gender06cEnum:
       enum:
-        - MALE
-        - FEMALE
-        - OTHER
+      - MALE
+      - FEMALE
+      - OTHER
       type: string
       description: |-
         * `MALE` - MALE
@@ -2902,11 +3285,11 @@ components:
         * `OTHER` - OTHER
     GroupNameEnum:
       enum:
-        - SUPER_SUPER_ADMIN
-        - SUPER_ADMIN
-        - REGION_MANAGER
-        - BRANCH_ADMIN
-        - CONSULTANT
+      - SUPER_SUPER_ADMIN
+      - SUPER_ADMIN
+      - REGION_MANAGER
+      - BRANCH_ADMIN
+      - CONSULTANT
       type: string
       description: |-
         * `SUPER_SUPER_ADMIN` - SUPER_SUPER_ADMIN
@@ -2914,6 +3297,81 @@ components:
         * `REGION_MANAGER` - REGION_MANAGER
         * `BRANCH_ADMIN` - BRANCH_ADMIN
         * `CONSULTANT` - CONSULTANT
+    NoteCreateRequestRequest:
+      type: object
+      description: |-
+        Serializer for creating notes (POST requests).
+
+        Validates input and passes to note service for creation.
+        Author is set from request.user in the view/service layer.
+      properties:
+        client:
+          type: integer
+          description: Client ID this note belongs to
+        content:
+          type: string
+          minLength: 1
+          description: Note content (1-10,000 characters)
+          maxLength: 10000
+      required:
+      - client
+      - content
+    NoteOutput:
+      type: object
+      description: |-
+        Serializer for note output (GET requests).
+
+        Returns complete note data including author information.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        client:
+          type: integer
+          readOnly: true
+          description: Client this note belongs to
+        author:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: User who created the note
+        author_name:
+          type: string
+          readOnly: true
+        content:
+          type: string
+          description: Note content (max 10,000 characters)
+          maxLength: 10000
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when note was created
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when note was last updated
+      required:
+      - author
+      - author_name
+      - client
+      - content
+      - created_at
+      - id
+      - updated_at
+    NoteUpdateRequestRequest:
+      type: object
+      description: |-
+        Serializer for updating notes (PUT/PATCH requests).
+
+        Only content can be updated. Client and author are immutable.
+      properties:
+        content:
+          type: string
+          minLength: 1
+          description: Note content (1-10,000 characters)
+          maxLength: 10000
     NotificationOutput:
       type: object
       description: |-
@@ -2926,7 +3384,7 @@ components:
           readOnly: true
         notification_type:
           allOf:
-            - $ref: '#/components/schemas/NotificationTypeEnum'
+          - $ref: '#/components/schemas/NotificationTypeEnum'
           description: |-
             Type of notification
 
@@ -2991,26 +3449,26 @@ components:
           readOnly: true
           description: Timestamp when record was last updated
       required:
-        - assigned_to_name
-        - created_at
-        - id
-        - is_overdue
-        - notification_type_display
-        - updated_at
+      - assigned_to_name
+      - created_at
+      - id
+      - is_overdue
+      - notification_type_display
+      - updated_at
     NotificationTypeEnum:
       enum:
-        - TASK_ASSIGNED
-        - TASK_DUE_SOON
-        - TASK_OVERDUE
-        - VISA_APPROVED
-        - VISA_REJECTED
-        - VISA_STATUS_UPDATE
-        - CLIENT_ASSIGNED
-        - SYSTEM_ALERT
-        - LEAD_ASSIGNED
-        - APPLICATION_ASSIGNED
-        - VISA_APPLICATION_ASSIGNED
-        - REMINDER
+      - TASK_ASSIGNED
+      - TASK_DUE_SOON
+      - TASK_OVERDUE
+      - VISA_APPROVED
+      - VISA_REJECTED
+      - VISA_STATUS_UPDATE
+      - CLIENT_ASSIGNED
+      - SYSTEM_ALERT
+      - LEAD_ASSIGNED
+      - APPLICATION_ASSIGNED
+      - VISA_APPLICATION_ASSIGNED
+      - REMINDER
       type: string
       description: |-
         * `TASK_ASSIGNED` - Task Assigned
@@ -3040,6 +3498,9 @@ components:
           description: Whether the related action has been completed
     PaginatedClientOutputList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -3058,8 +3519,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClientOutput'
+    PaginatedNoteOutputList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/NoteOutput'
     PaginatedNotificationOutputList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -3080,6 +3567,9 @@ components:
             $ref: '#/components/schemas/NotificationOutput'
     PaginatedTaskOutputList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -3100,6 +3590,9 @@ components:
             $ref: '#/components/schemas/TaskOutput'
     PaginatedUserOutputList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -3120,6 +3613,9 @@ components:
             $ref: '#/components/schemas/UserOutput'
     PaginatedVisaApplicationOutputList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -3162,7 +3658,7 @@ components:
           type: string
           maxLength: 15
         gender:
-          $ref: '#/components/schemas/Gender571Enum'
+          $ref: '#/components/schemas/Gender06cEnum'
         dob:
           type: string
           format: date
@@ -3194,8 +3690,8 @@ components:
           nullable: true
         stage:
           oneOf:
-            - $ref: '#/components/schemas/Stage664Enum'
-            - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/Stage5daEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         referred_by:
           type: string
           maxLength: 20
@@ -3203,6 +3699,18 @@ components:
           type: string
         active:
           type: boolean
+    PatchedNoteUpdateRequestRequest:
+      type: object
+      description: |-
+        Serializer for updating notes (PUT/PATCH requests).
+
+        Only content can be updated. Client and author are immutable.
+      properties:
+        content:
+          type: string
+          minLength: 1
+          description: Note content (1-10,000 characters)
+          maxLength: 10000
     PatchedNotificationUpdateRequest:
       type: object
       description: |-
@@ -3234,7 +3742,7 @@ components:
           description: Detailed task description
         priority:
           allOf:
-            - $ref: '#/components/schemas/PriorityB48Enum'
+          - $ref: '#/components/schemas/PriorityA2dEnum'
           description: |-
             Task priority level
 
@@ -3244,7 +3752,7 @@ components:
             * `URGENT` - URGENT
         status:
           allOf:
-            - $ref: '#/components/schemas/TaskUpdateStatusEnum'
+          - $ref: '#/components/schemas/TaskUpdateStatusEnum'
           description: |-
             Current task status
 
@@ -3343,7 +3851,7 @@ components:
           type: array
           items: {}
         status:
-          $ref: '#/components/schemas/Status70eEnum'
+          $ref: '#/components/schemas/Status9e8Enum'
         expiry_date:
           type: string
           format: date
@@ -3372,38 +3880,38 @@ components:
           type: string
           format: date
           nullable: true
-    PriorityB48Enum:
+    PriorityA2dEnum:
       enum:
-        - LOW
-        - MEDIUM
-        - HIGH
-        - URGENT
+      - LOW
+      - MEDIUM
+      - HIGH
+      - URGENT
       type: string
       description: |-
         * `LOW` - LOW
         * `MEDIUM` - MEDIUM
         * `HIGH` - HIGH
         * `URGENT` - URGENT
-    Stage664Enum:
+    Stage5daEnum:
       enum:
-        - LEAD
-        - FOLLOW_UP
-        - CLIENT
-        - CLOSE
+      - LEAD
+      - FOLLOW_UP
+      - CLIENT
+      - CLOSE
       type: string
       description: |-
         * `LEAD` - LEAD
         * `FOLLOW_UP` - FOLLOW_UP
         * `CLIENT` - CLIENT
         * `CLOSE` - CLOSE
-    Status70eEnum:
+    Status9e8Enum:
       enum:
-        - TO_BE_APPLIED
-        - VISA_APPLIED
-        - CASE_OPENED
-        - GRANTED
-        - REJECTED
-        - WITHDRAWN
+      - TO_BE_APPLIED
+      - VISA_APPLIED
+      - CASE_OPENED
+      - GRANTED
+      - REJECTED
+      - WITHDRAWN
       type: string
       description: |-
         * `TO_BE_APPLIED` - TO_BE_APPLIED
@@ -3431,7 +3939,7 @@ components:
           description: Detailed task description
         priority:
           allOf:
-            - $ref: '#/components/schemas/PriorityB48Enum'
+          - $ref: '#/components/schemas/PriorityA2dEnum'
           default: MEDIUM
           description: |-
             Task priority level
@@ -3462,10 +3970,10 @@ components:
           nullable: true
           description: Related visa application ID
       required:
-        - assigned_to
-        - detail
-        - due_date
-        - title
+      - assigned_to
+      - detail
+      - due_date
+      - title
     TaskOutput:
       type: object
       description: |-
@@ -3485,7 +3993,7 @@ components:
           description: Detailed task description
         priority:
           allOf:
-            - $ref: '#/components/schemas/TaskOutputPriorityEnum'
+          - $ref: '#/components/schemas/TaskOutputPriorityEnum'
           description: |-
             Task priority level
 
@@ -3498,7 +4006,7 @@ components:
           readOnly: true
         status:
           allOf:
-            - $ref: '#/components/schemas/TaskOutputStatusEnum'
+          - $ref: '#/components/schemas/TaskOutputStatusEnum'
           description: |-
             Current task status
 
@@ -3556,24 +4064,24 @@ components:
           readOnly: true
           description: Timestamp when record was last updated
       required:
-        - assigned_to
-        - assigned_to_full_name
-        - assigned_to_name
-        - completed_at
-        - created_at
-        - detail
-        - due_date
-        - id
-        - priority_display
-        - status_display
-        - title
-        - updated_at
+      - assigned_to
+      - assigned_to_full_name
+      - assigned_to_name
+      - completed_at
+      - created_at
+      - detail
+      - due_date
+      - id
+      - priority_display
+      - status_display
+      - title
+      - updated_at
     TaskOutputPriorityEnum:
       enum:
-        - LOW
-        - MEDIUM
-        - HIGH
-        - URGENT
+      - LOW
+      - MEDIUM
+      - HIGH
+      - URGENT
       type: string
       description: |-
         * `LOW` - Low
@@ -3582,11 +4090,11 @@ components:
         * `URGENT` - Urgent
     TaskOutputStatusEnum:
       enum:
-        - PENDING
-        - IN_PROGRESS
-        - COMPLETED
-        - CANCELLED
-        - OVERDUE
+      - PENDING
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+      - OVERDUE
       type: string
       description: |-
         * `PENDING` - Pending
@@ -3612,7 +4120,7 @@ components:
           description: Detailed task description
         priority:
           allOf:
-            - $ref: '#/components/schemas/PriorityB48Enum'
+          - $ref: '#/components/schemas/PriorityA2dEnum'
           description: |-
             Task priority level
 
@@ -3622,7 +4130,7 @@ components:
             * `URGENT` - URGENT
         status:
           allOf:
-            - $ref: '#/components/schemas/TaskUpdateStatusEnum'
+          - $ref: '#/components/schemas/TaskUpdateStatusEnum'
           description: |-
             Current task status
 
@@ -3643,11 +4151,11 @@ components:
           description: Tags for categorization
     TaskUpdateStatusEnum:
       enum:
-        - PENDING
-        - IN_PROGRESS
-        - COMPLETED
-        - CANCELLED
-        - OVERDUE
+      - PENDING
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+      - OVERDUE
       type: string
       description: |-
         * `PENDING` - PENDING
@@ -3665,8 +4173,8 @@ components:
           type: string
           readOnly: true
       required:
-        - access
-        - refresh
+      - access
+      - refresh
     TokenObtainPairRequest:
       type: object
       properties:
@@ -3679,8 +4187,8 @@ components:
           writeOnly: true
           minLength: 1
       required:
-        - password
-        - username
+      - password
+      - username
     TokenRefresh:
       type: object
       properties:
@@ -3690,8 +4198,8 @@ components:
         refresh:
           type: string
       required:
-        - access
-        - refresh
+      - access
+      - refresh
     TokenRefreshRequest:
       type: object
       properties:
@@ -3699,7 +4207,7 @@ components:
           type: string
           minLength: 1
       required:
-        - refresh
+      - refresh
     UserCreateRequest:
       type: object
       description: |-
@@ -3746,12 +4254,12 @@ components:
           type: boolean
           default: true
       required:
-        - email
-        - first_name
-        - group_name
-        - last_name
-        - password
-        - username
+      - email
+      - first_name
+      - group_name
+      - last_name
+      - password
+      - username
     UserOutput:
       type: object
       description: |-
@@ -3824,15 +4332,15 @@ components:
           readOnly: true
           nullable: true
       required:
-        - branches_data
-        - date_joined
-        - groups_list
-        - id
-        - last_login
-        - primary_group
-        - regions_data
-        - tenant_name
-        - username
+      - branches_data
+      - date_joined
+      - groups_list
+      - id
+      - last_login
+      - primary_group
+      - regions_data
+      - tenant_name
+      - username
     VisaApplicationCreateRequest:
       type: object
       description: |-
@@ -3878,7 +4386,7 @@ components:
           items: {}
         status:
           allOf:
-            - $ref: '#/components/schemas/Status70eEnum'
+          - $ref: '#/components/schemas/Status9e8Enum'
           default: TO_BE_APPLIED
         expiry_date:
           type: string
@@ -3909,10 +4417,10 @@ components:
           format: date
           nullable: true
       required:
-        - client_id
-        - immigration_fee
-        - service_fee
-        - visa_type_id
+      - client_id
+      - immigration_fee
+      - service_fee
+      - visa_type_id
     VisaApplicationOutput:
       type: object
       description: |-
@@ -4035,30 +4543,30 @@ components:
           readOnly: true
           description: Timestamp when record was last updated
       required:
-        - assigned_to_name
-        - client
-        - client_name
-        - created_at
-        - created_by
-        - created_by_name
-        - id
-        - immigration_fee
-        - immigration_fee_currency
-        - service_fee
-        - service_fee_currency
-        - updated_at
-        - updated_by
-        - visa_category_name
-        - visa_type
-        - visa_type_name
+      - assigned_to_name
+      - client
+      - client_name
+      - created_at
+      - created_by
+      - created_by_name
+      - id
+      - immigration_fee
+      - immigration_fee_currency
+      - service_fee
+      - service_fee_currency
+      - updated_at
+      - updated_by
+      - visa_category_name
+      - visa_type
+      - visa_type_name
     VisaApplicationOutputStatusEnum:
       enum:
-        - TO_BE_APPLIED
-        - VISA_APPLIED
-        - CASE_OPENED
-        - GRANTED
-        - REJECTED
-        - WITHDRAWN
+      - TO_BE_APPLIED
+      - VISA_APPLIED
+      - CASE_OPENED
+      - GRANTED
+      - REJECTED
+      - WITHDRAWN
       type: string
       description: |-
         * `TO_BE_APPLIED` - To be Applied

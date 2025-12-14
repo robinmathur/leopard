@@ -16,7 +16,8 @@ from django.db import transaction
 from immigration.constants import ALL_GROUPS, GROUP_DISPLAY_NAMES
 from immigration.models import (
     User, Client, Branch, Region, Tenant,
-    VisaApplication, Task, Notification
+    VisaApplication, Task, Notification,
+    Note, ClientActivity, ProfilePicture
 )
 
 
@@ -60,6 +61,9 @@ class Command(BaseCommand):
             Region: ['view', 'add', 'change', 'delete'],
             Tenant: ['view', 'add', 'change', 'delete'],
             User: ['view', 'add', 'change', 'delete'],
+            Note: ['view', 'add', 'change', 'delete'],
+            ClientActivity: ['view'],  # Read-only - created via signals
+            ProfilePicture: ['view', 'add', 'change', 'delete'],
         }
         
         # Define role-specific permissions
@@ -75,6 +79,9 @@ class Command(BaseCommand):
                 Task: ['view', 'add', 'change'],
                 Notification: ['view'],
                 User: ['view'],  # Can only view users
+                Note: ['view', 'add', 'change'],  # Can add and edit notes
+                ClientActivity: ['view'],  # Can view timeline
+                ProfilePicture: ['view', 'add', 'change'],  # Can upload profile pictures
             },
             'BRANCH_ADMIN': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -83,6 +90,9 @@ class Command(BaseCommand):
                 Notification: ['view', 'add'],
                 Branch: ['view'],
                 User: ['view', 'change'],  # Can view and update, but NOT create users
+                Note: ['view', 'add', 'change', 'delete'],  # Full note access
+                ClientActivity: ['view'],  # Can view timeline
+                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
             },
             'REGION_MANAGER': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -92,6 +102,9 @@ class Command(BaseCommand):
                 Branch: ['view', 'add', 'change'],
                 Region: ['view'],
                 User: ['view', 'change'],  # Can view and update, but NOT create users
+                Note: ['view', 'add', 'change', 'delete'],  # Full note access
+                ClientActivity: ['view'],  # Can view timeline
+                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
             },
             'COUNTRY_MANAGER': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -102,6 +115,9 @@ class Command(BaseCommand):
                 Region: ['view', 'add', 'change', 'delete'],
                 Tenant: ['view'],
                 User: ['view', 'change', 'delete'],  # Deprecated role, no user creation
+                Note: ['view', 'add', 'change', 'delete'],  # Full note access
+                ClientActivity: ['view'],  # Can view timeline
+                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
             },
             'SUPER_ADMIN': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -112,6 +128,9 @@ class Command(BaseCommand):
                 Region: ['view', 'add', 'change', 'delete'],
                 Tenant: ['view', 'add', 'change'],
                 User: ['view', 'add', 'change', 'delete'],  # CAN create users
+                Note: ['view', 'add', 'change', 'delete'],  # Full note access
+                ClientActivity: ['view'],  # Can view timeline
+                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
             },
             'SUPER_SUPER_ADMIN': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -122,6 +141,9 @@ class Command(BaseCommand):
                 Region: ['view', 'add', 'change', 'delete'],
                 Tenant: ['view', 'add', 'change', 'delete'],
                 User: ['view', 'add', 'change', 'delete'],  # CAN create users
+                Note: ['view', 'add', 'change', 'delete'],  # Full note access
+                ClientActivity: ['view'],  # Can view timeline
+                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
             },
         }
         

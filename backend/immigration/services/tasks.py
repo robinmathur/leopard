@@ -7,6 +7,7 @@ Business logic lives here - not in views or serializers.
 
 from typing import Optional, List
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.db.models import Q
 
@@ -27,6 +28,9 @@ def task_create(
     client_id: Optional[int] = None,
     visa_application_id: Optional[int] = None,
     created_by: Optional[User] = None,
+    assigned_by: Optional[User] = None,
+    content_type: Optional[int] = None,
+    object_id: Optional[int] = None,
 ) -> Task:
     """
     Create a new task and send assignment notification.
@@ -38,22 +42,48 @@ def task_create(
         due_date: When the task should be completed
         priority: Task priority
         tags: Optional tags
-        client_id: Related client ID
-        visa_application_id: Related visa application ID
+        client_id: Related client ID (legacy - use content_type/object_id)
+        visa_application_id: Related visa application ID (legacy - use content_type/object_id)
         created_by: User creating the task
+        assigned_by: User who assigned the task
+        content_type: ContentType ID for generic FK
+        object_id: Entity ID for generic FK
 
     Returns:
         Created Task instance
     """
+    # Handle generic FK or legacy client_id
+    content_type_obj = None
+    if content_type:
+        try:
+            content_type_obj = ContentType.objects.get(id=content_type)
+        except ContentType.DoesNotExist:
+            pass
+    elif client_id:
+        # Backward compatibility: migrate client_id to generic FK
+        try:
+            client_content_type = ContentType.objects.get(app_label='immigration', model='client')
+            content_type_obj = client_content_type
+            object_id = client_id
+        except ContentType.DoesNotExist:
+            pass
+    
+    # Use created_by as assigned_by if not provided
+    if not assigned_by and created_by:
+        assigned_by = created_by
+    
     task = Task.objects.create(
         title=title,
         detail=detail,
         assigned_to=assigned_to,
+        assigned_by=assigned_by,
         due_date=due_date,
         priority=priority,
         tags=tags or [],
-        client_id=client_id,
-        visa_application_id=visa_application_id,
+        content_type=content_type_obj,
+        object_id=object_id,
+        client_id=client_id,  # Keep for backward compatibility
+        visa_application_id=visa_application_id,  # Keep for backward compatibility
         created_by=created_by,
     )
     
@@ -286,8 +316,9 @@ def task_assign(
 
     # Update assignment
     task.assigned_to = assigned_to
+    task.assigned_by = assigned_by
     task.updated_by = assigned_by
-    task.save(update_fields=['assigned_to', 'updated_by', 'updated_at'])
+    task.save(update_fields=['assigned_to', 'assigned_by', 'updated_by', 'updated_at'])
 
     # Send assignment notification
     notification_create(

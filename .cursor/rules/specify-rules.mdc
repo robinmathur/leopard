@@ -5,6 +5,7 @@ Auto-generated from all feature plans. Last updated: 2025-12-09
 ## Active Technologies
 - Python 3.8+, Django 4.2.6 (per project baseline) + Django, Django REST Framework (current API stack), ruff for linting (001-align-views-cleanup)
 - Relational DB (assume PostgreSQL as current deployment default) (001-align-views-cleanup)
+- PostgreSQL (via Django ORM) (002-client-detail-enhancement)
 
 - Python 3.8+ (Django 4.2.x) + Django + Django REST Framework (existing stack) (001-align-views-cleanup)
 
@@ -25,6 +26,7 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.8+ (Django 4.2.x): Follow standard conventions
 
 ## Recent Changes
+- 002-client-detail-enhancement: Added PostgreSQL (via Django ORM)
 - 001-align-views-cleanup: Added Python 3.8+, Django 4.2.6 (per project baseline) + Django, Django REST Framework (current API stack), ruff for linting
 
 - 001-align-views-cleanup: Added Python 3.8+ (Django 4.2.x) + Django + Django REST Framework (existing stack)

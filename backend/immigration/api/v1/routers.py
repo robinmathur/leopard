@@ -11,12 +11,14 @@ from immigration.api.v1.views.visa import VisaApplicationViewSet
 from immigration.api.v1.views.users import UserViewSet
 from immigration.api.v1.views.notifications import NotificationViewSet
 from immigration.api.v1.views.tasks import TaskViewSet
+from immigration.api.v1.views.notes import NoteViewSet
 from immigration.api.v1.views.client_profiles import (
     LanguageExamViewSet,
     PassportViewSet,
     ProficiencyViewSet,
     QualificationViewSet,
 )
+from immigration.reminder.reminder import ReminderViewSet
 
 router = DefaultRouter()
 router.register(r"clients", ClientViewSet, basename="client")
@@ -24,6 +26,8 @@ router.register(r"visa-applications", VisaApplicationViewSet, basename="visa-app
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"notifications", NotificationViewSet, basename="notification")
 router.register(r"tasks", TaskViewSet, basename="task")
+router.register(r"notes", NoteViewSet, basename="note")
+router.register(r"reminders", ReminderViewSet, basename="reminder")
 router.register(r"language-exams", LanguageExamViewSet, basename="language-exam")
 router.register(r"language-proficiencies", ProficiencyViewSet, basename="language-proficiency")
 router.register(r"qualifications", QualificationViewSet, basename="qualification")

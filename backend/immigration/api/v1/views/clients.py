@@ -467,3 +467,136 @@ class ClientViewSet(ViewSet):
         # Serialize and return
         serializer = ClientStageCountSerializer(counts)
         return Response(serializer.data)
+    
+    @extend_schema(
+        summary="Get client timeline",
+        description="""
+        Get chronological timeline of activities for a client.
+        Returns paginated list of activities ordered by created_at (newest first).
+        
+        GET /api/v1/clients/{id}/timeline/
+        """,
+        parameters=[
+            OpenApiParameter(
+                name='activity_type',
+                type=str,
+                description='Filter by activity type',
+                required=False,
+            ),
+        ],
+        responses={200: 'ClientActivityOutput'},
+        tags=['clients'],
+    )
+    @action(detail=True, methods=['get'], url_path='timeline')
+    def timeline(self, request, pk=None):
+        """
+        Get timeline activities for a client.
+        
+        GET /api/v1/clients/{id}/timeline/
+        """
+        from immigration.services.timeline import timeline_list
+        from immigration.api.v1.serializers.client_activity import ClientActivityOutput
+        
+        activity_type = request.query_params.get('activity_type')
+        
+        # Get timeline activities
+        activities = timeline_list(
+            client_id=int(pk),
+            activity_type=activity_type
+        )
+        
+        # Paginate results
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(activities, request)
+        
+        if page is not None:
+            serializer = ClientActivityOutput(page, many=True, context={'request': request})
+            return paginator.get_paginated_response(serializer.data)
+        
+        serializer = ClientActivityOutput(activities, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+    @extend_schema(
+        summary="Get client profile picture",
+        description="""
+        Get the profile picture for a client.
+        
+        GET /api/v1/clients/{id}/profile-picture/
+        """,
+        responses={
+            200: 'ProfilePictureOutput',
+            404: {'description': 'Profile picture not found'},
+        },
+        tags=['clients'],
+    )
+    @action(detail=True, methods=['get', 'post', 'delete'], url_path='profile-picture')
+    def profile_picture(self, request, pk=None):
+        """
+        Get, upload, or delete a client's profile picture.
+        
+        GET /api/v1/clients/{id}/profile-picture/ - Get profile picture
+        POST /api/v1/clients/{id}/profile-picture/ - Upload profile picture
+        DELETE /api/v1/clients/{id}/profile-picture/ - Delete profile picture
+        """
+        from immigration.models import ProfilePicture
+        from immigration.api.v1.serializers.profile_picture import ProfilePictureOutput
+        
+        if request.method == 'GET':
+            # Get profile picture
+            try:
+                profile_picture = ProfilePicture.objects.get(client_id=pk)
+                serializer = ProfilePictureOutput(profile_picture, context={'request': request})
+                return Response(serializer.data)
+            except ProfilePicture.DoesNotExist:
+                return Response(
+                    {'detail': 'Profile picture not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        elif request.method == 'POST':
+            # Upload/replace profile picture
+            if not request.user.has_perm('immigration.add_profilepicture'):
+                return Response(
+                    {'detail': 'You do not have permission to upload profile pictures.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            file = request.FILES.get('file')
+            if not file:
+                return Response(
+                    {'detail': 'No file provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Delete existing profile picture if exists
+            ProfilePicture.objects.filter(client_id=pk).delete()
+            
+            # Create new profile picture
+            profile_picture = ProfilePicture.objects.create(
+                client_id=pk,
+                file=file,
+                file_size=file.size,
+                file_type=file.content_type,
+                uploaded_by=request.user
+            )
+            
+            serializer = ProfilePictureOutput(profile_picture, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        elif request.method == 'DELETE':
+            # Delete profile picture
+            if not request.user.has_perm('immigration.delete_profilepicture'):
+                return Response(
+                    {'detail': 'You do not have permission to delete profile pictures.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            try:
+                profile_picture = ProfilePicture.objects.get(client_id=pk)
+                profile_picture.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except ProfilePicture.DoesNotExist:
+                return Response(
+                    {'detail': 'Profile picture not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
