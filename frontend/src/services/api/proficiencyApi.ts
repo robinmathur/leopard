@@ -6,55 +6,56 @@ import httpClient from './httpClient';
 
 export interface Proficiency {
   id: number;
-  overall_score?: number;
-  speaking_score?: number;
-  reading_score?: number;
-  listening_score?: number;
-  writing_score?: number;
+  client_id: number;
+  test_name_id?: number;
+  test_name_display?: string;
+  overall_score?: number | string; // Backend returns Decimal as string
+  speaking_score?: number | string;
+  reading_score?: number | string;
+  listening_score?: number | string;
+  writing_score?: number | string;
   test_date?: string; // ISO date
-  test_name?: {
-    id: number;
-    name: string;
-  };
-  client: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProficiencyCreateRequest {
-  overall_score?: number;
-  speaking_score?: number;
-  reading_score?: number;
-  listening_score?: number;
-  writing_score?: number;
+  client_id: number;
+  test_name_id: number;
+  overall_score?: number | string;
+  speaking_score?: number | string;
+  reading_score?: number | string;
+  listening_score?: number | string;
+  writing_score?: number | string;
   test_date?: string;
-  test_name?: number;
-  client: number;
 }
 
 export interface ProficiencyUpdateRequest {
-  overall_score?: number;
-  speaking_score?: number;
-  reading_score?: number;
-  listening_score?: number;
-  writing_score?: number;
+  client_id: number;
+  test_name_id?: number;
+  overall_score?: number | string;
+  speaking_score?: number | string;
+  reading_score?: number | string;
+  listening_score?: number | string;
+  writing_score?: number | string;
   test_date?: string;
-  test_name?: number;
 }
 
 /**
  * Get proficiencies for a specific client
  */
 export const getProficiencies = async (clientId: number): Promise<Proficiency[]> => {
-  const response = await httpClient.get<Proficiency[]>('/v1/proficiencies/', {
-    params: { client: clientId },
+  const response = await httpClient.get<{ results: Proficiency[] }>('/v1/language-proficiencies/', {
+    params: { client_id: clientId },
   });
-  return response.data;
+  return response.data.results;
 };
 
 /**
  * Get a specific proficiency by ID
  */
 export const getProficiency = async (id: number): Promise<Proficiency> => {
-  const response = await httpClient.get<Proficiency>(`/v1/proficiencies/${id}/`);
+  const response = await httpClient.get<Proficiency>(`/v1/language-proficiencies/${id}/`);
   return response.data;
 };
 
@@ -62,7 +63,7 @@ export const getProficiency = async (id: number): Promise<Proficiency> => {
  * Create a new proficiency
  */
 export const createProficiency = async (data: ProficiencyCreateRequest): Promise<Proficiency> => {
-  const response = await httpClient.post<Proficiency>('/v1/proficiencies/', data);
+  const response = await httpClient.post<Proficiency>('/v1/language-proficiencies/', data);
   return response.data;
 };
 
@@ -73,7 +74,7 @@ export const updateProficiency = async (
   id: number,
   data: ProficiencyUpdateRequest
 ): Promise<Proficiency> => {
-  const response = await httpClient.patch<Proficiency>(`/v1/proficiencies/${id}/`, data);
+  const response = await httpClient.patch<Proficiency>(`/v1/language-proficiencies/${id}/`, data);
   return response.data;
 };
 
@@ -81,7 +82,7 @@ export const updateProficiency = async (
  * Delete a proficiency
  */
 export const deleteProficiency = async (id: number): Promise<void> => {
-  await httpClient.delete(`/v1/proficiencies/${id}/`);
+  await httpClient.delete(`/v1/language-proficiencies/${id}/`);
 };
 
 export default {

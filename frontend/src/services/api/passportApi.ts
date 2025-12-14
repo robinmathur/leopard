@@ -5,7 +5,7 @@
 import httpClient from './httpClient';
 
 export interface Passport {
-  id: number; // Client ID (OneToOne relationship)
+  client_id: number; // Client ID (OneToOne relationship)
   passport_no: string;
   passport_country: string;
   date_of_issue?: string; // ISO date
@@ -13,10 +13,12 @@ export interface Passport {
   place_of_issue?: string;
   country_of_birth: string;
   nationality: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PassportCreateRequest {
-  id: number; // Client ID
+  client_id: number; // Client ID
   passport_no: string;
   passport_country: string;
   date_of_issue?: string;
@@ -27,6 +29,7 @@ export interface PassportCreateRequest {
 }
 
 export interface PassportUpdateRequest {
+  client_id: number;
   passport_no?: string;
   passport_country?: string;
   date_of_issue?: string;
@@ -43,11 +46,15 @@ export const getPassport = async (clientId: number): Promise<Passport | null> =>
   try {
     const response = await httpClient.get<Passport>(`/v1/passports/${clientId}/`);
     return response.data;
-  } catch (error) {
-    // If 404, no passport exists for this client
-    if ((error as { response?: { status?: number } }).response?.status === 404) {
+  } catch (error: any) {
+    // If 404, no passport exists for this client - this is expected behavior
+    // Check both the status property (transformed error) and response.status (axios error)
+    if (error?.status === 404 || error?.response?.status === 404) {
+      console.log(`No passport found for client ${clientId} (404 - this is normal)`);
       return null;
     }
+    // For other errors, throw so they can be handled by the component
+    console.error('Error fetching passport:', error);
     throw error;
   }
 };

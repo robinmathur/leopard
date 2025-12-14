@@ -6,26 +6,35 @@ import httpClient from './httpClient';
 
 export interface Qualification {
   id: number;
+  client_id: number;
   course: string;
   institute?: string;
+  degree?: string;
+  field_of_study?: string;
   enroll_date?: string; // ISO date
   completion_date?: string; // ISO date (null means in progress)
   country: string;
-  client: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface QualificationCreateRequest {
+  client_id: number;
   course: string;
   institute?: string;
+  degree?: string;
+  field_of_study?: string;
   enroll_date?: string;
   completion_date?: string;
   country: string;
-  client: number;
 }
 
 export interface QualificationUpdateRequest {
+  client_id: number;
   course?: string;
   institute?: string;
+  degree?: string;
+  field_of_study?: string;
   enroll_date?: string;
   completion_date?: string;
   country?: string;
@@ -35,10 +44,10 @@ export interface QualificationUpdateRequest {
  * Get qualifications for a specific client
  */
 export const getQualifications = async (clientId: number): Promise<Qualification[]> => {
-  const response = await httpClient.get<Qualification[]>('/v1/qualifications/', {
-    params: { client: clientId },
+  const response = await httpClient.get<{ results: Qualification[] }>('/v1/qualifications/', {
+    params: { client_id: clientId },
   });
-  return response.data;
+  return response.data.results;
 };
 
 /**
