@@ -98,6 +98,7 @@ export interface ClientListParams {
   email?: string;
   first_name?: string;
   last_name?: string;
+  search?: string;
 }
 
 export interface StageCounts {

@@ -1,5 +1,4 @@
 import { useAuthStore } from '@/store/authStore';
-import { Permission } from '@/auth/types';
 
 /**
  * Custom hook for checking user permissions

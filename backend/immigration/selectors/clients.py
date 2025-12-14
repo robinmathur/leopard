@@ -66,6 +66,17 @@ def client_list(*, user, filters: Optional[Dict[str, Any]] = None, include_delet
     # SUPER_SUPER_ADMIN sees everything (no additional filter)
     
     # Apply additional filters
+    
+    # General search across name and email
+    if 'search' in filters and filters['search']:
+        from django.db.models import Q
+        search_term = filters['search']
+        qs = qs.filter(
+            Q(first_name__icontains=search_term) |
+            Q(last_name__icontains=search_term) |
+            Q(email__icontains=search_term)
+        )
+    
     if 'email' in filters and filters['email']:
         qs = qs.filter(email__icontains=filters['email'])
     

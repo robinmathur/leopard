@@ -3,7 +3,7 @@
  * Client-specific notes component using shared Notes
  */
 import { useEffect } from 'react';
-import { Box, Paper } from '@mui/material';
+import { Paper } from '@mui/material';
 import { Notes } from '@/components/shared/Notes';
 import { useNoteStore } from '@/store/noteStore';
 import { usePermission } from '@/auth/hooks/usePermission';

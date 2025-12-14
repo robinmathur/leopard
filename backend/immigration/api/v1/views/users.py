@@ -50,6 +50,12 @@ User = get_user_model()
         """,
         parameters=[
             OpenApiParameter(
+                name='search',
+                type=str,
+                description='Search across first name, last name, email, and username (partial match, case-insensitive)',
+                required=False,
+            ),
+            OpenApiParameter(
                 name='group',
                 type=str,
                 description='Filter by user group',
@@ -173,7 +179,8 @@ class UserViewSet(ViewSet):
         GET /api/v1/users/
         """
         # Get filtered users using selector
-        users = user_list(user=request.user)
+        search = request.query_params.get('search')
+        users = user_list(user=request.user, search=search)
         
         # Apply query param filters
         role = request.query_params.get('role')

@@ -7,6 +7,7 @@ role-based access control.
 
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
@@ -19,6 +20,10 @@ from immigration.api.v1.serializers.visa import (
     VisaApplicationUpdateSerializer
 )
 from immigration.selectors.applications import visa_application_list, visa_application_get
+from immigration.selectors.visa_statistics import (
+    visa_application_status_counts,
+    visa_application_dashboard_statistics
+)
 from immigration.services.applications import (
     visa_application_create,
     visa_application_update,
@@ -44,6 +49,42 @@ from immigration.models import VisaApplication
                 name='client_id',
                 type=int,
                 description='Filter by client ID',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='client_name',
+                type=str,
+                description='Search by client name (first or last name)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='visa_type_id',
+                type=int,
+                description='Filter by visa type ID',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='assigned_to_id',
+                type=int,
+                description='Filter by assigned user ID',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='created_by_id',
+                type=int,
+                description='Filter by created by user ID (applied by)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='date_applied_from',
+                type=str,
+                description='Filter by date applied from (YYYY-MM-DD)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='date_applied_to',
+                type=str,
+                description='Filter by date applied to (YYYY-MM-DD)',
                 required=False,
             ),
         ],
@@ -79,10 +120,16 @@ class VisaApplicationViewSet(ViewSet):
     pagination_class = StandardResultsSetPagination
     
     def list(self, request):
-        """List all visa applications with role-based filtering."""
+        """List all visa applications with role-based filtering and search."""
         filters = {
             'status': request.query_params.get('status'),
             'client_id': request.query_params.get('client_id'),
+            'client_name': request.query_params.get('client_name'),
+            'visa_type_id': request.query_params.get('visa_type_id'),
+            'assigned_to_id': request.query_params.get('assigned_to_id'),
+            'created_by_id': request.query_params.get('created_by_id'),
+            'date_applied_from': request.query_params.get('date_applied_from'),
+            'date_applied_to': request.query_params.get('date_applied_to'),
         }
         filters = {k: v for k, v in filters.items() if v is not None}
 
@@ -150,3 +197,27 @@ class VisaApplicationViewSet(ViewSet):
                 {'detail': str(e)},
                 status=status.HTTP_403_FORBIDDEN if isinstance(e, PermissionError) else status.HTTP_400_BAD_REQUEST
             )
+    
+    @extend_schema(
+        summary="Get visa application status counts",
+        description="Returns count of applications for each status (for tab badges).",
+        responses={200: dict},
+        tags=['visa-applications'],
+    )
+    @action(detail=False, methods=['get'], url_path='status-counts')
+    def status_counts(self, request):
+        """Get count of applications by status."""
+        counts = visa_application_status_counts(user=request.user)
+        return Response(counts)
+    
+    @extend_schema(
+        summary="Get visa application dashboard statistics",
+        description="Returns comprehensive statistics for visa dashboard with graphs and charts.",
+        responses={200: dict},
+        tags=['visa-applications'],
+    )
+    @action(detail=False, methods=['get'], url_path='dashboard-statistics')
+    def dashboard_statistics(self, request):
+        """Get dashboard statistics for visa applications."""
+        statistics = visa_application_dashboard_statistics(user=request.user)
+        return Response(statistics)

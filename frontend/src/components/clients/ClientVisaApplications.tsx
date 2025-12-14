@@ -27,8 +27,8 @@ export interface ClientVisaApplicationsProps {
  */
 const STATUS_COLORS: Record<VisaApplicationStatus, 'default' | 'info' | 'warning' | 'success' | 'error'> = {
   TO_BE_APPLIED: 'default',
-  APPLIED: 'info',
-  OPEN: 'warning',
+  VISA_APPLIED: 'info',
+  CASE_OPENED: 'warning',
   GRANTED: 'success',
   REJECTED: 'error',
   WITHDRAWN: 'default',
@@ -39,8 +39,8 @@ const STATUS_COLORS: Record<VisaApplicationStatus, 'default' | 'info' | 'warning
  */
 const STATUS_LABELS: Record<VisaApplicationStatus, string> = {
   TO_BE_APPLIED: 'To Be Applied',
-  APPLIED: 'Applied',
-  OPEN: 'Open',
+  VISA_APPLIED: 'Visa Applied',
+  CASE_OPENED: 'Case Opened',
   GRANTED: 'Granted',
   REJECTED: 'Rejected',
   WITHDRAWN: 'Withdrawn',

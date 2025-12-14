@@ -14,7 +14,6 @@ import {
   DialogActions,
   Alert,
   IconButton,
-  Tooltip,
   CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -104,13 +103,13 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
   };
 
   // Handle task creation
-  const handleCreate = async (data: TaskCreateRequest) => {
+  const handleCreate = async (data: TaskCreateRequest | TaskUpdateRequest) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const newTask = await createTask({
-        ...data,
+      await createTask({
+        ...(data as TaskCreateRequest),
         content_type: CLIENT_CONTENT_TYPE_ID,
         object_id: clientId,
       });
@@ -125,14 +124,14 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
   };
 
   // Handle task update
-  const handleUpdate = async (data: TaskUpdateRequest) => {
+  const handleUpdate = async (data: TaskCreateRequest | TaskUpdateRequest) => {
     if (!selectedTask) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await updateTask(selectedTask.id, data);
+      await updateTask(selectedTask.id, data as TaskUpdateRequest);
       // Refresh tasks list to get the latest data
       await fetchTasks();
       setEditDialogOpen(false);

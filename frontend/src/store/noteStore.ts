@@ -41,7 +41,7 @@ const initialState = {
   hasMore: false,
 };
 
-export const useNoteStore = create<NoteStore>((set, get) => ({
+export const useNoteStore = create<NoteStore>((set) => ({
   ...initialState,
 
   /**

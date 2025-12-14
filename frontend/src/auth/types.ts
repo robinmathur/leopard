@@ -58,7 +58,13 @@ export type Permission =
   // Dashboard permissions
   | 'view_dashboard'
   | 'view_analytics'
-  | 'export_data';
+  | 'export_data'
+  
+  // Note permissions
+  | 'add_note'
+  | 'change_note'
+  | 'delete_note'
+  | 'view_note';
 
 /**
  * JWT Token pair for authentication

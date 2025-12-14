@@ -5,7 +5,7 @@ This module implements the selector pattern for visa application queries,
 providing role-based data scoping and filtering.
 """
 
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Q
 from typing import Optional, Dict, Any
 
 from immigration.models import VisaApplication
@@ -81,14 +81,33 @@ def visa_application_list(
     if 'client_id' in filters and filters['client_id']:
         qs = qs.filter(client_id=filters['client_id'])
     
+    # Client name search (case-insensitive)
+    if 'client_name' in filters and filters['client_name']:
+        search_term = filters['client_name']
+        qs = qs.filter(
+            Q(client__first_name__icontains=search_term) |
+            Q(client__last_name__icontains=search_term)
+        )
+    
     if 'visa_type_id' in filters and filters['visa_type_id']:
         qs = qs.filter(visa_type_id=filters['visa_type_id'])
     
     if 'assigned_to_id' in filters and filters['assigned_to_id']:
         qs = qs.filter(assigned_to_id=filters['assigned_to_id'])
     
+    # Created by filter (applied by)
+    if 'created_by_id' in filters and filters['created_by_id']:
+        qs = qs.filter(created_by_id=filters['created_by_id'])
+    
     if 'dependent' in filters and filters['dependent'] is not None:
         qs = qs.filter(dependent=filters['dependent'])
+    
+    # Date range filters
+    if 'date_applied_from' in filters and filters['date_applied_from']:
+        qs = qs.filter(date_applied__gte=filters['date_applied_from'])
+    
+    if 'date_applied_to' in filters and filters['date_applied_to']:
+        qs = qs.filter(date_applied__lte=filters['date_applied_to'])
     
     return qs
 

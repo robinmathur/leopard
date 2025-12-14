@@ -4,6 +4,9 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SchoolIcon from '@mui/icons-material/School';
 import BadgeIcon from '@mui/icons-material/Badge';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import CategoryIcon from '@mui/icons-material/Category';
 import { Permission } from '@/auth/types';
 
 /**
@@ -44,11 +47,41 @@ export const navigationConfig: NavItem[] = [
     icon: TrendingUpIcon,
   },
   {
-    id: 'visa-applications',
-    label: 'Visa Applications',
-    path: '/visa-applications',
+    id: 'visa-manager',
+    label: 'Visa Manager',
+    path: '/visa-manager',
     icon: DescriptionIcon,
     permission: 'view_applications',
+    children: [
+      {
+        id: 'visa-dashboard',
+        label: 'Visa Dashboard',
+        path: '/visa-manager/dashboard',
+        icon: AssignmentIcon,
+        permission: 'view_applications',
+      },
+      {
+        id: 'visa-tracker',
+        label: 'Visa Tracker',
+        path: '/visa-manager/tracker',
+        icon: TimelineIcon,
+        permission: 'view_applications',
+      },
+      {
+        id: 'visa-applications',
+        label: 'Visa Applications',
+        path: '/visa-manager/applications',
+        icon: DescriptionIcon,
+        permission: 'view_applications',
+      },
+      {
+        id: 'visa-types',
+        label: 'Visa Type',
+        path: '/visa-manager/types',
+        icon: CategoryIcon,
+        permission: 'view_applications',
+      },
+    ],
   },
   {
     id: 'institute',

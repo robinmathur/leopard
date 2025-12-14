@@ -163,10 +163,6 @@ export const TaskForm = ({
     onSubmit(formData);
   };
 
-  // Handle tag removal
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
-  };
 
   return (
     <form onSubmit={handleSubmit}>

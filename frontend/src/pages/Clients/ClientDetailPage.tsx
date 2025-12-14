@@ -66,7 +66,14 @@ export const ClientDetailPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = (location.state as { from?: string })?.from || '/clients';
-  const backLabel = fromPath === '/leads' ? 'Back to Leads' : 'Back to Clients';
+  
+  // Determine back button label based on where user came from
+  let backLabel = 'Back to Clients';
+  if (fromPath === '/leads') {
+    backLabel = 'Back to Leads';
+  } else if (fromPath === '/visa-manager/applications') {
+    backLabel = 'Back to Visa Applications';
+  }
   const { selectedClient, loading, error, fetchClientById, clearError } = useClientStore();
   const { setCurrentTab, markSectionLoaded, loadedSections, resetStore } = useClientDetailStore();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');

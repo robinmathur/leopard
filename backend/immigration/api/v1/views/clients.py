@@ -49,6 +49,12 @@ from django.db.models import Count
         """,
         parameters=[
             OpenApiParameter(
+                name='search',
+                type=str,
+                description='Search across first name, last name, and email (partial match, case-insensitive)',
+                required=False,
+            ),
+            OpenApiParameter(
                 name='email',
                 type=str,
                 description='Filter by email (partial match, case-insensitive)',
@@ -200,6 +206,7 @@ class ClientViewSet(ViewSet):
         """
         # Extract filters from query params
         filters = {
+            'search': request.query_params.get('search'),
             'email': request.query_params.get('email'),
             'stage': request.query_params.get('stage'),
             'first_name': request.query_params.get('first_name'),
