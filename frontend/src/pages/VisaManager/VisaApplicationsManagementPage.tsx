@@ -3,7 +3,7 @@
  * Comprehensive page for managing visa applications with CRUD operations
  * Features simple and advanced search functionality
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -111,6 +111,19 @@ export const VisaApplicationsManagementPage = () => {
     date_applied_from: '',
     date_applied_to: '',
   });
+  // Draft filters for advanced search (not applied until user clicks Apply)
+  const [draftAdvancedFilters, setDraftAdvancedFilters] = useState<Omit<SearchFilters, 'client_name'>>({
+    status: '',
+    visa_type_id: '',
+    assigned_to_id: '',
+    created_by_id: '',
+    date_applied_from: '',
+    date_applied_to: '',
+  });
+  // Track if advanced filters are actually applied (not just opened)
+  const [advancedFiltersApplied, setAdvancedFiltersApplied] = useState(false);
+  // Ref to prevent reload when just closing advanced search without changes
+  const isRestoringFilters = useRef(false);
 
   // Snackbar
   const [snackbar, setSnackbar] = useState<{
@@ -165,9 +178,16 @@ export const VisaApplicationsManagementPage = () => {
     }
   }, [page, pageSize, searchFilters]);
 
-  // Debounced search effect
+  // Debounced search effect - only trigger on client_name changes or when advanced filters are applied
   useEffect(() => {
+    // Skip if we're just restoring filters (no actual change)
+    if (isRestoringFilters.current) {
+      isRestoringFilters.current = false;
+      return;
+    }
+
     // Only search if client_name is empty or has 2+ characters
+    // Advanced filters are handled separately via handleApplyAdvancedSearch
     if (searchFilters.client_name === '' || searchFilters.client_name.length >= 2) {
       const debounceTimer = setTimeout(() => {
         fetchApplications();
@@ -175,30 +195,48 @@ export const VisaApplicationsManagementPage = () => {
 
       return () => clearTimeout(debounceTimer);
     }
-  }, [searchFilters, page, pageSize, fetchApplications]);
+  }, [searchFilters.client_name, page, pageSize, fetchApplications]);
+
+  // Reset advanced filters applied flag when filters are cleared manually
+  useEffect(() => {
+    const hasAdvancedFilters = 
+      searchFilters.status !== '' ||
+      searchFilters.visa_type_id !== '' ||
+      searchFilters.assigned_to_id !== '' ||
+      searchFilters.created_by_id !== '' ||
+      searchFilters.date_applied_from !== '' ||
+      searchFilters.date_applied_to !== '';
+    
+    if (!hasAdvancedFilters) {
+      setAdvancedFiltersApplied(false);
+    }
+  }, [searchFilters]);
 
   // Search handlers
   const handleSimpleSearchChange = (value: string) => {
     setSearchFilters((prev) => ({ ...prev, client_name: value }));
   };
 
-  const handleSimpleSearchSubmit = () => {
-    setPage(0);
-    fetchApplications();
-  };
 
-  const handleAdvancedFilterChange = (field: keyof SearchFilters, value: any) => {
+  const handleAdvancedFilterChange = (field: keyof Omit<SearchFilters, 'client_name'>, value: any) => {
     // Convert string to number for ID fields
     let processedValue = value;
     if (field === 'visa_type_id' || field === 'assigned_to_id' || field === 'created_by_id') {
       processedValue = value === '' ? '' : Number(value);
     }
-    setSearchFilters((prev) => ({ ...prev, [field]: processedValue }));
+    // Update draft filters only (not active filters) - no automatic search
+    setDraftAdvancedFilters((prev) => ({ ...prev, [field]: processedValue }));
   };
 
   const handleApplyAdvancedSearch = () => {
+    // Apply draft filters to active filters
+    setSearchFilters((prev) => ({
+      ...prev,
+      ...draftAdvancedFilters,
+    }));
     setPage(0);
-    fetchApplications();
+    setAdvancedFiltersApplied(true);
+    // fetchApplications will be triggered by useEffect when searchFilters change
   };
 
   const handleClearSearch = () => {
@@ -211,28 +249,73 @@ export const VisaApplicationsManagementPage = () => {
       date_applied_from: '',
       date_applied_to: '',
     });
+    setDraftAdvancedFilters({
+      status: '',
+      visa_type_id: '',
+      assigned_to_id: '',
+      created_by_id: '',
+      date_applied_from: '',
+      date_applied_to: '',
+    });
     setAssignedToUser(null);
     setCreatedByUser(null);
+    setAdvancedFiltersApplied(false);
     setPage(0);
   };
 
   const toggleAdvancedSearch = () => {
     const newShowState = !showAdvancedSearch;
-    setShowAdvancedSearch(newShowState);
     
-    // Clear advanced filters when minimizing
-    if (!newShowState) {
-      setSearchFilters((prev) => ({
-        ...prev,
-        status: '',
-        visa_type_id: '',
-        assigned_to_id: '',
-        created_by_id: '',
-        date_applied_from: '',
-        date_applied_to: '',
-      }));
-      setAssignedToUser(null);
-      setCreatedByUser(null);
+    if (newShowState) {
+      // Opening advanced search - initialize draft filters with current active filters
+      setDraftAdvancedFilters({
+        status: searchFilters.status,
+        visa_type_id: searchFilters.visa_type_id,
+        assigned_to_id: searchFilters.assigned_to_id,
+        created_by_id: searchFilters.created_by_id,
+        date_applied_from: searchFilters.date_applied_from,
+        date_applied_to: searchFilters.date_applied_to,
+      });
+      // Restore user selections if they exist (would need to fetch users, but for now clear)
+      if (searchFilters.assigned_to_id) {
+        setAssignedToUser(null);
+      }
+      if (searchFilters.created_by_id) {
+        setCreatedByUser(null);
+      }
+      setShowAdvancedSearch(true);
+    } else {
+      // Closing advanced search
+      if (advancedFiltersApplied) {
+        // User had applied advanced filters, so clear them and reload
+        setSearchFilters((prev) => ({
+          ...prev,
+          status: '',
+          visa_type_id: '',
+          assigned_to_id: '',
+          created_by_id: '',
+          date_applied_from: '',
+          date_applied_to: '',
+        }));
+        setDraftAdvancedFilters({
+          status: '',
+          visa_type_id: '',
+          assigned_to_id: '',
+          created_by_id: '',
+          date_applied_from: '',
+          date_applied_to: '',
+        });
+        setAssignedToUser(null);
+        setCreatedByUser(null);
+        setAdvancedFiltersApplied(false);
+        setPage(0);
+        // fetchApplications will be triggered by useEffect when searchFilters change
+      } else {
+        // User just opened and closed without applying - no changes needed
+        // Draft filters are discarded, active filters remain unchanged
+        setShowAdvancedSearch(false);
+        // No reload needed - filters haven't changed
+      }
     }
   };
 
@@ -411,11 +494,6 @@ export const VisaApplicationsManagementPage = () => {
             placeholder="Search by client name (min 2 characters)..."
             value={searchFilters.client_name}
             onChange={(e) => handleSimpleSearchChange(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSimpleSearchSubmit();
-              }
-            }}
             size="small"
             fullWidth
             helperText={
@@ -431,13 +509,6 @@ export const VisaApplicationsManagementPage = () => {
               ),
             }}
           />
-          <Button
-            variant="contained"
-            onClick={handleSimpleSearchSubmit}
-            sx={{ minWidth: 100 }}
-          >
-            Search
-          </Button>
           <Button
             variant="outlined"
             startIcon={<FilterList />}
@@ -468,7 +539,7 @@ export const VisaApplicationsManagementPage = () => {
                 <TextField
                   select
                   label="Status"
-                  value={searchFilters.status}
+                  value={draftAdvancedFilters.status}
                   onChange={(e) => handleAdvancedFilterChange('status', e.target.value)}
                   size="small"
                   fullWidth
@@ -486,7 +557,7 @@ export const VisaApplicationsManagementPage = () => {
                 <TextField
                   select
                   label="Visa Type"
-                  value={searchFilters.visa_type_id === '' ? '' : searchFilters.visa_type_id}
+                  value={draftAdvancedFilters.visa_type_id === '' ? '' : draftAdvancedFilters.visa_type_id}
                   onChange={(e) => handleAdvancedFilterChange('visa_type_id', e.target.value)}
                   size="small"
                   fullWidth
@@ -530,7 +601,7 @@ export const VisaApplicationsManagementPage = () => {
                 <TextField
                   type="date"
                   label="Date Applied From"
-                  value={searchFilters.date_applied_from}
+                  value={draftAdvancedFilters.date_applied_from}
                   onChange={(e) => handleAdvancedFilterChange('date_applied_from', e.target.value)}
                   size="small"
                   fullWidth
@@ -542,7 +613,7 @@ export const VisaApplicationsManagementPage = () => {
                 <TextField
                   type="date"
                   label="Date Applied To"
-                  value={searchFilters.date_applied_to}
+                  value={draftAdvancedFilters.date_applied_to}
                   onChange={(e) => handleAdvancedFilterChange('date_applied_to', e.target.value)}
                   size="small"
                   fullWidth

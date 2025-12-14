@@ -73,6 +73,8 @@ export const ClientDetailPage = () => {
     backLabel = 'Back to Leads';
   } else if (fromPath === '/visa-manager/applications') {
     backLabel = 'Back to Visa Applications';
+  } else if (fromPath === '/visa-manager/tracker') {
+    backLabel = 'Back to Visa Tracker';
   }
   const { selectedClient, loading, error, fetchClientById, clearError } = useClientStore();
   const { setCurrentTab, markSectionLoaded, loadedSections, resetStore } = useClientDetailStore();

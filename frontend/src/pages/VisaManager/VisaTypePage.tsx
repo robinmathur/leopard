@@ -27,8 +27,13 @@ import {
   Snackbar,
   CircularProgress,
   Chip,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
 } from '@mui/material';
-import { Add, Edit, Delete, Close } from '@mui/icons-material';
+import { Add, Edit, Delete, Close, Visibility, Description } from '@mui/icons-material';
 import {
   getVisaTypes,
   getVisaCategories,
@@ -231,6 +236,121 @@ const VisaTypeForm = ({
 };
 
 /**
+ * View Documents Dialog
+ */
+interface ViewDocumentsDialogProps {
+  open: boolean;
+  visaType: VisaType | null;
+  onClose: () => void;
+}
+
+const ViewDocumentsDialog = ({ open, visaType, onClose }: ViewDocumentsDialogProps) => {
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Description color="primary" />
+          <Typography variant="h6">Document Checklist</Typography>
+        </Box>
+        <IconButton onClick={onClose} size="small">
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        {visaType ? (
+          <Box>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Visa Type
+              </Typography>
+              <Typography variant="body1" fontWeight={600}>
+                {visaType.name}
+              </Typography>
+              {visaType.code && (
+                <Typography variant="caption" color="text.secondary">
+                  Code: {visaType.code}
+                </Typography>
+              )}
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            {visaType.checklist && visaType.checklist.length > 0 ? (
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Required Documents ({visaType.checklist.length})
+                </Typography>
+                <List dense sx={{ mt: 1 }}>
+                  {visaType.checklist.map((document, index) => (
+                    <ListItem
+                      key={index}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        mb: 1,
+                        bgcolor: 'background.paper',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {index + 1}
+                        </Typography>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={document}
+                        primaryTypographyProps={{
+                          variant: 'body2',
+                          fontWeight: 500,
+                        }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  textAlign: 'center',
+                  py: 4,
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                }}
+              >
+                <Description sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  No documents added to this visa type yet
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        ) : (
+          <CircularProgress />
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+/**
  * Delete Confirmation Dialog
  */
 interface DeleteConfirmDialogProps {
@@ -288,6 +408,7 @@ export const VisaTypePage = () => {
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | null>(null);
   const [selectedVisaType, setSelectedVisaType] = useState<VisaType | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [viewDocumentsDialogOpen, setViewDocumentsDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
   // Snackbar
@@ -349,6 +470,16 @@ export const VisaTypePage = () => {
   const handleDeleteVisaType = (visaType: VisaType) => {
     setSelectedVisaType(visaType);
     setDeleteDialogOpen(true);
+  };
+
+  const handleViewDocuments = (visaType: VisaType) => {
+    setSelectedVisaType(visaType);
+    setViewDocumentsDialogOpen(true);
+  };
+
+  const handleCloseViewDocuments = () => {
+    setViewDocumentsDialogOpen(false);
+    setSelectedVisaType(null);
   };
 
   const handleSaveVisaType = async (data: VisaTypeCreateRequest | VisaTypeUpdateRequest) => {
@@ -498,6 +629,15 @@ export const VisaTypePage = () => {
                         label={`${visaType.checklist.length} documents`}
                         size="small"
                         color={visaType.checklist.length > 0 ? 'primary' : 'default'}
+                        onClick={() => handleViewDocuments(visaType)}
+                        sx={{
+                          cursor: visaType.checklist.length > 0 ? 'pointer' : 'default',
+                          '&:hover': visaType.checklist.length > 0 ? {
+                            bgcolor: 'primary.dark',
+                            color: 'primary.contrastText',
+                          } : {},
+                        }}
+                        icon={visaType.checklist.length > 0 ? <Visibility fontSize="small" /> : undefined}
                       />
                     </TableCell>
                     <TableCell>
@@ -515,13 +655,23 @@ export const VisaTypePage = () => {
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
+                      <Tooltip title="View Documents">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleViewDocuments(visaType)}
+                          color="primary"
+                          disabled={visaType.checklist.length === 0}
+                        >
+                          <Visibility fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="Edit">
                         <IconButton size="small" onClick={() => handleEditVisaType(visaType)}>
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
-                        <IconButton size="small" onClick={() => handleDeleteVisaType(visaType)}>
+                        <IconButton size="small" onClick={() => handleDeleteVisaType(visaType)} color="error">
                           <Delete fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -579,6 +729,13 @@ export const VisaTypePage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* View Documents Dialog */}
+      <ViewDocumentsDialog
+        open={viewDocumentsDialogOpen}
+        visaType={selectedVisaType}
+        onClose={handleCloseViewDocuments}
+      />
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
