@@ -21,6 +21,17 @@ from immigration.api.v1.views.client_profiles import (
     EmploymentViewSet,
 )
 from immigration.reminder.reminder import ReminderViewSet
+from immigration.api.v1.views.institutes import InstituteViewSet
+from immigration.institute import (
+    InstituteLocationViewSet,
+    InstituteIntakeViewSet,
+    InstituteContactPersonViewSet,
+    InstituteRequirementViewSet,
+    CourseLevelViewSet,
+    BroadFieldViewSet,
+    NarrowFieldViewSet,
+    CourseViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"clients", ClientViewSet, basename="client")
@@ -37,5 +48,14 @@ router.register(r"language-proficiencies", ProficiencyViewSet, basename="languag
 router.register(r"qualifications", QualificationViewSet, basename="qualification")
 router.register(r"passports", PassportViewSet, basename="passport")
 router.register(r"employments", EmploymentViewSet, basename="employment")
+router.register(r"institutes", InstituteViewSet, basename="institute")
+router.register(r"institute-locations", InstituteLocationViewSet, basename="institute-location")
+router.register(r"institute-intakes", InstituteIntakeViewSet, basename="institute-intake")
+router.register(r"institute-contact-persons", InstituteContactPersonViewSet, basename="institute-contact-person")
+router.register(r"institute-requirements", InstituteRequirementViewSet, basename="institute-requirement")
+router.register(r"course-levels", CourseLevelViewSet, basename="course-level")
+router.register(r"broad-fields", BroadFieldViewSet, basename="broad-field")
+router.register(r"narrow-fields", NarrowFieldViewSet, basename="narrow-field")
+router.register(r"courses", CourseViewSet, basename="course")
 
 __all__ = ["router"]

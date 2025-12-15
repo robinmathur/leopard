@@ -16,6 +16,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import { getVisaApplications, VisaApplication, VisaApplicationStatus } from '@/services/api/visaApplicationApi';
+import {Protect} from "@/components/protected/Protect.tsx";
 
 export interface ClientVisaApplicationsProps {
   /** Client ID */
@@ -218,7 +219,7 @@ export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Visa Applications</Typography>
         <Button
-          variant="outlined"
+          variant="contained"
           size="small"
           startIcon={<AddIcon />}
           onClick={() => {
@@ -242,19 +243,11 @@ export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps
           <Typography variant="body1" gutterBottom>
             No visa applications yet
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Create a visa application for this client
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              // TODO: Open visa application add form
-              alert('New Visa Application form - Coming in future enhancement');
-            }}
-          >
-            New Application
-          </Button>
+          <Protect permission={'add_client'}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Create a visa application for this client
+            </Typography>
+          </Protect>
         </Box>
       ) : (
         <>

@@ -41,7 +41,7 @@ export const AgentPage = () => {
   const { hasPermission } = usePermission();
 
   // Show warning if user doesn't have permission
-  if (!hasPermission('view_agents')) {
+  if (!hasPermission('view_agent')) {
     return (
       <Box>
         <Alert severity="warning">
@@ -62,7 +62,7 @@ export const AgentPage = () => {
             Manage team members and permissions
           </Typography>
         </Box>
-        <Protect permission="create_agent">
+        <Protect permission="add_agent">
           <Button variant="contained" startIcon={<AddIcon />} size="small">
             Add Agent
           </Button>
@@ -95,7 +95,7 @@ export const AgentPage = () => {
                   </TableCell>
                   <TableCell align="right">{agent.clients}</TableCell>
                   <TableCell align="right">
-                    <Protect permission="edit_agent">
+                    <Protect permission="change_agent">
                       <Button size="small" variant="text">
                         Edit
                       </Button>

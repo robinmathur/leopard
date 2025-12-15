@@ -25,6 +25,56 @@ class Institute(LifeCycleModel, SoftDeleteModel):
         return self.name
 
 
+# Institute Contact Person
+class InstituteContactPerson(models.Model):
+    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, related_name='contact_persons')
+    name = models.CharField(max_length=100)
+    gender = models.CharField(
+        max_length=10,
+        choices=[
+            ('MALE', 'Male'),
+            ('FEMALE', 'Female'),
+            ('OTHER', 'Other'),
+        ],
+        blank=True
+    )
+    position = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=15, blank=True)
+    email = models.EmailField(blank=True)
+
+    class Meta:
+        verbose_name = "institute contact person"
+        verbose_name_plural = "institute contact persons"
+
+    def __str__(self):
+        return f"{self.name} - {self.institute.name}"
+
+
+# Institute Requirements
+class InstituteRequirement(models.Model):
+    institute = models.ForeignKey(Institute, on_delete=models.CASCADE, related_name='requirements')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    requirement_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('ACADEMIC', 'Academic'),
+            ('LANGUAGE', 'Language'),
+            ('FINANCIAL', 'Financial'),
+            ('DOCUMENT', 'Document'),
+            ('OTHER', 'Other'),
+        ],
+        default='OTHER'
+    )
+
+    class Meta:
+        verbose_name = "institute requirement"
+        verbose_name_plural = "institute requirements"
+
+    def __str__(self):
+        return f"{self.title} - {self.institute.name}"
+
+
 class InstituteSerializer(LifeCycleAwareSerializer, DeleteAwareSerializer, HumanReadableIdAwareSerializer):
     class Meta(DeleteAwareSerializer.Meta, LifeCycleAwareSerializer.Meta):
         model = Institute
@@ -210,4 +260,32 @@ class CourseSerializer(serializers.ModelSerializer):
 class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
+    filterset_fields = ['institute']
+
+
+# Institute Contact Person Serializer and ViewSet
+class InstituteContactPersonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstituteContactPerson
+        fields = "__all__"
+        read_only_fields = ['id']
+
+
+class InstituteContactPersonViewSet(viewsets.ModelViewSet):
+    serializer_class = InstituteContactPersonSerializer
+    queryset = InstituteContactPerson.objects.all()
+    filterset_fields = ['institute']
+
+
+# Institute Requirements Serializer and ViewSet
+class InstituteRequirementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstituteRequirement
+        fields = "__all__"
+        read_only_fields = ['id']
+
+
+class InstituteRequirementViewSet(viewsets.ModelViewSet):
+    serializer_class = InstituteRequirementSerializer
+    queryset = InstituteRequirement.objects.all()
     filterset_fields = ['institute']

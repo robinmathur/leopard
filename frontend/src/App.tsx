@@ -9,6 +9,7 @@ import { ClientsPage } from './pages/Clients/ClientsPage';
 import { ClientDetailPage } from './pages/Clients/ClientDetailPage';
 import { LeadsPage } from './pages/Leads/LeadsPage';
 import { InstitutePage } from './pages/Institute/InstitutePage';
+import { InstituteDetailPage } from './pages/Institute/InstituteDetailPage';
 import { AgentPage } from './pages/Agent/AgentPage';
 import { VisaDashboard } from './pages/VisaManager/VisaDashboard';
 import { VisaTracker } from './pages/VisaManager/VisaTracker';
@@ -65,6 +66,7 @@ function App() {
             <Route path="visa-applications" element={<Navigate to="/visa-manager/dashboard" replace />} />
             
             <Route path="institute" element={<InstitutePage />} />
+            <Route path="institute/:id" element={<InstituteDetailPage />} />
             <Route path="agent" element={<AgentPage />} />
           </Route>
 

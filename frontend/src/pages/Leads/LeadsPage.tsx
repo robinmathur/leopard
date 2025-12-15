@@ -320,7 +320,7 @@ export const LeadsPage = () => {
             Track and manage clients through different stages
           </Typography>
         </Box>
-        <Protect permission="create_client">
+        <Protect permission="add_client">
           <Button
             variant="contained"
             startIcon={<AddIcon />}

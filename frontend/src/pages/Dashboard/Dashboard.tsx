@@ -63,7 +63,7 @@ export const Dashboard = () => {
       <Grid container spacing={2}>
         {/* Statistics Cards */}
         <Grid item xs={12} sm={6} md={3}>
-          <Protect permission="view_clients">
+          <Protect permission="view_client">
             <StatCard
               title="Total Clients"
               value="1,245"
@@ -74,7 +74,7 @@ export const Dashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Protect permission="view_leads">
+          <Protect permission="view_client">
             <StatCard
               title="Active Leads"
               value="387"
@@ -85,7 +85,7 @@ export const Dashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Protect permission="view_applications">
+          <Protect permission="view_visaapplication">
             <StatCard
               title="Applications"
               value="562"
@@ -96,14 +96,14 @@ export const Dashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Protect permission="view_analytics">
+          {/*<Protect permission="view_analytic">*/}
             <StatCard
               title="Conversion Rate"
               value="68%"
               icon={<TrendingUpIcon />}
               color="#9c27b0"
             />
-          </Protect>
+          {/*</Protect>*/}
         </Grid>
 
         {/* Recent Activity */}

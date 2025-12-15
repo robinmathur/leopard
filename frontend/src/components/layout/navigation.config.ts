@@ -38,48 +38,49 @@ export const navigationConfig: NavItem[] = [
     label: 'Clients',
     path: '/clients',
     icon: PeopleIcon,
-    permission: 'view_clients',
+    permission: 'view_client',
   },
   {
     id: 'leads',
     label: 'Leads',
     path: '/leads',
     icon: TrendingUpIcon,
+    permission: 'view_client'
   },
   {
     id: 'visa-manager',
     label: 'Visa Manager',
     path: '/visa-manager',
     icon: DescriptionIcon,
-    permission: 'view_applications',
+    permission: 'view_visaapplication',
     children: [
       {
         id: 'visa-dashboard',
         label: 'Visa Dashboard',
         path: '/visa-manager/dashboard',
         icon: AssignmentIcon,
-        permission: 'view_applications',
+        permission: 'view_visaapplication',
       },
       {
         id: 'visa-tracker',
         label: 'Visa Tracker',
         path: '/visa-manager/tracker',
         icon: TimelineIcon,
-        permission: 'view_applications',
+        permission: 'view_visaapplication',
       },
       {
         id: 'visa-applications',
         label: 'Visa Applications',
         path: '/visa-manager/applications',
         icon: DescriptionIcon,
-        permission: 'view_applications',
+        permission: 'view_visaapplication',
       },
       {
         id: 'visa-types',
         label: 'Visa Type',
         path: '/visa-manager/types',
         icon: CategoryIcon,
-        permission: 'view_applications',
+        permission: 'view_visaapplication',
       },
     ],
   },
@@ -88,14 +89,14 @@ export const navigationConfig: NavItem[] = [
     label: 'Institute',
     path: '/institute',
     icon: SchoolIcon,
-    permission: 'view_institutes',
+    permission: 'view_institute'
   },
   {
     id: 'agent',
     label: 'Agent',
     path: '/agent',
     icon: BadgeIcon,
-    permission: 'view_agents',
+    permission: 'view_agent',
   },
 ];
 
