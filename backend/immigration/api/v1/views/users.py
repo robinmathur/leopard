@@ -416,3 +416,55 @@ class UserViewSet(ViewSet):
         user_data['permissions'] = permissions_data
         
         return Response(user_data)
+    
+    @extend_schema(
+        summary="Assign permissions to user",
+        description="Assign permissions directly to a user. Replaces existing direct permissions.",
+        request={
+            'type': 'object',
+            'properties': {
+                'permission_ids': {
+                    'type': 'array',
+                    'items': {'type': 'integer'},
+                }
+            },
+            'required': ['permission_ids'],
+        },
+        responses={
+            200: UserOutputSerializer,
+            400: {'description': 'Bad Request - Validation errors'},
+            404: {'description': 'Not Found'},
+        },
+        tags=['users'],
+    )
+    @action(detail=True, methods=['post'], url_path='assign-permissions')
+    def assign_permissions(self, request, pk=None):
+        """
+        Assign permissions directly to a user.
+        POST /api/v1/users/{id}/assign-permissions/
+        """
+        from django.contrib.auth.models import Permission
+        from immigration.api.v1.serializers.groups import UserPermissionAssignmentSerializer
+        
+        try:
+            target_user = user_get(user_id=int(pk), requesting_user=request.user)
+            if target_user is None:
+                return Response(
+                    {'detail': 'User not found or access denied'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except ValueError:
+            return Response(
+                {'detail': 'User not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = UserPermissionAssignmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        permission_ids = serializer.validated_data['permission_ids']
+        permissions = Permission.objects.filter(id__in=permission_ids)
+        target_user.user_permissions.set(permissions)
+        
+        output_serializer = UserOutputSerializer(target_user)
+        return Response(output_serializer.data)

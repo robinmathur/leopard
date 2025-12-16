@@ -15,6 +15,9 @@ import { VisaDashboard } from './pages/VisaManager/VisaDashboard';
 import { VisaTracker } from './pages/VisaManager/VisaTracker';
 import { VisaTypePage } from './pages/VisaManager/VisaTypePage';
 import { VisaApplicationsManagementPage } from './pages/VisaManager/VisaApplicationsManagementPage';
+import { UsersPage } from './pages/Users/UsersPage';
+import { UserDetailPage } from './pages/Users/UserDetailPage';
+import { GroupsPage } from './pages/Groups/GroupsPage';
 
 /**
  * Protected Route Component
@@ -68,6 +71,11 @@ function App() {
             <Route path="institute" element={<InstitutePage />} />
             <Route path="institute/:id" element={<InstituteDetailPage />} />
             <Route path="agent" element={<AgentPage />} />
+            
+            {/* User Management Routes */}
+            <Route path="user-management/users" element={<UsersPage />} />
+            <Route path="user-management/users/:id" element={<UserDetailPage />} />
+            <Route path="user-management/groups" element={<GroupsPage />} />
           </Route>
 
           {/* Catch-all redirect */}

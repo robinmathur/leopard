@@ -66,7 +66,6 @@ function isValidPermission(value: string): value is Permission {
   const validPermissions: Permission[] = [
     'view_client', 'add_client', 'change_client', 'delete_client',
     'view_contact_info', 'view_client_documents',
-    'view_lead', 'add_lead', 'change_lead', 'delete_lead', 'assign_lead',
     'view_visaapplication', 'add_visaapplication', 'change_visaapplication',
     'delete_visaapplication', 'submit_visaapplication',
     'view_agent', 'add_agent', 'change_agent', 'delete_agent', 'manage_permissions',
@@ -82,6 +81,9 @@ function isValidPermission(value: string): value is Permission {
     'add_course', 'change_course', 'delete_course', 'view_course',
     'add_broadfield', 'change_broadfield', 'delete_broadfield', 'view_broadfield',
     'add_instituteintake', 'change_instituteintake', 'delete_instituteintake', 'view_instituteintake',
+    'view_user', 'add_user', 'change_user', 'delete_user',
+    'view_group', 'add_group', 'change_group', 'delete_group',
+    'view_permission', 'add_permission', 'change_permission', 'delete_permission',
   ];
   return validPermissions.includes(value as Permission);
 }

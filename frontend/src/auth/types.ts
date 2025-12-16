@@ -105,7 +105,25 @@ export type Permission =
   | 'add_instituteintake'
   | 'change_instituteintake'
   | 'delete_instituteintake'
-  | 'view_instituteintake';
+  | 'view_instituteintake'
+  
+  // User management permissions
+  | 'view_user'
+  | 'add_user'
+  | 'change_user'
+  | 'delete_user'
+  
+  // Group management permissions
+  | 'view_group'
+  | 'add_group'
+  | 'change_group'
+  | 'delete_group'
+  
+  // Permission management permissions
+  | 'view_permission'
+  | 'add_permission'
+  | 'change_permission'
+  | 'delete_permission';
 
 /**
  * JWT Token pair for authentication

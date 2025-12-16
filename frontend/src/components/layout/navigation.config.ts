@@ -7,6 +7,8 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import CategoryIcon from '@mui/icons-material/Category';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import GroupIcon from '@mui/icons-material/Group';
 import { Permission } from '@/auth/types';
 
 /**
@@ -97,6 +99,29 @@ export const navigationConfig: NavItem[] = [
     path: '/agent',
     icon: BadgeIcon,
     permission: 'view_agent',
+  },
+  {
+    id: 'user-management',
+    label: 'User Management',
+    path: '/user-management',
+    icon: AdminPanelSettingsIcon,
+    permission: 'view_user',
+    children: [
+      {
+        id: 'users',
+        label: 'Users',
+        path: '/user-management/users',
+        icon: PeopleIcon,
+        permission: 'view_user',
+      },
+      {
+        id: 'groups',
+        label: 'Groups',
+        path: '/user-management/groups',
+        icon: GroupIcon,
+        permission: 'view_group',
+      },
+    ],
   },
 ];
 

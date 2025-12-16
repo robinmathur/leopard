@@ -31,7 +31,8 @@ import {
   deleteTask,
   completeTask,
 } from '@/services/api/taskApi';
-import { getAllActiveUsers, User } from '@/services/api/userApi';
+import { userApi } from '@/services/api/userApi';
+import type { User } from '@/types/user';
 import { CLIENT_CONTENT_TYPE_ID } from '@/services/api/reminderApi';
 
 export interface ClientTasksProps {
@@ -92,7 +93,7 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      const data = await getAllActiveUsers();
+      const data = await userApi.getAllActiveUsers();
       setUsers(data);
     } catch (err) {
       console.error('Failed to load users:', err);

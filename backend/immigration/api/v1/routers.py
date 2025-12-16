@@ -10,6 +10,7 @@ from immigration.api.v1.views.clients import ClientViewSet
 from immigration.api.v1.views.visa import VisaApplicationViewSet
 from immigration.api.v1.views.visa_type import VisaTypeViewSet, VisaCategoryViewSet
 from immigration.api.v1.views.users import UserViewSet
+from immigration.api.v1.views.groups import GroupViewSet, PermissionViewSet
 from immigration.api.v1.views.notifications import NotificationViewSet
 from immigration.api.v1.views.tasks import TaskViewSet
 from immigration.api.v1.views.notes import NoteViewSet
@@ -39,6 +40,8 @@ router.register(r"visa-applications", VisaApplicationViewSet, basename="visa-app
 router.register(r"visa-types", VisaTypeViewSet, basename="visa-type")
 router.register(r"visa-categories", VisaCategoryViewSet, basename="visa-category")
 router.register(r"users", UserViewSet, basename="user")
+router.register(r"groups", GroupViewSet, basename="group")
+router.register(r"permissions", PermissionViewSet, basename="permission")
 router.register(r"notifications", NotificationViewSet, basename="notification")
 router.register(r"tasks", TaskViewSet, basename="task")
 router.register(r"notes", NoteViewSet, basename="note")
