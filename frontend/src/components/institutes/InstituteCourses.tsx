@@ -89,7 +89,31 @@ export const InstituteCourses = ({ instituteId }: InstituteCoursesProps) => {
   const [savingField, setSavingField] = useState(false);
 
   useEffect(() => {
-    loadCourses();
+    const abortController = new AbortController();
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await instituteApi.listCourses(instituteId, abortController.signal);
+        setCourses(data);
+      } catch (err) {
+        // Ignore abort errors
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        setError('Failed to load courses');
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      abortController.abort();
+    };
   }, [instituteId]);
 
   // Load options only when dialog opens

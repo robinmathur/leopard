@@ -14,6 +14,8 @@ import { ApiError } from '@/services/api/httpClient';
 
 // Module-level AbortController to track and cancel in-flight fetchInstitutes requests
 let fetchInstitutesAbortController: AbortController | null = null;
+// Module-level AbortController for fetchInstituteById
+let fetchInstituteByIdAbortController: AbortController | null = null;
 
 interface Pagination {
   count: number;
@@ -41,6 +43,7 @@ interface InstituteStore {
   setPage: (page: number) => void;
   setPageSize: (pageSize: number) => void;
   cancelFetchInstitutes: () => void;
+  cancelFetchInstituteById: () => void;
 }
 
 export const useInstituteStore = create<InstituteStore>((set, get) => ({
@@ -107,18 +110,28 @@ export const useInstituteStore = create<InstituteStore>((set, get) => ({
 
   /**
    * Fetch a single institute by ID
+   * Automatically cancels any in-flight request to prevent race conditions
    */
   fetchInstituteById: async (id: number) => {
+    // Abort any in-flight request to prevent race conditions
+    fetchInstituteByIdAbortController?.abort();
+    fetchInstituteByIdAbortController = new AbortController();
+    const signal = fetchInstituteByIdAbortController.signal;
+
     set({ loading: true, error: null });
 
     try {
-      const institute = await instituteApi.getById(id);
+      const institute = await instituteApi.getById(id, signal);
       set({
         selectedInstitute: institute,
         loading: false,
       });
       return institute;
     } catch (error) {
+      // Ignore abort errors - request was intentionally cancelled
+      if ((error as Error).name === 'CanceledError' || signal.aborted) {
+        return null;
+      }
       const apiError = error as ApiError;
       set({
         error: apiError,
@@ -274,5 +287,13 @@ export const useInstituteStore = create<InstituteStore>((set, get) => ({
   cancelFetchInstitutes: () => {
     fetchInstitutesAbortController?.abort();
     fetchInstitutesAbortController = null;
+  },
+
+  /**
+   * Cancel any in-flight fetchInstituteById request
+   */
+  cancelFetchInstituteById: () => {
+    fetchInstituteByIdAbortController?.abort();
+    fetchInstituteByIdAbortController = null;
   },
 }));

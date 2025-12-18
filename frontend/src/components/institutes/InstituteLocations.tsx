@@ -67,7 +67,31 @@ export const InstituteLocations = ({ instituteId }: InstituteLocationsProps) => 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    loadLocations();
+    const abortController = new AbortController();
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await instituteApi.listLocations(instituteId, abortController.signal);
+        setLocations(data);
+      } catch (err) {
+        // Ignore abort errors
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        setError('Failed to load locations');
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      abortController.abort();
+    };
   }, [instituteId]);
 
   const loadLocations = async () => {

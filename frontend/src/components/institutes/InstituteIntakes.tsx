@@ -55,7 +55,31 @@ export const InstituteIntakes = ({ instituteId }: InstituteIntakesProps) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadIntakes();
+    const abortController = new AbortController();
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await instituteApi.listIntakes(instituteId, abortController.signal);
+        setIntakes(data);
+      } catch (err) {
+        // Ignore abort errors
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        setError('Failed to load intakes');
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      abortController.abort();
+    };
   }, [instituteId]);
 
   const loadIntakes = async () => {

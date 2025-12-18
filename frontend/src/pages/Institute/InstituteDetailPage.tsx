@@ -56,7 +56,7 @@ export const InstituteDetailPage = () => {
   const location = useLocation();
   const fromPath = (location.state as { from?: string })?.from || '/institute';
   
-  const { selectedInstitute, loading, error, fetchInstituteById, clearError } = useInstituteStore();
+  const { selectedInstitute, loading, error, fetchInstituteById, clearError, cancelFetchInstituteById } = useInstituteStore();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
 
   // Fetch institute on mount
@@ -65,9 +65,10 @@ export const InstituteDetailPage = () => {
       fetchInstituteById(parseInt(id, 10));
     }
     return () => {
+      cancelFetchInstituteById();
       clearError();
     };
-  }, [id, fetchInstituteById, clearError]);
+  }, [id, fetchInstituteById]);
 
   const handleBack = () => {
     navigate(fromPath);

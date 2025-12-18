@@ -46,9 +46,11 @@ export const instituteApi = {
 
   /**
    * Get a single institute by ID
+   * @param id - Institute ID
+   * @param signal - Optional AbortSignal to cancel the request
    */
-  async getById(id: number): Promise<Institute> {
-    const response = await httpClient.get<Institute>(`/v1/institutes/${id}/`);
+  async getById(id: number, signal?: AbortSignal): Promise<Institute> {
+    const response = await httpClient.get<Institute>(`/v1/institutes/${id}/`, { signal });
     return response.data;
   },
 
@@ -84,10 +86,10 @@ export const instituteApi = {
   },
 
   // Contact Persons
-  async listContactPersons(instituteId: number): Promise<InstituteContactPerson[]> {
+  async listContactPersons(instituteId: number, signal?: AbortSignal): Promise<InstituteContactPerson[]> {
     const response = await httpClient.get<PaginatedResponse<InstituteContactPerson> | InstituteContactPerson[]>(
       '/v1/institute-contact-persons/',
-      { params: { institute: instituteId } }
+      { params: { institute: instituteId }, signal }
     );
     // Handle both paginated and non-paginated responses
     if (Array.isArray(response.data)) {
@@ -120,10 +122,10 @@ export const instituteApi = {
   },
 
   // Locations
-  async listLocations(instituteId: number): Promise<InstituteLocation[]> {
+  async listLocations(instituteId: number, signal?: AbortSignal): Promise<InstituteLocation[]> {
     const response = await httpClient.get<PaginatedResponse<InstituteLocation> | InstituteLocation[]>(
       '/v1/institute-locations/',
-      { params: { institute: instituteId } }
+      { params: { institute: instituteId }, signal }
     );
     // Handle both paginated and non-paginated responses
     if (Array.isArray(response.data)) {
@@ -153,10 +155,10 @@ export const instituteApi = {
   },
 
   // Intakes
-  async listIntakes(instituteId: number): Promise<InstituteIntake[]> {
+  async listIntakes(instituteId: number, signal?: AbortSignal): Promise<InstituteIntake[]> {
     const response = await httpClient.get<PaginatedResponse<InstituteIntake> | InstituteIntake[]>(
       '/v1/institute-intakes/',
-      { params: { institute: instituteId } }
+      { params: { institute: instituteId }, signal }
     );
     // Handle both paginated and non-paginated responses
     if (Array.isArray(response.data)) {
@@ -186,10 +188,10 @@ export const instituteApi = {
   },
 
   // Requirements
-  async listRequirements(instituteId: number): Promise<InstituteRequirement[]> {
+  async listRequirements(instituteId: number, signal?: AbortSignal): Promise<InstituteRequirement[]> {
     const response = await httpClient.get<PaginatedResponse<InstituteRequirement> | InstituteRequirement[]>(
       '/v1/institute-requirements/',
-      { params: { institute: instituteId } }
+      { params: { institute: instituteId }, signal }
     );
     // Handle both paginated and non-paginated responses
     if (Array.isArray(response.data)) {
@@ -222,10 +224,10 @@ export const instituteApi = {
   },
 
   // Courses
-  async listCourses(instituteId: number): Promise<Course[]> {
+  async listCourses(instituteId: number, signal?: AbortSignal): Promise<Course[]> {
     const response = await httpClient.get<PaginatedResponse<Course> | Course[]>(
       '/v1/courses/',
-      { params: { institute: instituteId } }
+      { params: { institute: instituteId }, signal }
     );
     // Handle both paginated and non-paginated responses
     if (Array.isArray(response.data)) {

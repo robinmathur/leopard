@@ -59,7 +59,31 @@ export const InstituteRequirements = ({ instituteId }: InstituteRequirementsProp
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadRequirements();
+    const abortController = new AbortController();
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await instituteApi.listRequirements(instituteId, abortController.signal);
+        setRequirements(data);
+      } catch (err) {
+        // Ignore abort errors
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        setError('Failed to load requirements');
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      abortController.abort();
+    };
   }, [instituteId]);
 
   const loadRequirements = async () => {
