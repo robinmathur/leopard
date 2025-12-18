@@ -56,3 +56,11 @@ class CanManageApplications(RoleBasedPermission):
     Requires 'view_visaapplication' permission.
     """
     required_permission = 'immigration.view_visaapplication'
+
+
+class CanManageAgents(RoleBasedPermission):
+    """
+    Permission for agent management operations.
+    Requires 'view_agent' permission.
+    """
+    required_permission = 'immigration.view_agent'

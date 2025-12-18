@@ -11,6 +11,7 @@ import { LeadsPage } from './pages/Leads/LeadsPage';
 import { InstitutePage } from './pages/Institute/InstitutePage';
 import { InstituteDetailPage } from './pages/Institute/InstituteDetailPage';
 import { AgentPage } from './pages/Agent/AgentPage';
+import { AgentDetailPage } from './pages/Agent/AgentDetailPage';
 import { VisaDashboard } from './pages/VisaManager/VisaDashboard';
 import { VisaTracker } from './pages/VisaManager/VisaTracker';
 import { VisaTypePage } from './pages/VisaManager/VisaTypePage';
@@ -71,6 +72,7 @@ function App() {
             <Route path="institute" element={<InstitutePage />} />
             <Route path="institute/:id" element={<InstituteDetailPage />} />
             <Route path="agent" element={<AgentPage />} />
+            <Route path="agent/:id" element={<AgentDetailPage />} />
             
             {/* User Management Routes */}
             <Route path="user-management/users" element={<UsersPage />} />
