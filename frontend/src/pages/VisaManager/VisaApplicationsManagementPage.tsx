@@ -3,7 +3,7 @@
  * Comprehensive page for managing visa applications with CRUD operations
  * Features simple and advanced search functionality
  */
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -134,20 +134,32 @@ export const VisaApplicationsManagementPage = () => {
 
   // Fetch visa types on mount (users and clients are loaded on-demand)
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchDropdownData = async () => {
       try {
-        const typesResponse = await getVisaTypes({ page_size: 1000 });
-        setVisaTypes(typesResponse.results);
+        const typesResponse = await getVisaTypes({ page_size: 1000 }, abortController.signal);
+        if (!abortController.signal.aborted) {
+          setVisaTypes(typesResponse.results);
+        }
       } catch (err: any) {
+        // Ignore abort errors
+        if (err.name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
         console.error('Failed to fetch dropdown data:', err);
       }
     };
 
     fetchDropdownData();
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
-  // Fetch applications
-  const fetchApplications = useCallback(async () => {
+  // Fetch applications with AbortController support
+  const fetchApplications = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError(null);
@@ -168,15 +180,26 @@ export const VisaApplicationsManagementPage = () => {
       if (searchFilters.date_applied_from) params.date_applied_from = searchFilters.date_applied_from;
       if (searchFilters.date_applied_to) params.date_applied_to = searchFilters.date_applied_to;
 
-      const response = await listVisaApplications(params);
-      setApplications(response.results);
-      setTotalCount(response.count);
+      const response = await listVisaApplications(params, signal);
+      if (!signal?.aborted) {
+        setApplications(response.results);
+        setTotalCount(response.count);
+      }
     } catch (err: any) {
+      // Ignore abort errors
+      if (err.name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       setError(err.message || 'Failed to fetch visa applications');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize, searchFilters]);
+
+  // AbortController ref for cancelling in-flight requests
+  const fetchAbortControllerRef = useRef<AbortController | null>(null);
 
   // Debounced search effect - only trigger on client_name changes or when advanced filters are applied
   useEffect(() => {
@@ -190,10 +213,16 @@ export const VisaApplicationsManagementPage = () => {
     // Advanced filters are handled separately via handleApplyAdvancedSearch
     if (searchFilters.client_name === '' || searchFilters.client_name.length >= 2) {
       const debounceTimer = setTimeout(() => {
-        fetchApplications();
+        // Cancel any in-flight request
+        fetchAbortControllerRef.current?.abort();
+        fetchAbortControllerRef.current = new AbortController();
+        fetchApplications(fetchAbortControllerRef.current.signal);
       }, 500); // 500ms debounce
 
-      return () => clearTimeout(debounceTimer);
+      return () => {
+        clearTimeout(debounceTimer);
+        fetchAbortControllerRef.current?.abort();
+      };
     }
   }, [searchFilters.client_name, page, pageSize, fetchApplications]);
 

@@ -32,9 +32,11 @@ export const clientApi = {
 
   /**
    * Get a single client by ID
+   * @param id - Client ID
+   * @param signal - Optional AbortSignal to cancel the request
    */
-  async getById(id: number): Promise<Client> {
-    const response = await httpClient.get<Client>(`/v1/clients/${id}/`);
+  async getById(id: number, signal?: AbortSignal): Promise<Client> {
+    const response = await httpClient.get<Client>(`/v1/clients/${id}/`, { signal });
     return response.data;
   },
 
@@ -76,9 +78,10 @@ export const clientApi = {
   /**
    * Get counts of clients by stage
    * Returns counts for LEAD, FOLLOW_UP, CLIENT, CLOSE, and TOTAL
+   * @param signal - Optional AbortSignal to cancel the request
    */
-  async getStageCounts(): Promise<StageCounts> {
-    const response = await httpClient.get<StageCounts>('/v1/clients/stage-counts/');
+  async getStageCounts(signal?: AbortSignal): Promise<StageCounts> {
+    const response = await httpClient.get<StageCounts>('/v1/clients/stage-counts/', { signal });
     return response.data;
   },
 };

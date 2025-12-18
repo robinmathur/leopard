@@ -356,21 +356,29 @@ export const VisaTracker = () => {
     severity: 'success' | 'error' | 'info';
   }>({ open: false, message: '', severity: 'info' });
 
-  // Fetch status counts
-  const fetchStatusCounts = useCallback(async () => {
+  // Fetch status counts with AbortController support
+  const fetchStatusCounts = useCallback(async (signal?: AbortSignal) => {
     try {
       setStatusCountsLoading(true);
-      const counts = await getVisaApplicationStatusCounts();
-      setStatusCounts(counts);
+      const counts = await getVisaApplicationStatusCounts(signal);
+      if (!signal?.aborted) {
+        setStatusCounts(counts);
+      }
     } catch (err: any) {
+      // Ignore abort errors
+      if (err.name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       console.error('Failed to fetch status counts:', err);
     } finally {
-      setStatusCountsLoading(false);
+      if (!signal?.aborted) {
+        setStatusCountsLoading(false);
+      }
     }
   }, []);
 
   // Fetch applications with current tab's status filter
-  const fetchApplications = useCallback(async (status: VisaApplicationStatus) => {
+  const fetchApplications = useCallback(async (status: VisaApplicationStatus, signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError(null);
@@ -378,24 +386,40 @@ export const VisaTracker = () => {
         status,
         page,
         page_size: pageSize,
-      });
-      setApplications(response.results);
-      setTotalCount(response.count);
+      }, signal);
+      if (!signal?.aborted) {
+        setApplications(response.results);
+        setTotalCount(response.count);
+      }
     } catch (err: any) {
+      // Ignore abort errors
+      if (err.name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       setError(err.message || 'Failed to fetch visa applications');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize]);
 
   // Fetch on mount and when tab/page changes
   useEffect(() => {
-    fetchApplications(TABS[tabValue].status);
+    const abortController = new AbortController();
+    fetchApplications(TABS[tabValue].status, abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [tabValue, page, pageSize, fetchApplications]);
 
   // Fetch status counts on mount
   useEffect(() => {
-    fetchStatusCounts();
+    const abortController = new AbortController();
+    fetchStatusCounts(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [fetchStatusCounts]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {

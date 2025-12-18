@@ -85,10 +85,10 @@ export const listVisaApplications = async (params?: {
   date_applied_to?: string;
   page?: number;
   page_size?: number;
-}): Promise<PaginatedResponse<VisaApplication>> => {
+}, signal?: AbortSignal): Promise<PaginatedResponse<VisaApplication>> => {
   const response = await httpClient.get<PaginatedResponse<VisaApplication>>(
     '/v1/visa-applications/',
-    { params }
+    { params, signal }
   );
   return response.data;
 };

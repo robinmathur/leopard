@@ -76,7 +76,7 @@ export const ClientDetailPage = () => {
   } else if (fromPath === '/visa-manager/tracker') {
     backLabel = 'Back to Visa Tracker';
   }
-  const { selectedClient, loading, error, fetchClientById, clearError } = useClientStore();
+  const { selectedClient, loading, error, fetchClientById, clearError, cancelFetchClientById } = useClientStore();
   const { setCurrentTab, markSectionLoaded, loadedSections, resetStore } = useClientDetailStore();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
 
@@ -87,10 +87,11 @@ export const ClientDetailPage = () => {
       markSectionLoaded('overview');
     }
     return () => {
+      cancelFetchClientById(); // Cancel any in-flight request
       clearError();
       resetStore(); // Reset client detail store on unmount
     };
-  }, [id, fetchClientById, clearError, markSectionLoaded, resetStore]);
+  }, [id, fetchClientById, cancelFetchClientById, clearError, markSectionLoaded, resetStore]);
 
   const handleBack = () => {
     navigate(fromPath);

@@ -418,43 +418,65 @@ export const VisaTypePage = () => {
     severity: 'success' | 'error' | 'info';
   }>({ open: false, message: '', severity: 'info' });
 
-  // Fetch visa types
-  const fetchVisaTypes = useCallback(async () => {
+  // Fetch visa types with AbortController support
+  const fetchVisaTypes = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError(null);
       const response = await getVisaTypes({
         page: page + 1,
         page_size: pageSize,
-      });
+      }, signal);
       setVisaTypes(response.results);
       setTotalCount(response.count);
     } catch (err: any) {
+      // Ignore abort errors
+      if (err.name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       setError(err.message || 'Failed to fetch visa types');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize]);
 
-  // Fetch visa categories
-  const fetchCategories = useCallback(async () => {
+  // Fetch visa categories with AbortController support
+  const fetchCategories = useCallback(async (signal?: AbortSignal) => {
     try {
       setCategoriesLoading(true);
-      const data = await getVisaCategories();
-      setCategories(data);
+      const data = await getVisaCategories(signal);
+      if (!signal?.aborted) {
+        setCategories(data);
+      }
     } catch (err: any) {
+      // Ignore abort errors
+      if (err.name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       console.error('Failed to fetch categories:', err);
     } finally {
-      setCategoriesLoading(false);
+      if (!signal?.aborted) {
+        setCategoriesLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchVisaTypes();
+    const abortController = new AbortController();
+    fetchVisaTypes(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [fetchVisaTypes]);
 
   useEffect(() => {
-    fetchCategories();
+    const abortController = new AbortController();
+    fetchCategories(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [fetchCategories]);
 
   const handleAddVisaType = () => {

@@ -275,20 +275,38 @@ export const VisaDashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchStatistics = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getVisaDashboardStatistics();
-        setStatistics(data);
+        const data = await getVisaDashboardStatistics(abortController.signal);
+        if (isMounted) {
+          setStatistics(data);
+        }
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch dashboard statistics');
+        // Ignore abort errors
+        if (err.name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        if (isMounted) {
+          setError(err.message || 'Failed to fetch dashboard statistics');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchStatistics();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, []);
 
   if (loading) {

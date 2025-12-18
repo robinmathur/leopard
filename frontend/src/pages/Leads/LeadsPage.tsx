@@ -101,6 +101,7 @@ export const LeadsPage = () => {
     setPageSize,
     clearError,
     cancelFetchClients,
+    cancelFetchStageCounts,
   } = useClientStore();
 
   // Fetch clients with current tab's stage filter
@@ -120,6 +121,7 @@ export const LeadsPage = () => {
     // Cancel any in-flight requests on unmount to prevent memory leaks
     return () => {
       cancelFetchClients();
+      cancelFetchStageCounts();
     };
   }, []);
 

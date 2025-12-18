@@ -27,10 +27,10 @@ export const getVisaTypes = async (params?: {
   search?: string;
   page?: number;
   page_size?: number;
-}): Promise<PaginatedResponse<VisaType>> => {
+}, signal?: AbortSignal): Promise<PaginatedResponse<VisaType>> => {
   const response = await httpClient.get<PaginatedResponse<VisaType>>(
     '/v1/visa-types/',
-    { params }
+    { params, signal }
   );
   return response.data;
 };
@@ -72,17 +72,18 @@ export const deleteVisaType = async (id: number): Promise<void> => {
 /**
  * Get all visa categories
  */
-export const getVisaCategories = async (): Promise<VisaCategory[]> => {
-  const response = await httpClient.get<VisaCategory[]>('/v1/visa-categories/');
+export const getVisaCategories = async (signal?: AbortSignal): Promise<VisaCategory[]> => {
+  const response = await httpClient.get<VisaCategory[]>('/v1/visa-categories/', { signal });
   return response.data;
 };
 
 /**
  * Get visa application status counts for tabs
  */
-export const getVisaApplicationStatusCounts = async (): Promise<VisaApplicationStatusCounts> => {
+export const getVisaApplicationStatusCounts = async (signal?: AbortSignal): Promise<VisaApplicationStatusCounts> => {
   const response = await httpClient.get<VisaApplicationStatusCounts>(
-    '/v1/visa-applications/status-counts/'
+    '/v1/visa-applications/status-counts/',
+    { signal }
   );
   return response.data;
 };
@@ -90,9 +91,10 @@ export const getVisaApplicationStatusCounts = async (): Promise<VisaApplicationS
 /**
  * Get visa application dashboard statistics
  */
-export const getVisaDashboardStatistics = async (): Promise<VisaDashboardStatistics> => {
+export const getVisaDashboardStatistics = async (signal?: AbortSignal): Promise<VisaDashboardStatistics> => {
   const response = await httpClient.get<VisaDashboardStatistics>(
-    '/v1/visa-applications/dashboard-statistics/'
+    '/v1/visa-applications/dashboard-statistics/',
+    { signal }
   );
   return response.data;
 };
