@@ -9,6 +9,7 @@ import { create } from 'zustand';
  */
 interface LoadedSections {
   overview: boolean;
+  profile: boolean;
   notes: boolean;
   timeline: boolean;
   documents: boolean;
@@ -21,6 +22,7 @@ interface LoadedSections {
  * Section-specific loading states
  */
 interface SectionLoadingStates {
+  profile: boolean;
   notes: boolean;
   timeline: boolean;
   documents: boolean;
@@ -33,6 +35,7 @@ interface SectionLoadingStates {
  * Section-specific error states
  */
 interface SectionErrors {
+  profile: string | null;
   notes: string | null;
   timeline: string | null;
   documents: string | null;
@@ -45,6 +48,7 @@ interface SectionErrors {
  * Cached data for sections
  */
 interface SectionCache {
+  profile: unknown;
   notes: unknown;
   timeline: unknown;
   documents: unknown;
@@ -81,6 +85,7 @@ interface ClientDetailStore {
 
 const initialLoadedSections: LoadedSections = {
   overview: false,
+  profile: false,
   notes: false,
   timeline: false,
   documents: false,
@@ -90,6 +95,7 @@ const initialLoadedSections: LoadedSections = {
 };
 
 const initialSectionLoading: SectionLoadingStates = {
+  profile: false,
   notes: false,
   timeline: false,
   documents: false,
@@ -99,6 +105,7 @@ const initialSectionLoading: SectionLoadingStates = {
 };
 
 const initialSectionErrors: SectionErrors = {
+  profile: null,
   notes: null,
   timeline: null,
   documents: null,
@@ -108,6 +115,7 @@ const initialSectionErrors: SectionErrors = {
 };
 
 const initialSectionCache: SectionCache = {
+  profile: null,
   notes: null,
   timeline: null,
   documents: null,
