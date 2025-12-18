@@ -69,9 +69,10 @@ export const userApi = {
    * Get all active users (non-paginated)
    * Used for dropdowns and selectors
    */
-  async getAllActiveUsers(): Promise<User[]> {
+  async getAllActiveUsers(signal?: AbortSignal): Promise<User[]> {
     const response = await httpClient.get<PaginatedResponse<User>>('/v1/users/', {
       params: { is_active: true, page_size: 1000 },
+      signal,
     });
     return response.data.results;
   },

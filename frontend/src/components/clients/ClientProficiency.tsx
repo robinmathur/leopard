@@ -187,33 +187,44 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
   });
 
   // Fetch proficiency data and language exams
-  const fetchData = async () => {
+  const fetchData = async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
     try {
       const [proficienciesData, examsData] = await Promise.all([
-        getProficiencies(clientId),
-        getLanguageExams(),
+        getProficiencies(clientId, signal),
+        getLanguageExams(signal),
       ]);
 
-      // Sort by test date (most recent first)
-      const sorted = proficienciesData.sort((a, b) => {
-        if (!a.test_date) return 1;
-        if (!b.test_date) return -1;
-        return new Date(b.test_date).getTime() - new Date(a.test_date).getTime();
-      });
-      setProficiencies(sorted);
-      setLanguageExams(examsData);
+      if (!signal?.aborted) {
+        // Sort by test date (most recent first)
+        const sorted = proficienciesData.sort((a, b) => {
+          if (!a.test_date) return 1;
+          if (!b.test_date) return -1;
+          return new Date(b.test_date).getTime() - new Date(a.test_date).getTime();
+        });
+        setProficiencies(sorted);
+        setLanguageExams(examsData);
+      }
     } catch (err) {
+      if ((err as Error).name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       setError((err as Error).message || 'Failed to load language proficiency data');
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchData();
+    const abortController = new AbortController();
+    fetchData(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Open form dialog

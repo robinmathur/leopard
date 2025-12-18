@@ -44,9 +44,10 @@ export interface ProficiencyUpdateRequest {
 /**
  * Get proficiencies for a specific client
  */
-export const getProficiencies = async (clientId: number): Promise<Proficiency[]> => {
+export const getProficiencies = async (clientId: number, signal?: AbortSignal): Promise<Proficiency[]> => {
   const response = await httpClient.get<{ results: Proficiency[] }>('/v1/language-proficiencies/', {
     params: { client_id: clientId },
+    signal,
   });
   return response.data.results;
 };

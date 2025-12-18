@@ -20,8 +20,8 @@ export interface ProfilePicture {
 /**
  * Get profile picture for a client
  */
-export const getProfilePicture = async (clientId: number): Promise<ProfilePicture> => {
-  const response = await httpClient.get<ProfilePicture>(`/v1/clients/${clientId}/profile-picture/`);
+export const getProfilePicture = async (clientId: number, signal?: AbortSignal): Promise<ProfilePicture> => {
+  const response = await httpClient.get<ProfilePicture>(`/v1/clients/${clientId}/profile-picture/`, { signal });
   return response.data;
 };
 

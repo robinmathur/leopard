@@ -40,8 +40,8 @@ export interface PaginatedResponse<T> {
 /**
  * List notes with optional filters
  */
-export const listNotes = async (params?: NoteListParams): Promise<PaginatedResponse<Note>> => {
-  const response = await httpClient.get<PaginatedResponse<Note>>('/v1/notes/', { params });
+export const listNotes = async (params?: NoteListParams, signal?: AbortSignal): Promise<PaginatedResponse<Note>> => {
+  const response = await httpClient.get<PaginatedResponse<Note>>('/v1/notes/', { params, signal });
   return response.data;
 };
 

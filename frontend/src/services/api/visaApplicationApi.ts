@@ -53,11 +53,12 @@ export interface PaginatedResponse<T> {
 /**
  * Get visa applications for a specific client
  */
-export const getVisaApplications = async (clientId: number): Promise<VisaApplication[]> => {
+export const getVisaApplications = async (clientId: number, signal?: AbortSignal): Promise<VisaApplication[]> => {
   const response = await httpClient.get<PaginatedResponse<VisaApplication>>(
     '/v1/visa-applications/',
     {
       params: { client_id: clientId },
+      signal,
     }
   );
   return response.data.results;

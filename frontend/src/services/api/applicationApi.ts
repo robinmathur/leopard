@@ -49,9 +49,10 @@ export interface Application {
 /**
  * Get applications for a specific client
  */
-export const getApplications = async (clientId: number): Promise<Application[]> => {
+export const getApplications = async (clientId: number, signal?: AbortSignal): Promise<Application[]> => {
   const response = await httpClient.get<Application[]>('/v1/applications/', {
     params: { client: clientId },
+    signal,
   });
   return response.data;
 };

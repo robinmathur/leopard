@@ -37,9 +37,10 @@ export interface EmploymentUpdateRequest {
 /**
  * Get employments for a specific client
  */
-export const getEmployments = async (clientId: number): Promise<Employment[]> => {
+export const getEmployments = async (clientId: number, signal?: AbortSignal): Promise<Employment[]> => {
   const response = await httpClient.get<{ results: Employment[] }>('/v1/employments/', {
     params: { client_id: clientId },
+    signal,
   });
   return response.data.results;
 };

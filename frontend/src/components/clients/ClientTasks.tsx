@@ -59,12 +59,80 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
 
   // Fetch tasks when component mounts or clientId changes
   useEffect(() => {
-    fetchTasks();
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    const loadTasks = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await getTasks(clientId, abortController.signal);
+        if (isMounted) {
+          // Sort by due_date (earliest first, then by created_at)
+          const sorted = data.sort((a, b) => {
+            const dateA = new Date(a.due_date).getTime();
+            const dateB = new Date(b.due_date).getTime();
+            if (dateA === dateB) {
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            }
+            return dateA - dateB;
+          });
+          setTasks(sorted);
+        }
+      } catch (err) {
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        if (isMounted) {
+          setError((err as Error).message || 'Failed to load tasks');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadTasks();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Fetch users when component mounts
   useEffect(() => {
-    fetchUsers();
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    const loadUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const data = await userApi.getAllActiveUsers(abortController.signal);
+        if (isMounted) {
+          setUsers(data);
+        }
+      } catch (err) {
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        console.error('Failed to load users:', err);
+        // Don't set error state, just log it
+      } finally {
+        if (isMounted) {
+          setUsersLoading(false);
+        }
+      }
+    };
+
+    loadUsers();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, []);
 
   const fetchTasks = async () => {

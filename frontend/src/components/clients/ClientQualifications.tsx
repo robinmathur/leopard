@@ -198,28 +198,39 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
   });
 
   // Fetch qualifications
-  const fetchQualifications = async () => {
+  const fetchQualifications = async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await getQualifications(clientId);
-      // Sort by start date (most recent first)
-      const sorted = data.sort((a, b) => {
-        if (!a.enroll_date) return 1;
-        if (!b.enroll_date) return -1;
-        return new Date(b.enroll_date).getTime() - new Date(a.enroll_date).getTime();
-      });
-      setQualifications(sorted);
+      const data = await getQualifications(clientId, signal);
+      if (!signal?.aborted) {
+        // Sort by start date (most recent first)
+        const sorted = data.sort((a, b) => {
+          if (!a.enroll_date) return 1;
+          if (!b.enroll_date) return -1;
+          return new Date(b.enroll_date).getTime() - new Date(a.enroll_date).getTime();
+        });
+        setQualifications(sorted);
+      }
     } catch (err) {
+      if ((err as Error).name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       setError((err as Error).message || 'Failed to load qualifications');
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchQualifications();
+    const abortController = new AbortController();
+    fetchQualifications(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Open form dialog

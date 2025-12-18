@@ -169,28 +169,39 @@ export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
   });
 
   // Fetch employments
-  const fetchEmployments = async () => {
+  const fetchEmployments = async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await getEmployments(clientId);
-      // Sort by end date (most recent first)
-      const sorted = data.sort((a, b) => {
-        if (!a.end_date) return 1;
-        if (!b.end_date) return -1;
-        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
-      });
-      setEmployments(sorted);
+      const data = await getEmployments(clientId, signal);
+      if (!signal?.aborted) {
+        // Sort by end date (most recent first)
+        const sorted = data.sort((a, b) => {
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+        });
+        setEmployments(sorted);
+      }
     } catch (err) {
+      if ((err as Error).name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       setError((err as Error).message || 'Failed to load employment history');
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchEmployments();
+    const abortController = new AbortController();
+    fetchEmployments(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Open form dialog
