@@ -37,7 +37,17 @@ class ClientActivityOutput(serializers.ModelSerializer):
             'metadata',
             'created_at',
         ]
-        read_only_fields = '__all__'  # All fields are read-only
+        read_only_fields = [
+            'id',
+            'client',
+            'activity_type',
+            'activity_type_display',
+            'performed_by',
+            'performed_by_name',
+            'description',
+            'metadata',
+            'created_at',
+        ]  # All fields are read-only
     
     def get_performed_by_name(self, obj):
         """Get performer's full name if exists."""
