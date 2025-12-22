@@ -20,4 +20,26 @@ Content-Type: application/json
   "password": "password123"
 }
 
+### Get Main Admin Access token
+POST http://main.immigrate.localhost:8000/api/token/
+accept: application/json
+X-CSRFTOKEN: 9Z20Gl2SYVLX616MK5e4RyUDqRBUpdSK4BvBvqUNmGOmKLcT9C0xymyaUklx1jJH
+Content-Type: application/json
+
+{
+  "username": "admin@main.com",
+  "password": "admin123"
+}
+
+### Get Demo Admin Access token
+POST http://demo.immigrate.localhost:8000/api/token/
+accept: application/json
+X-CSRFTOKEN: 9Z20Gl2SYVLX616MK5e4RyUDqRBUpdSK4BvBvqUNmGOmKLcT9C0xymyaUklx1jJH
+Content-Type: application/json
+
+{
+  "username": "admin@demo.com",
+  "password": "demo123"
+}
+
 ###

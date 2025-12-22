@@ -50,6 +50,13 @@ ALLOWED_HOSTS = [
     BASE_DOMAIN,
 ]
 
+# In DEBUG mode, we'll use a custom host validation in middleware
+# to allow any tenant subdomain pattern dynamically
+if DEBUG:
+    # Allow all hosts in DEBUG (security risk in production!)
+    # The middleware will still validate tenant existence
+    ALLOWED_HOSTS = ['*']
+
 
 # ==================== MULTI-TENANT CONFIGURATION ====================
 
@@ -104,7 +111,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'tenants.csrf_middleware.MultiTenantCsrfMiddleware',  # CUSTOM - Auto-trust tenant subdomains
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'immigration.middleware.CurrentUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -206,13 +213,25 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# CSRF exemption for JWT token endpoints
+# CSRF Configuration
+# For multi-tenant architecture with JWT, we allow all subdomains
+# Development: Allow all *.immigrate.localhost origins
 CSRF_TRUSTED_ORIGINS = [
+    # Backend
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    # Frontend (all tenant subdomains)
     'http://localhost:5173',
+    'http://main.immigrate.localhost:5173',
+    'http://demo.immigrate.localhost:5173',
+    'http://acme.immigrate.localhost:5173',
+    # Add more as needed, or disable CSRF for API endpoints (recommended for JWT)
     'http://192.168.0.196:62718'
 ]
+
+# Alternative: Disable CSRF for API endpoints using @csrf_exempt
+# Since we're using JWT authentication, CSRF protection is redundant for API endpoints
+# The JWT token itself provides protection against CSRF attacks
 
 SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
@@ -355,6 +374,11 @@ LOGGING = {
         'immigration.events': {
             'handlers': ['console'],
             'level': 'DEBUG',  # Enable debug logging for events framework
+            'propagate': False,
+        },
+        'immigration.authentication': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Enable debug logging for authentication
             'propagate': False,
         },
         'django': {

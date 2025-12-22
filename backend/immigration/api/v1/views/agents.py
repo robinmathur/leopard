@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from immigration.authentication import TenantJWTAuthentication
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
 from immigration.api.v1.permissions import RoleBasedPermission
@@ -188,7 +188,7 @@ class AgentViewSet(ViewSet):
     and selectors (read operations), keeping views thin.
     """
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageAgents]
     pagination_class = StandardResultsSetPagination
     

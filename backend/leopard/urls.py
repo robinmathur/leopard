@@ -17,12 +17,14 @@ urlpatterns = [
     # JWT Authentication endpoints (CSRF exempt) - TENANT-BOUND TOKENS
     path('api/token/', csrf_exempt(TenantTokenObtainPairView.as_view()), name='token_obtain_pair'),
     path('api/token/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='token_refresh'),
-    # API endpoints
+    # API endpoints (tenant-specific)
     path('api/v1/', include('immigration.api.v1.urls')),
-    # OpenAPI schema and documentation
+    # OpenAPI schema and documentation (tenant-specific)
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    # Public endpoints (no tenant required)
+    # path('public/', include('tenants.urls')),
 ]
 
 # required for nginx

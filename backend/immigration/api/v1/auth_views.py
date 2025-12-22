@@ -12,10 +12,13 @@ from django.db import connection
 
 class TenantTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
-    Custom JWT serializer that includes tenant_schema in token claims.
+    Custom JWT serializer that includes tenant identifier (tid) in token claims.
 
     This ensures tokens are bound to a specific tenant and cannot be used
     across tenants even if a user has access to multiple tenants.
+
+    The tenant identifier stores only the tenant name (e.g., "main") without
+    the "tenant_" prefix, making it less obvious to users.
 
     Example JWT payload:
     {
@@ -23,9 +26,9 @@ class TenantTokenObtainPairSerializer(TokenObtainPairSerializer):
         "token_type": "access",
         "exp": 1234567890,
         "iat": 1234567890,
-        "tenant_schema": "tenant_acme",  # NEW
-        "email": "user@acme.com",
-        "username": "user@acme.com",
+        "tid": "main",  # Tenant identifier (extracted from "tenant_main")
+        "email": "user@main.com",
+        "username": "user@main.com",
         "groups": ["SUPER_ADMIN"]
     }
     """
@@ -33,28 +36,37 @@ class TenantTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         """
-        Generate JWT token with tenant_schema claim.
+        Generate JWT token with tenant identifier (tid) claim.
 
-        The tenant_schema is captured from the current database connection
+        The tenant name is extracted from the current database connection
         context set by TenantMainMiddleware based on the subdomain.
 
         Security Note:
-        The tenant_schema is automatically set by TenantMainMiddleware
-        based on the subdomain in the request URL. This ensures the token
-        is bound to the correct tenant from the authentication request.
+        - Only the tenant name is stored (e.g., "main" from "tenant_main")
+        - The full schema name is reconstructed in middleware for validation
+        - This makes the tenant identifier less obvious to users
 
         Example:
-        - User logs in at acme.leopard.com
-        - TenantMainMiddleware sets connection.schema_name = 'tenant_acme'
-        - Token is generated with tenant_schema = 'tenant_acme'
-        - Token can ONLY be used for acme.leopard.com requests
+        - User logs in at main.immigrate.localhost
+        - TenantMainMiddleware sets connection.schema_name = 'tenant_main'
+        - Token is generated with tid = 'main' (not 'tenant_main')
+        - Token can ONLY be used for main.immigrate.localhost requests
         """
         token = super().get_token(user)
 
-        # CRITICAL: Add tenant_schema to token claims
+        # CRITICAL: Add tenant identifier (tid) to token claims
+        # Extract tenant name from schema (e.g., "main" from "tenant_main")
         # This is set by TenantMainMiddleware based on subdomain
         tenant_schema = connection.schema_name
-        token['tenant_schema'] = tenant_schema
+        
+        # Extract tenant name by removing "tenant_" prefix
+        if tenant_schema.startswith('tenant_'):
+            tenant_name = tenant_schema[7:]  # Remove "tenant_" prefix
+        else:
+            tenant_name = tenant_schema  # Fallback for non-standard schemas
+        
+        # Store only the tenant name, not the full schema name
+        token['tid'] = tenant_name
 
         # Optional: Add additional user claims for frontend convenience
         token['email'] = user.email

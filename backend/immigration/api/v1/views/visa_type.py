@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from immigration.authentication import TenantJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
@@ -85,7 +85,7 @@ from immigration.models.visa import VisaType
 class VisaTypeViewSet(ViewSet):
     """ViewSet for visa type management using service/selector pattern."""
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [IsAuthenticated]
     pagination_class = StandardResultsSetPagination
     
@@ -184,7 +184,7 @@ class VisaTypeViewSet(ViewSet):
 class VisaCategoryViewSet(ViewSet):
     """ViewSet for visa category listing (read-only)."""
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def list(self, request):

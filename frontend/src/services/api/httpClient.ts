@@ -7,23 +7,32 @@
  * - Handles cross-tenant token validation
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { getApiBaseUrl, getTenantFromHostname } from '../../config/domain.config';
+import { getApiBaseUrl } from '../../config/domain.config';
 
-// Get base URL from environment or auto-detect from domain
-let BASE_URL: string;
+/**
+ * Get the API base URL dynamically
+ * This function is called on each request to ensure the correct tenant URL is used
+ */
+function getBaseURL(): string {
+  // Check for manual override first
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
 
-try {
   // Try to get tenant-specific API URL
-  BASE_URL = import.meta.env.VITE_API_BASE_URL || getApiBaseUrl();
-} catch (error) {
-  // Fallback for non-tenant pages (login, tenant selection, etc.)
-  console.warn('No tenant detected in URL, using relative API path');
-  BASE_URL = '/api/v1';
+  try {
+    const apiUrl = getApiBaseUrl();
+    console.log('🌐 API Base URL:', apiUrl); // Debug log
+    return apiUrl;
+  } catch (error) {
+    // Fallback for non-tenant pages (login, tenant selection, etc.)
+    console.warn('⚠️ No tenant detected in URL, using relative API path');
+    return '/api/v1';
+  }
 }
 
-// Create axios instance
+// Create axios instance without baseURL (will be set dynamically)
 export const httpClient = axios.create({
-  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -50,10 +59,15 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 /**
- * Request interceptor - adds Authorization header
+ * Request interceptor - sets dynamic baseURL and adds Authorization header
  */
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Dynamically set baseURL for each request
+    const baseURL = getBaseURL();
+    config.baseURL = baseURL;
+
+    // Add authentication token
     const tokensStr = localStorage.getItem('auth_tokens');
     if (tokensStr) {
       try {
@@ -117,8 +131,9 @@ httpClient.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        // Attempt to refresh the token
-        const response = await axios.post(`${BASE_URL}/token/refresh/`, {
+        // Attempt to refresh the token (use dynamic baseURL)
+        const baseURL = getBaseURL();
+        const response = await axios.post(`${baseURL}/token/refresh/`, {
           refresh: tokens.refresh,
         });
 

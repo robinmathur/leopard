@@ -114,7 +114,7 @@ export const getApiBaseUrl = (): string => {
 
   // Build full URL
   const port = apiPort ? `:${apiPort}` : '';
-  const apiUrl = `${apiProtocol}://${apiHostname}${port}/api/v1`;
+  const apiUrl = `${apiProtocol}://${apiHostname}${port}/api`;
 
   return apiUrl;
 };

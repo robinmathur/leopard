@@ -20,7 +20,6 @@ class UserOutputSerializer(serializers.ModelSerializer):
     """
     
     full_name = serializers.SerializerMethodField(read_only=True)
-    tenant_name = serializers.CharField(source='tenant.name', read_only=True, allow_null=True)
     groups_list = serializers.SerializerMethodField(read_only=True)
     primary_group = serializers.SerializerMethodField(read_only=True)
     
@@ -62,8 +61,6 @@ class UserOutputSerializer(serializers.ModelSerializer):
             'full_name',
             'groups_list',
             'primary_group',
-            'tenant',
-            'tenant_name',
             'branches_data',
             'regions_data',
             'is_active',
@@ -94,7 +91,6 @@ class UserCreateSerializer(serializers.Serializer):
     
     # Group and scope
     group_name = serializers.ChoiceField(choices=ALL_GROUPS)
-    tenant_id = serializers.IntegerField(required=False, allow_null=True)
     
     # Multiple branches
     branch_ids = serializers.ListField(
@@ -131,7 +127,6 @@ class UserUpdateSerializer(serializers.Serializer):
     
     # Group and scope
     group_name = serializers.ChoiceField(choices=ALL_GROUPS, required=False)
-    tenant_id = serializers.IntegerField(required=False, allow_null=True)
     
     # Multiple branches
     branch_ids = serializers.ListField(

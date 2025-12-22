@@ -7,7 +7,7 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from immigration.authentication import TenantJWTAuthentication
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import get_user_model
@@ -97,7 +97,7 @@ class GroupViewSet(ViewSet):
     ViewSet for Django Group management.
     """
     
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [IsAuthenticated, CanManageGroups]
     pagination_class = StandardResultsSetPagination
     
@@ -261,7 +261,7 @@ class PermissionViewSet(ViewSet):
     Permissions are managed by Django, not created/updated via API.
     """
     
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [IsAuthenticated]
     pagination_class = StandardResultsSetPagination
     

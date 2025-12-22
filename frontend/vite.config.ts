@@ -11,7 +11,15 @@ export default defineConfig({
     },
   },
   server: {
-      allowedHosts: ['leopard.logiclucent.in', 'localhost', '127.0.0.1']
-    }
+    host: '0.0.0.0', // Listen on all network interfaces
+    port: 5173,
+    strictPort: false,
+    // Allow all subdomains (any tenant can be added dynamically)
+    allowedHosts: [
+      '.localhost', // Matches *.localhost and localhost
+      '.immigrate.localhost', // Matches *.immigrate.localhost
+      'leopard.logiclucent.in',
+    ],
+  }
 });
 

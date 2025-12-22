@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from immigration.authentication import TenantJWTAuthentication
 
 from immigration.api.v1.permissions import CanManageClients
 from immigration.api.v1.serializers.client_profiles import (
@@ -57,7 +57,7 @@ from immigration.models import LPE, Passport, Proficiency, Qualification, Employ
 
 
 class LanguageExamViewSet(ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageClients]
     pagination_class = StandardResultsSetPagination
 
@@ -109,7 +109,7 @@ class LanguageExamViewSet(ViewSet):
 
 
 class ProficiencyViewSet(ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageClients]
     pagination_class = StandardResultsSetPagination
 
@@ -172,7 +172,7 @@ class ProficiencyViewSet(ViewSet):
 
 
 class QualificationViewSet(ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageClients]
     pagination_class = StandardResultsSetPagination
 
@@ -233,7 +233,7 @@ class QualificationViewSet(ViewSet):
 
 
 class PassportViewSet(ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageClients]
     lookup_field = "client_id"
 
@@ -288,7 +288,7 @@ class PassportViewSet(ViewSet):
 
 
 class EmploymentViewSet(ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageClients]
     pagination_class = StandardResultsSetPagination
 
