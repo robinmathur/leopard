@@ -12,6 +12,7 @@ authors = [
 dependencies = [
     # Django Core
     "django>=4.2,<5.0",
+    "django-tenants>=3.5.0,<4.0",
     "djangorestframework>=3.14,<4.0",
     "djangorestframework-simplejwt>=5.3,<6.0",
     "django-cors-headers>=4.3,<5.0",

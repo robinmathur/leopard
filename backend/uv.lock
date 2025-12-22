@@ -582,6 +582,18 @@ wheels = [
 ]
 
 [[package]]
+name = "django-tenants"
+version = "3.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6b/54/c2e0e2dacd1caa9729c054da5bbdee4244ccd0de912b70dc2932a46ef177/django_tenants-3.9.0.tar.gz", hash = "sha256:6bc67c26be57f412e47c476261a977ef0ef74ec3740d50fd1eb6b69cb072eb03", size = 154244, upload-time = "2025-09-05T10:08:31.973Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/57/918cfca627fcdc3441981dddc72a22be02e57abdb5391eb7339ea77a5ef4/django_tenants-3.9.0-py3-none-any.whl", hash = "sha256:14421088a4336444e2c4af54f21a6af2e57e53dcf95ba5d19b5fa17142cb460b", size = 215955, upload-time = "2025-09-06T21:46:05.939Z" },
+]
+
+[[package]]
 name = "djangorestframework"
 version = "3.16.1"
 source = { registry = "https://pypi.org/simple" }
@@ -833,6 +845,7 @@ dependencies = [
     { name = "django-filter" },
     { name = "django-money" },
     { name = "django-soft-delete" },
+    { name = "django-tenants" },
     { name = "djangorestframework" },
     { name = "djangorestframework-simplejwt" },
     { name = "drf-spectacular" },
@@ -890,6 +903,7 @@ requires-dist = [
     { name = "django-filter", specifier = ">=23.3,<24.0" },
     { name = "django-money", specifier = ">=3.5,<4.0" },
     { name = "django-soft-delete", specifier = ">=1.0,<2.0" },
+    { name = "django-tenants", specifier = ">=3.5.0,<4.0" },
     { name = "djangorestframework", specifier = ">=3.14,<4.0" },
     { name = "djangorestframework-simplejwt", specifier = ">=5.3,<6.0" },
     { name = "drf-spectacular", specifier = ">=0.27,<1.0" },

@@ -12,26 +12,27 @@ from immigration.models.user import User
 def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
     """
     List users visible to the current user based on their group.
-    
+
+    Multi-tenant: Schema isolation provides automatic tenant scoping.
+
     Filtering rules:
-    - SUPER_SUPER_ADMIN: All users across all tenants
-    - SUPER_ADMIN: All users in their tenant
+    - SUPER_ADMIN: All users in current tenant schema
     - REGION_MANAGER: Users in their assigned regions
     - BRANCH_ADMIN: Users in their assigned branches
     - CONSULTANT: Only themselves
-    
+
     Args:
         user: The requesting user
         search: Optional search term to filter by name, email, or username
-        
+
     Returns:
         QuerySet of users visible to the requesting user
     """
     # Build base queryset based on user's group
-    if user.is_in_group('SUPER_SUPER_ADMIN'):
+    # REMOVED: SUPER_SUPER_ADMIN check (operates in public schema, not tenant schemas)
+    if user.is_in_group('SUPER_ADMIN'):
+        # SUPER_ADMIN sees all users in current tenant schema (automatic)
         qs = User.objects.all()
-    elif user.is_in_group('SUPER_ADMIN'):
-        qs = User.objects.filter(tenant=user.tenant)
     elif user.is_in_group('REGION_MANAGER'):
         user_regions = user.regions.all()
         if not user_regions.exists():
@@ -42,11 +43,10 @@ def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
             region_branches = Branch.objects.filter(
                 region__in=user_regions
             ).values_list('id', flat=True)
-            
+
             # Return users in those branches + users managing those regions
+            # REMOVED: tenant FK filter (schema provides isolation)
             qs = User.objects.filter(
-                tenant=user.tenant
-            ).filter(
                 Q(branches__in=region_branches) |
                 Q(regions__in=user_regions)
             ).distinct()

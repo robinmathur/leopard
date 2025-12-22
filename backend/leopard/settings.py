@@ -28,32 +28,77 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ['DEBUG']
 
-ALLOWED_HOSTS = ['*']
+# ==================== DOMAIN CONFIGURATION ====================
+# 4-level subdomain architecture: tenant.app.company.com
+
+# Application subdomain (fixed across all environments)
+APP_SUBDOMAIN = os.getenv('APP_SUBDOMAIN', 'immigrate')
+
+# Base domain (changes per environment)
+BASE_DOMAIN = os.getenv('BASE_DOMAIN', 'localhost')  # Development default
+
+# Allowed hosts for 4-level subdomain structure
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    # Development: *.app.localhost
+    f'*.{APP_SUBDOMAIN}.localhost',
+    f'{APP_SUBDOMAIN}.localhost',
+    # Production: *.app.company.com (set via environment)
+    f'*.{APP_SUBDOMAIN}.{BASE_DOMAIN}',
+    f'{APP_SUBDOMAIN}.{BASE_DOMAIN}',
+    BASE_DOMAIN,
+]
 
 
-# Application definition
+# ==================== MULTI-TENANT CONFIGURATION ====================
 
-INSTALLED_APPS = [
-    "daphne",
-    'django.contrib.admin',
-    'django.contrib.auth',
+# Tenant models
+TENANT_MODEL = "tenants.Tenant"
+TENANT_DOMAIN_MODEL = "tenants.Domain"
+
+# Shared apps (stored in public schema)
+SHARED_APPS = [
+    'django_tenants',  # MUST BE FIRST
     'django.contrib.contenttypes',
+    'django.contrib.auth',  # For public schema Super Super Admins
+    # REMOVED: 'django.contrib.admin' - admin only needed in tenant schemas
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'tenants',  # Tenant management app
+]
+
+# Tenant-specific apps (each tenant gets their own schema)
+TENANT_APPS = [
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
+    'django.contrib.admin',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+
+    'immigration',  # ALL immigration models go here
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
-    'drf_spectacular',  # OpenAPI generation
-    'immigration',
-    'whitenoise.runserver_nostatic',
-    'corsheaders',
+    'drf_spectacular',
     'django_countries',
     'djmoney',
+    'corsheaders',
+    'whitenoise.runserver_nostatic',
 ]
 
+# Combined (django-tenants requires this)
+INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
+# Add daphne at the beginning
+INSTALLED_APPS.insert(0, 'daphne')
+
+# ==================== MIDDLEWARE ====================
+# CRITICAL: TenantMainMiddleware MUST BE FIRST
 MIDDLEWARE = [
+    'tenants.middleware.FourLevelSubdomainMiddleware',  # CUSTOM - 4-level subdomain support
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -68,20 +113,24 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'leopard.urls'
 
-# CORS_ALLOW_ALL_ORIGINS = True
-CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ORIGIN_WHITELIST = [
-#      'http://localhost:3000'
+# CORS Configuration for 4-level subdomain architecture
+# Allow all subdomains of app.company.com
+CORS_ALLOW_ALL_ORIGINS = True  # For development
+# For production, use:
+# CORS_ALLOWED_ORIGIN_REGEXES = [
+#     r"^https://\w+\.app\.company\.com$",  # tenant.app.company.com
+#     r"^http://\w+\.app\.localhost$",      # tenant.app.localhost (dev)
 # ]
-# CORS_ALLOW_METHODS = [
-#     "DELETE",
-#     "GET",
-#     "OPTIONS",
-#     "PATCH",
-#     "POST",
-#     "PUT",
-# ]
-# CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+CORS_ALLOW_HEADERS = ['*']
 
 TEMPLATES = [
     {
@@ -102,12 +151,13 @@ TEMPLATES = [
 # WSGI_APPLICATION = 'leopard.wsgi.application'
 ASGI_APPLICATION = 'leopard.asgi.application'
 
-# Database
+# ==================== DATABASE ====================
+# CRITICAL: Using django_tenants PostgreSQL backend for schema-per-tenant
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_tenants.postgresql_backend',  # CHANGED for multi-tenancy
         'NAME': os.environ['DB_NAME'],
         'USER': os.environ['DB_USER'],
         'PASSWORD': os.environ['DB_PASSWORD'],
@@ -115,6 +165,11 @@ DATABASES = {
         'PORT': os.environ['DB_PORT']
     }
 }
+
+# Database router for multi-tenant setup
+DATABASE_ROUTERS = [
+    'django_tenants.routers.TenantSyncRouter',
+]
 
 
 # Password validation
@@ -143,7 +198,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         # 'rest_framework.authentication.BasicAuthentication',
         # 'rest_framework.authentication.SessionAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'immigration.authentication.TenantJWTAuthentication',  # CHANGED: Tenant-bound JWT
     ],
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_PAGINATION_CLASS': 'immigration.pagination.StandardResultsSetPagination',

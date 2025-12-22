@@ -11,29 +11,26 @@ from django.db import models
 class User(AbstractUser):
     """
     Extended User model for multi-tenant CRM.
-    
+
+    Schema-per-tenant: No tenant FK needed (automatic isolation via PostgreSQL schemas)
+
     Groups (instead of roles):
-    - SUPER_SUPER_ADMIN: System-wide access, can create SUPER_ADMIN
-    - SUPER_ADMIN: Tenant-scoped, can create all other groups
+    - SUPER_SUPER_ADMIN: System-wide access (stored in public schema)
+    - SUPER_ADMIN: Tenant-scoped, can create all other groups (in tenant schema)
     - REGION_MANAGER: Multiple regions access
     - BRANCH_ADMIN: Multiple branches access
     - CONSULTANT: Limited access
-    
+
     Note:
     - User permissions are managed via Django Groups
     - No role field - group membership determines access
     - SUPER_ADMIN group has special permission to create/manage users
+    - Tenant isolation provided by PostgreSQL schema (not FK)
     """
-    
-    tenant = models.ForeignKey(
-        'Tenant',
-        on_delete=models.CASCADE,
-        related_name='users',
-        null=True,
-        blank=True,
-        help_text='Tenant assignment'
-    )
-    
+
+    # REMOVED: tenant FK (schema provides tenant isolation)
+    # tenant = models.ForeignKey('Tenant', ...)
+
     # Multiple branches assignment
     branches = models.ManyToManyField(
         'Branch',
@@ -41,7 +38,7 @@ class User(AbstractUser):
         blank=True,
         help_text='Branch assignments'
     )
-    
+
     # Multiple regions assignment
     regions = models.ManyToManyField(
         'Region',
@@ -49,11 +46,11 @@ class User(AbstractUser):
         blank=True,
         help_text='Region assignments'
     )
-    
+
     class Meta:
         db_table = 'immigration_user'
         indexes = [
-            models.Index(fields=['tenant']),
+            # REMOVED: tenant index (no longer needed)
             models.Index(fields=['email']),
         ]
     

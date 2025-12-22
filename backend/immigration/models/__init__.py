@@ -2,6 +2,9 @@
 Immigration app models.
 
 This package contains all model definitions organized by domain.
+
+Note: Tenant model has been moved to tenants app (tenants.models.Tenant)
+for schema-per-tenant multi-tenancy support.
 """
 
 from immigration.models.base import (
@@ -9,7 +12,8 @@ from immigration.models.base import (
     SoftDeletionModel,
     LifeCycleModel,
 )
-from immigration.models.tenant import Tenant
+# REMOVED: Tenant import (now in tenants app)
+# from immigration.models.tenant import Tenant
 from immigration.models.region import Region
 from immigration.models.branch import Branch
 from immigration.models.user import User
@@ -28,7 +32,7 @@ __all__ = [
     'SoftDeletionManager',
     'SoftDeletionModel',
     'LifeCycleModel',
-    'Tenant',
+    # REMOVED: 'Tenant' (now in tenants app)
     'Region',
     'Branch',
     'User',

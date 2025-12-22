@@ -1,10 +1,13 @@
 """
 Event dispatcher for creating events from model signals.
+
+Multi-tenant: Captures tenant schema when creating events to enable
+proper schema context switching during async processing.
 """
 
 import logging
 import threading
-from django.db import transaction
+from django.db import transaction, connection
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save, pre_delete, post_delete
 
@@ -227,9 +230,14 @@ def _create_event(
     changed_fields: list,
 ):
     """Create event record and trigger async processing."""
+    from django_tenants.utils import schema_context
+
     # Get current user
     performed_by = get_current_user()
-    
+
+    # CRITICAL: Capture current tenant schema
+    current_schema = connection.schema_name
+
     # Create event in database (using transaction.on_commit for safety)
     def create_event():
         event = Event.objects.create(
@@ -241,13 +249,17 @@ def _create_event(
             current_state=current_state,
             changed_fields=changed_fields,
             performed_by=performed_by,
+            tenant_schema=current_schema,  # ADD: Capture schema for async processing
         )
-        
-        # Trigger async processing if not paused
-        if not EventProcessingControl.is_processing_paused():
+
+        # Check if processing is paused (check public schema)
+        with schema_context('public'):
+            is_paused = EventProcessingControl.is_processing_paused()
+
+        if not is_paused:
             process_event_async(event.id)
         else:
             logger.info(f"Event processing is paused. Event {event.id} queued for later processing.")
-    
+
     # Use transaction.on_commit to ensure event is created after transaction commits
     transaction.on_commit(create_event)

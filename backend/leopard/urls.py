@@ -5,7 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
+from immigration.api.v1.auth_views import TenantTokenObtainPairView
 
 admin.site.site_header = 'Upright India'  # default: "Django Administration"
 admin.site.index_title = 'Features area'  # default: "Site administration"
@@ -13,8 +14,8 @@ admin.site.site_title = 'Upright India'  # default: "Django site admin"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # JWT Authentication endpoints (CSRF exempt)
-    path('api/token/', csrf_exempt(TokenObtainPairView.as_view()), name='token_obtain_pair'),
+    # JWT Authentication endpoints (CSRF exempt) - TENANT-BOUND TOKENS
+    path('api/token/', csrf_exempt(TenantTokenObtainPairView.as_view()), name='token_obtain_pair'),
     path('api/token/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='token_refresh'),
     # API endpoints
     path('api/v1/', include('immigration.api.v1.urls')),

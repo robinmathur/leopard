@@ -37,8 +37,11 @@ class EventAction:
 class Event(models.Model):
     """
     Event queue model for tracking entity changes and processing side effects.
+
+    Multi-tenant: Events are stored in tenant schemas. The tenant_schema field
+    allows async processors to switch to the correct schema context.
     """
-    
+
     # Event identification
     event_type = models.CharField(
         max_length=100,
@@ -51,6 +54,17 @@ class Event(models.Model):
         help_text="e.g., 'Client', 'Task'"
     )
     entity_id = models.PositiveIntegerField()
+
+    # Multi-tenant support
+    tenant_schema = models.CharField(
+        max_length=100,
+        db_index=True,
+        null=True,  # Temporary: nullable for migration compatibility
+        blank=True,
+        default='public',  # Temporary default for existing records
+        help_text="Schema name for tenant context (e.g., 'tenant_acme')"
+    )
+
     action = models.CharField(
         max_length=20,
         choices=EventAction.CHOICES,
@@ -107,6 +121,8 @@ class Event(models.Model):
 class EventProcessingControl(models.Model):
     """
     Singleton model to control event processing state (pause/resume).
+
+    Multi-tenant: Stored in PUBLIC schema - global pause/resume for all tenants.
     """
     is_paused = models.BooleanField(default=False)
     paused_at = models.DateTimeField(null=True, blank=True)
@@ -121,9 +137,9 @@ class EventProcessingControl(models.Model):
         related_name='resumed_events'
     )
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
-        db_table = 'immigration_event_processing_control'
+        db_table = 'public.immigration_event_processing_control'
     
     def save(self, *args, **kwargs):
         self.pk = 1  # Ensure singleton

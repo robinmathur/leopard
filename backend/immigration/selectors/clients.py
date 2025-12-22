@@ -15,11 +15,14 @@ def client_list(*, user, filters: Optional[Dict[str, Any]] = None, include_delet
     """
     Get clients filtered by user's role and scope.
 
+    Multi-tenant: Schema isolation provides automatic tenant scoping.
+    All queries are automatically scoped to current tenant schema.
+
     Role-based filtering:
     - Consultant/Branch Admin: only their branch
     - Region Manager: all branches in their region
-    - Country Manager/Super Admin: entire tenant
-    - Super Super Admin: system-wide (all tenants)
+    - Super Admin: entire tenant (schema-scoped automatically)
+    - Super Super Admin: exists in public schema, needs explicit tenant context
 
     Args:
         user: Authenticated user making the request
@@ -43,27 +46,27 @@ def client_list(*, user, filters: Optional[Dict[str, Any]] = None, include_delet
     ).all()
     
     # Group-based scoping
-    # Note: Currently Client doesn't have direct branch/tenant FK
-    # This will filter based on assigned_to user's branch/tenant
-    
+    # Multi-tenant: Schema provides automatic tenant isolation, no need to filter by tenant FK
+
     if user.is_in_group('CONSULTANT') or user.is_in_group('BRANCH_ADMIN'):
         # Filter to clients assigned to users in the same branches
         user_branches = user.branches.all()
         if user_branches.exists():
             qs = qs.filter(assigned_to__branches__in=user_branches)
-    
+
     elif user.is_in_group('REGION_MANAGER'):
         # Filter to clients assigned to users in the same regions
         user_regions = user.regions.all()
         if user_regions.exists():
             qs = qs.filter(assigned_to__regions__in=user_regions)
-    
-    elif user.is_in_group('SUPER_ADMIN'):
-        # Filter to clients assigned to users in the same tenant
-        if user.tenant:
-            qs = qs.filter(assigned_to__tenant=user.tenant)
-    
-    # SUPER_SUPER_ADMIN sees everything (no additional filter)
+
+    # REMOVED: SUPER_ADMIN tenant filtering (schema provides isolation)
+    # elif user.is_in_group('SUPER_ADMIN'):
+    #     if user.tenant:
+    #         qs = qs.filter(assigned_to__tenant=user.tenant)
+
+    # SUPER_ADMIN sees all in current tenant schema (automatic)
+    # SUPER_SUPER_ADMIN would need explicit cross-tenant access (not implemented here)
     
     # Apply additional filters
     

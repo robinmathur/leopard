@@ -1,11 +1,25 @@
 /**
  * HTTP Client
  * Axios instance with interceptors for authentication and error handling
+ *
+ * 4-Level Subdomain Architecture: tenant.app.company.com
+ * - Automatically constructs API URL based on current tenant subdomain
+ * - Handles cross-tenant token validation
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getApiBaseUrl, getTenantFromHostname } from '../../config/domain.config';
 
-// Get base URL from environment or default to API path
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// Get base URL from environment or auto-detect from domain
+let BASE_URL: string;
+
+try {
+  // Try to get tenant-specific API URL
+  BASE_URL = import.meta.env.VITE_API_BASE_URL || getApiBaseUrl();
+} catch (error) {
+  // Fallback for non-tenant pages (login, tenant selection, etc.)
+  console.warn('No tenant detected in URL, using relative API path');
+  BASE_URL = '/api/v1';
+}
 
 // Create axios instance
 export const httpClient = axios.create({
@@ -14,6 +28,7 @@ export const httpClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
+  withCredentials: false, // Set to true if using cookies for auth
 });
 
 // Flag to prevent multiple refresh attempts
