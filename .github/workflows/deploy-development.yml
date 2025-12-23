@@ -25,6 +25,17 @@ jobs:
           echo "COMPOSE_PROJECT_NAME=leopard-dev" >> $GITHUB_ENV
           echo "DEPLOYMENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
 
+      - name: Copy .env file from parent directory (if exists)
+        run: |
+          if [ -f ../.env ]; then
+            cp ../.env .env
+            echo "✓ .env file copied from parent directory"
+          elif [ -f .env ]; then
+            echo "✓ .env file already exists"
+          else
+            echo "Warning: .env file not found, using defaults"
+          fi
+
       - name: Stop existing containers
         run: |
           echo "Stopping existing development containers..."
