@@ -13,29 +13,56 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
+# Initialize django-environ
+# Note: Required variables don't have defaults - they must be set in .env files
+env = environ.Env(
+    # Set casting for variables
+    DEBUG=(bool, False),
+    SECRET_KEY=(str, None),
+    DB_NAME=(str, None),
+    DB_USER=(str, None),
+    DB_PASSWORD=(str, None),
+    DB_HOST=(str, 'localhost'),
+    DB_PORT=(str, '5432'),
+)
+
+# Determine which .env file to load based on DJANGO_ENV
+# Default to 'development' if not set
+DJANGO_ENV = os.environ.get('DJANGO_ENV', 'development')
+env_file = BASE_DIR / f'.env.{DJANGO_ENV}'
+
+# Require environment-specific file to exist - fail fast if missing
+if not env_file.exists():
+    raise FileNotFoundError(
+        f"Environment file not found: {env_file}\n"
+        f"Please create .env.{DJANGO_ENV} file or set DJANGO_ENV to an environment with an existing .env file.\n"
+        f"Available environments: development, production, staging, test"
+    )
+
+# Read .env file
+environ.Env.read_env(env_file)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['SECRET_KEY']
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ['DEBUG']
+DEBUG = env('DEBUG')
 
 # ==================== DOMAIN CONFIGURATION ====================
 # 4-level subdomain architecture: tenant.app.company.com
 
 # Application subdomain (fixed across all environments)
-APP_SUBDOMAIN = os.getenv('APP_SUBDOMAIN', 'immigrate')
+APP_SUBDOMAIN = env('APP_SUBDOMAIN', default='immigrate')
 
 # Base domain (changes per environment)
-BASE_DOMAIN = os.getenv('BASE_DOMAIN', 'localhost')  # Development default
+BASE_DOMAIN = env('BASE_DOMAIN', default='localhost')  # Development default
 
 # Allowed hosts for 4-level subdomain structure
 ALLOWED_HOSTS = [
@@ -165,11 +192,11 @@ ASGI_APPLICATION = 'leopard.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django_tenants.postgresql_backend',  # CHANGED for multi-tenancy
-        'NAME': os.environ['DB_NAME'],
-        'USER': os.environ['DB_USER'],
-        'PASSWORD': os.environ['DB_PASSWORD'],
-        'HOST': os.environ['DB_HOST'],
-        'PORT': os.environ['DB_PORT']
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT')
     }
 }
 
@@ -281,7 +308,7 @@ AUTH_USER_MODEL = 'immigration.User'
 def _int_env(var_name, default):
     """Safely parse integer environment variable with fallback to default."""
     try:
-        return int(os.getenv(var_name, default))
+        return env.int(var_name, default=default)
     except (TypeError, ValueError):
         return int(default)
 
@@ -291,13 +318,33 @@ def _validate_required_env_vars():
     Validate required environment variables at startup.
     Fails fast if critical variables are missing or invalid.
     """
-    required_vars = ['SECRET_KEY', 'DEBUG', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT']
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    required_vars = {
+        'SECRET_KEY': str,
+        'DEBUG': bool,
+        'DB_NAME': str,
+        'DB_USER': str,
+        'DB_PASSWORD': str,
+        'DB_HOST': str,
+        'DB_PORT': str,
+    }
+    missing_vars = []
+    
+    for var, var_type in required_vars.items():
+        try:
+            if var_type == bool:
+                value = env.bool(var)
+            else:
+                value = env(var)
+            # Check if value is None or empty string
+            if value is None or (isinstance(value, str) and value.strip() == ''):
+                missing_vars.append(var)
+        except (ValueError, environ.ImproperlyConfigured):
+            missing_vars.append(var)
     
     if missing_vars:
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing_vars)}. "
-            f"Please ensure all required variables are set in your .env file."
+            f"Please ensure all required variables are set in your .env.{DJANGO_ENV} file."
         )
     
     # Validate TASKS_DUE_SOON_DEFAULT_DAYS is a positive integer
@@ -314,9 +361,9 @@ _validate_required_env_vars()
 
 # Environment-specific settings with validated defaults
 TASKS_DUE_SOON_DEFAULT_DAYS = _int_env('TASKS_DUE_SOON_DEFAULT_DAYS', 3)
-TASKS_INCLUDE_OVERDUE_DEFAULT = os.getenv('TASKS_INCLUDE_OVERDUE_DEFAULT', 'true')
-NOTIFICATIONS_INCLUDE_READ_DEFAULT = os.getenv('NOTIFICATIONS_INCLUDE_READ_DEFAULT', 'true')
-NOTIFICATION_STREAM_ALLOWED_ORIGIN = os.getenv('NOTIFICATION_STREAM_ALLOWED_ORIGIN', '*')
+TASKS_INCLUDE_OVERDUE_DEFAULT = env('TASKS_INCLUDE_OVERDUE_DEFAULT', default='true')
+NOTIFICATIONS_INCLUDE_READ_DEFAULT = env('NOTIFICATIONS_INCLUDE_READ_DEFAULT', default='true')
+NOTIFICATION_STREAM_ALLOWED_ORIGIN = env('NOTIFICATION_STREAM_ALLOWED_ORIGIN', default='*')
 
 CHANNEL_LAYERS = {
     'default': {
