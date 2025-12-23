@@ -31,14 +31,29 @@ jobs:
           echo "COMPOSE_PROJECT_NAME=leopard" >> $GITHUB_ENV
           echo "DEPLOYMENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
 
+      - name: Copy .env file from parent directory
+        run: |
+          if [ -f ../.env ]; then
+            cp ../.env .env
+            echo "✓ .env file copied from parent directory"
+          elif [ -f .env ]; then
+            echo "✓ .env file already exists in working directory"
+          else
+            echo "Error: .env file not found!"
+            echo "Please create .env file at: $(pwd)/../.env"
+            echo "Expected location: $HOME/actions-runner/_work/leopard/.env"
+            exit 1
+          fi
+
       - name: Verify .env file exists
         run: |
           if [ ! -f .env ]; then
-            echo "Error: .env file not found!"
-            echo "Please create .env file from .env.docker.example"
+            echo "Error: .env file not found after copy!"
             exit 1
           fi
-          echo "✓ .env file found"
+          echo "✓ .env file verified"
+          echo "Environment variables loaded:"
+          grep -v "PASSWORD\|SECRET" .env | head -5
 
       - name: Stop existing containers
         run: |
