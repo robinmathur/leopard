@@ -65,12 +65,30 @@ from immigration.models.visa import VisaType
     retrieve=extend_schema(
         summary="Get visa type details",
         description="Retrieve a specific visa type by ID.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Visa Type ID',
+                required=True,
+            ),
+        ],
         responses={200: VisaTypeOutputSerializer},
         tags=['visa-types'],
     ),
     partial_update=extend_schema(
         summary="Update visa type",
         description="Update specific fields of a visa type.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Visa Type ID',
+                required=True,
+            ),
+        ],
         request=VisaTypeUpdateSerializer,
         responses={200: VisaTypeOutputSerializer},
         tags=['visa-types'],
@@ -78,6 +96,15 @@ from immigration.models.visa import VisaType
     destroy=extend_schema(
         summary="Delete visa type",
         description="Delete a visa type if it has no associated applications.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Visa Type ID',
+                required=True,
+            ),
+        ],
         responses={204: None},
         tags=['visa-types'],
     ),

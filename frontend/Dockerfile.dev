@@ -1,0 +1,16 @@
+# Development Dockerfile for Leopard Frontend
+# Optimized for hot-reload and debugging
+
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+# (package.json will be bind-mounted in docker-compose.dev.yml)
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Default command (can be overridden in docker-compose.dev.yml)
+CMD ["npm", "run", "dev"]

@@ -3,6 +3,7 @@ Group serializers for Django Groups management.
 """
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from django.contrib.auth.models import Group, Permission
 
 
@@ -26,10 +27,12 @@ class PermissionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'name', 'codename']
     
+    @extend_schema_field(serializers.CharField())
     def get_content_type(self, obj):
         """Get content type as string format (app_label.model)."""
         return f"{obj.content_type.app_label}.{obj.content_type.model}"
     
+    @extend_schema_field(serializers.CharField())
     def get_content_type_display(self, obj):
         """Get human-readable content type name."""
         return f"{obj.content_type.app_label}.{obj.content_type.model}"
@@ -56,6 +59,7 @@ class GroupOutputSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
     
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_permissions_list(self, obj):
         """Get all permissions for this group."""
         permissions = obj.permissions.all().select_related('content_type')
@@ -69,10 +73,12 @@ class GroupOutputSerializer(serializers.ModelSerializer):
             for perm in permissions
         ]
     
+    @extend_schema_field(serializers.IntegerField())
     def get_permissions_count(self, obj):
         """Get count of permissions."""
         return obj.permissions.count()
     
+    @extend_schema_field(serializers.IntegerField())
     def get_users_count(self, obj):
         """Get count of users in this group."""
         return obj.user_set.count()

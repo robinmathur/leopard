@@ -101,12 +101,30 @@ from immigration.models import VisaApplication
     retrieve=extend_schema(
         summary="Get visa application details",
         description="Retrieve a specific visa application by ID.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Visa Application ID',
+                required=True,
+            ),
+        ],
         responses={200: VisaApplicationOutputSerializer},
         tags=['visa-applications'],
     ),
     partial_update=extend_schema(
         summary="Update visa application",
         description="Update specific fields of a visa application.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Visa Application ID',
+                required=True,
+            ),
+        ],
         request=VisaApplicationUpdateSerializer,
         responses={200: VisaApplicationOutputSerializer},
         tags=['visa-applications'],

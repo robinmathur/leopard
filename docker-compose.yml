@@ -1,71 +1,139 @@
+# Docker Compose for Leopard Immigration CRM - Production
+# Services: PostgreSQL, Backend (Django+Daphne), Frontend (React), Nginx Reverse Proxy, Certbot
+
 version: '3.8'
 
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: leopard-postgres
-    ports:
-      - "5432:5432"
+    restart: always
     environment:
-      POSTGRES_USER: leopard
-      POSTGRES_PASSWORD: leopard
-      POSTGRES_DB: leopard
+      POSTGRES_DB: ${DB_NAME:-leopard}
+      POSTGRES_USER: ${DB_USER:-leopard}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-leopard}
     volumes:
-      - leopard-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - leopard-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U leopard"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-leopard}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    # Internal only - no port exposure to host
 
-  # Redis for Django Channels (WebSocket support)
-#  redis:
-#    image: redis:7-alpine
-#    container_name: leopard-redis
-#    ports:
-#      - "6379:6379"
-#    healthcheck:
-#      test: ["CMD", "redis-cli", "ping"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
+  # Django Backend with Daphne ASGI Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        DJANGO_ENV: ${DJANGO_ENV:-production}
+    container_name: leopard-backend
+    restart: always
+    env_file:
+      - ./backend/.env.${DJANGO_ENV:-production}
+    environment:
+      # Override database connection to use postgres service
+      DB_HOST: postgres
+      DB_PORT: 5432
+    volumes:
+      # Shared volumes for static and media files
+      - staticfiles:/app/staticfiles
+      - mediafiles:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - leopard-network
+    healthcheck:
+      test: ["CMD", "bash", "/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Internal only - accessed via nginx reverse proxy
 
-  # Django Backend (uncomment when Dockerfile is ready)
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   container_name: leopard-backend
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - DATABASE_URL=postgres://leopard:leopard@postgres:5432/leopard
-  #     - REDIS_URL=redis://redis:6379/0
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   volumes:
-  #     - ./backend:/app
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_APP_SUBDOMAIN: ${VITE_APP_SUBDOMAIN:-immigrate}
+        VITE_BASE_DOMAIN: ${VITE_BASE_DOMAIN:-localhost}
+        VITE_ENVIRONMENT: ${VITE_ENVIRONMENT:-production}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: leopard-frontend
+    restart: always
+    networks:
+      - leopard-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Internal only - accessed via nginx reverse proxy
 
-  # React Frontend (uncomment when Dockerfile is ready)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: leopard-frontend
-  #   ports:
-  #     - "5173:5173"
-  #   environment:
-  #     - VITE_API_URL=http://localhost:8000
-  #   depends_on:
-  #     - backend
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
+  # Nginx Reverse Proxy (SSL Termination, Routing)
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: leopard-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Static and media files from backend
+      - staticfiles:/app/staticfiles:ro
+      - mediafiles:/app/mediafiles:ro
+      # Let's Encrypt certificates
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - leopard-network
+    # Reload nginx every 6 hours to pick up renewed certificates
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  # Certbot for Let's Encrypt SSL certificate auto-renewal
+  certbot:
+    image: certbot/certbot
+    container_name: leopard-certbot
+    restart: unless-stopped
+    volumes:
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    # Renew certificates every 12 hours
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  leopard-network:
+    driver: bridge
 
 volumes:
-  leopard-data:
+  # PostgreSQL data
+  pgdata:
+    driver: local
+
+  # Django static files (shared with nginx)
+  staticfiles:
+    driver: local
+
+  # Django media files (shared with nginx)
+  mediafiles:
+    driver: local
+
+  # Let's Encrypt certificates
+  certbot-conf:
+    driver: local
+
+  # Let's Encrypt ACME challenge
+  certbot-www:
     driver: local

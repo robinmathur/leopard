@@ -205,6 +205,41 @@ DATABASE_ROUTERS = [
     'django_tenants.routers.TenantSyncRouter',
 ]
 
+# ==================== DATABASE CONNECTION POOLING ====================
+# Persistent database connections for better performance in Docker
+DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+
+# ==================== DOCKER PRODUCTION SECURITY SETTINGS ====================
+# Security settings for production Docker deployment with nginx reverse proxy
+# These settings are only applied when DEBUG=False
+if not DEBUG:
+    # SSL/HTTPS Settings
+    SECURE_SSL_REDIRECT = True  # Redirect all HTTP to HTTPS
+    SESSION_COOKIE_SECURE = True  # Only send session cookies over HTTPS
+    CSRF_COOKIE_SECURE = True  # Only send CSRF cookies over HTTPS
+
+    # Security Headers
+    SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS filter
+    SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
+    X_FRAME_OPTIONS = 'SAMEORIGIN'  # Prevent clickjacking
+
+    # HSTS (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Trust proxy headers from nginx container
+    # This is critical for Docker deployments where nginx is the reverse proxy
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True
+
+    # CORS for production - restrict to actual tenant domains
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, BASE_DOMAIN.replace('.', r'\.')),
+    ]
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -391,6 +426,14 @@ SPECTACULAR_SETTINGS = {
     },
     'COMPONENT_SPLIT_REQUEST': True,
     'SORT_OPERATIONS': False,
+    'ENUM_NAME_OVERRIDES': {
+        'agent_type': 'AgentTypeEnum',
+        'gender': 'GenderEnum',
+        'stage': 'StageEnum',
+        'priority': 'PriorityEnum',
+        'status': 'StatusEnum',
+    },
+    'SCHEMA_PATH_PREFIX': '/api/v1',
 }
 
 # Logging configuration

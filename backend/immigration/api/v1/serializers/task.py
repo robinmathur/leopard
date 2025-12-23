@@ -9,6 +9,7 @@ are defined in one file and imported by views.
 """
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from immigration.models.task import Task
 from immigration.constants import TaskPriority, TaskStatus
 
@@ -82,24 +83,28 @@ class TaskOutputSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_assigned_to_full_name(self, obj):
         """Get assigned user's full name if exists."""
         if obj.assigned_to:
             return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}".strip()
         return None
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_assigned_by_name(self, obj):
         """Get assigned_by user's username if exists."""
         if obj.assigned_by:
             return obj.assigned_by.username
         return None
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_assigned_by_full_name(self, obj):
         """Get assigned_by user's full name if exists."""
         if obj.assigned_by:
             return f"{obj.assigned_by.first_name} {obj.assigned_by.last_name}".strip()
         return None
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_linked_entity_type(self, obj):
         """Get the type of linked entity (e.g., 'client', 'visaapplication')."""
         if obj.content_type:

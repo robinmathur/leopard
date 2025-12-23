@@ -22,6 +22,7 @@ from immigration.api.v1.serializers.users import (
     UserCreateSerializer,
     UserUpdateSerializer
 )
+from immigration.api.v1.serializers.groups import UserPermissionAssignmentSerializer
 from immigration.selectors.users import user_list, user_get
 from immigration.services.users import (
     user_create,
@@ -120,6 +121,15 @@ User = get_user_model()
     retrieve=extend_schema(
         summary="Get user details",
         description="Retrieve details of a specific user by ID. Requesting user must have access based on their role and scope.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='User ID',
+                required=True,
+            ),
+        ],
         responses={
             200: UserOutputSerializer,
             401: {'description': 'Unauthorized'},
@@ -140,6 +150,15 @@ User = get_user_model()
         
         Scope changes are validated against updater's permissions.
         """,
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='User ID',
+                required=True,
+            ),
+        ],
         request=UserUpdateSerializer,
         responses={
             200: UserOutputSerializer,
@@ -157,6 +176,8 @@ class UserViewSet(ViewSet):
 
     Enforces strict role hierarchy for all operations.
     """
+    
+    queryset = User.objects.none()  # For drf-spectacular schema generation
 
     authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanCreateUsers]
@@ -420,16 +441,16 @@ class UserViewSet(ViewSet):
     @extend_schema(
         summary="Assign permissions to user",
         description="Assign permissions directly to a user. Replaces existing direct permissions.",
-        request={
-            'type': 'object',
-            'properties': {
-                'permission_ids': {
-                    'type': 'array',
-                    'items': {'type': 'integer'},
-                }
-            },
-            'required': ['permission_ids'],
-        },
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='User ID',
+                required=True,
+            ),
+        ],
+        request=UserPermissionAssignmentSerializer,
         responses={
             200: UserOutputSerializer,
             400: {'description': 'Bad Request - Validation errors'},

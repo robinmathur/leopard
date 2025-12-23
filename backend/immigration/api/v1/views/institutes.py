@@ -68,6 +68,15 @@ from immigration.institute import Institute
     retrieve=extend_schema(
         summary="Get institute by ID",
         description="Returns a single institute by ID with scope validation.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Institute ID',
+                required=True,
+            ),
+        ],
     ),
     create=extend_schema(
         summary="Create new institute",
@@ -76,14 +85,41 @@ from immigration.institute import Institute
     update=extend_schema(
         summary="Update institute",
         description="Full update of an institute (all fields required).",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Institute ID',
+                required=True,
+            ),
+        ],
     ),
     partial_update=extend_schema(
         summary="Partial update institute",
         description="Partial update of an institute (only provided fields updated).",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Institute ID',
+                required=True,
+            ),
+        ],
     ),
     destroy=extend_schema(
         summary="Delete institute",
         description="Soft delete an institute (sets deleted_at timestamp).",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Institute ID',
+                required=True,
+            ),
+        ],
     ),
 )
 class InstituteViewSet(ViewSet):

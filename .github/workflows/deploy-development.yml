@@ -1,0 +1,109 @@
+name: Deploy to Development
+
+# Trigger on push to develop branch or manual workflow dispatch
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Development Server
+    runs-on: self-hosted  # Self-hosted runner on development server
+    environment: development
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set environment variables
+        run: |
+          echo "DJANGO_ENV=development" >> $GITHUB_ENV
+          echo "COMPOSE_PROJECT_NAME=leopard-dev" >> $GITHUB_ENV
+          echo "DEPLOYMENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+
+      - name: Stop existing containers
+        run: |
+          echo "Stopping existing development containers..."
+          docker-compose -f docker-compose.dev.yml down || true
+
+      - name: Build Docker images
+        run: |
+          echo "Building development Docker images..."
+          docker-compose -f docker-compose.dev.yml build --pull
+
+      - name: Start all containers
+        run: |
+          echo "Starting all development containers..."
+          docker-compose -f docker-compose.dev.yml up -d
+
+      - name: Wait for database to be healthy
+        run: |
+          echo "Waiting for database..."
+          timeout=60
+          while [ $timeout -gt 0 ]; do
+            if docker-compose -f docker-compose.dev.yml exec -T postgres pg_isready -U leopard; then
+              echo "✓ Database is ready"
+              break
+            fi
+            sleep 2
+            timeout=$((timeout-2))
+          done
+
+      - name: Run database migrations
+        run: |
+          echo "Running database migrations..."
+          sleep 10
+          docker-compose -f docker-compose.dev.yml exec -T backend python manage.py migrate --noinput
+          echo "✓ Migrations completed"
+
+      - name: Health check - Backend
+        run: |
+          echo "Checking backend health..."
+          sleep 5
+          if docker-compose -f docker-compose.dev.yml exec -T backend curl -f http://localhost:8000/api/v1/health/; then
+            echo "✓ Backend health check passed"
+          else
+            echo "Warning: Backend health check failed"
+            docker-compose -f docker-compose.dev.yml logs backend
+          fi
+
+      - name: Verify container status
+        run: |
+          echo "=== Development Container Status ==="
+          docker-compose -f docker-compose.dev.yml ps
+
+      - name: Clean up Docker resources
+        run: |
+          echo "Cleaning up unused Docker resources..."
+          docker system prune -f
+
+      - name: Display deployment summary
+        run: |
+          echo "======================================"
+          echo "Development deployment completed!"
+          echo "======================================"
+          echo "Environment: development"
+          echo "Time: $DEPLOYMENT_TIME"
+          echo "Commit: $(git rev-parse --short HEAD)"
+          echo
+          echo "Access URLs:"
+          echo "  Backend API: http://localhost:8000/api/"
+          echo "  Frontend: http://localhost:5173"
+          echo "  Database: localhost:5432"
+          echo
+          echo "To view logs:"
+          echo "  docker-compose -f docker-compose.dev.yml logs -f backend"
+          echo "  docker-compose -f docker-compose.dev.yml logs -f frontend"
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✓ Development deployment successful"
+          else
+            echo "✗ Development deployment failed"
+          fi

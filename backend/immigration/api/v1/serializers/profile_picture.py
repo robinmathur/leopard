@@ -6,6 +6,7 @@ File upload uses multipart/form-data, handled separately in views.
 """
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from immigration.models import ProfilePicture
 
 
@@ -36,12 +37,14 @@ class ProfilePictureOutput(serializers.ModelSerializer):
         ]
         read_only_fields = '__all__'  # All fields are read-only in output
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_uploaded_by_name(self, obj):
         """Get uploader's full name if exists."""
         if obj.uploaded_by:
             return f"{obj.uploaded_by.first_name} {obj.uploaded_by.last_name}".strip() or obj.uploaded_by.username
         return None
     
+    @extend_schema_field(serializers.URLField(allow_null=True))
     def get_file_url(self, obj):
         """Get absolute URL to the file."""
         if obj.file:

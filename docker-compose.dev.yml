@@ -1,0 +1,107 @@
+# Docker Compose for Leopard Immigration CRM - Development
+# Optimized for hot-reload, debugging, and local development
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: leopard-postgres-dev
+    ports:
+      - "5432:5432"  # Exposed for debugging with DB clients
+    environment:
+      POSTGRES_DB: leopard
+      POSTGRES_USER: leopard
+      POSTGRES_PASSWORD: leopard
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    networks:
+      - leopard-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leopard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django Backend (Development mode)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: leopard-backend-dev
+    ports:
+      - "8000:8000"  # Exposed for direct access
+    env_file:
+      - ./backend/.env.development
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DJANGO_ENV: development
+      DEBUG: "True"
+    volumes:
+      # Bind mount for hot-reload
+      - ./backend:/app
+      # Exclude .venv from bind mount (use container's venv)
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - leopard-network
+    # Override CMD to run Daphne in development mode
+    command: >
+      sh -c "
+        uv run python manage.py migrate --noinput &&
+        uv run daphne -b 0.0.0.0 -p 8000 leopard.asgi:application
+      "
+
+  # React Frontend (Development mode)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: leopard-frontend-dev
+    ports:
+      - "5173:5173"  # Vite dev server
+    environment:
+      VITE_APP_SUBDOMAIN: immigrate
+      VITE_BASE_DOMAIN: localhost
+      VITE_ENVIRONMENT: development
+      VITE_API_BASE_URL: http://localhost:8000
+    volumes:
+      # Bind mount for hot-reload
+      - ./frontend:/app
+      # Exclude node_modules from bind mount (use container's node_modules)
+      - /app/node_modules
+    networks:
+      - leopard-network
+    # Override CMD to ensure dependencies are installed
+    command: >
+      sh -c "
+        if [ ! -d node_modules ]; then npm ci; fi &&
+        npm run dev
+      "
+
+  # Nginx (Optional for development - uncomment if needed)
+  # In development, you can access backend/frontend directly via their exposed ports
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: leopard-nginx-dev
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #   networks:
+  #     - leopard-network
+
+networks:
+  leopard-network:
+    driver: bridge
+
+volumes:
+  pgdata-dev:
+    driver: local

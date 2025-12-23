@@ -13,11 +13,9 @@ from datetime import date
 from immigration.models import Client
 from immigration.constants import (
     ClientStage,
-    GROUP_CONSULTANT,
     GROUP_BRANCH_ADMIN,
     GROUP_REGION_MANAGER,
     GROUP_SUPER_ADMIN,
-    GROUP_SUPER_SUPER_ADMIN,
 )
 
 

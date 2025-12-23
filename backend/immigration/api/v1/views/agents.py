@@ -122,6 +122,15 @@ class CanManageAgents(RoleBasedPermission):
     retrieve=extend_schema(
         summary="Get agent details",
         description="Retrieve details of a specific agent by ID.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Agent ID',
+                required=True,
+            ),
+        ],
         responses={
             200: AgentOutputSerializer,
             401: {'description': 'Unauthorized'},
@@ -133,6 +142,15 @@ class CanManageAgents(RoleBasedPermission):
     update=extend_schema(
         summary="Update agent (full update)",
         description="Update all fields of an agent.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Agent ID',
+                required=True,
+            ),
+        ],
         request=AgentUpdateSerializer,
         responses={
             200: AgentOutputSerializer,
@@ -146,6 +164,15 @@ class CanManageAgents(RoleBasedPermission):
     partial_update=extend_schema(
         summary="Partial update agent",
         description="Update specific fields of an agent. Only provided fields are updated.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Agent ID',
+                required=True,
+            ),
+        ],
         request=AgentUpdateSerializer,
         responses={
             200: AgentOutputSerializer,
@@ -159,6 +186,15 @@ class CanManageAgents(RoleBasedPermission):
     destroy=extend_schema(
         summary="Delete agent (soft delete)",
         description="Soft delete an agent. Sets deleted_at timestamp without removing from database.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Agent ID',
+                required=True,
+            ),
+        ],
         responses={
             204: {'description': 'No Content - Successfully deleted'},
             401: {'description': 'Unauthorized'},
@@ -170,6 +206,15 @@ class CanManageAgents(RoleBasedPermission):
     restore=extend_schema(
         summary="Restore soft-deleted agent",
         description="Restore a previously soft-deleted agent.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Agent ID',
+                required=True,
+            ),
+        ],
         responses={
             200: AgentOutputSerializer,
             400: {'description': 'Bad Request - Agent is not soft-deleted'},
@@ -187,7 +232,8 @@ class AgentViewSet(ViewSet):
     This ViewSet delegates business logic to services (write operations)
     and selectors (read operations), keeping views thin.
     """
-
+    
+    queryset = Agent.objects.none()  # For drf-spectacular schema generation
     authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageAgents]
     pagination_class = StandardResultsSetPagination

@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from immigration.authentication import TenantJWTAuthentication
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import get_user_model
 
@@ -54,6 +54,15 @@ class CanManagePermissions(RoleBasedPermission):
     retrieve=extend_schema(
         summary="Get group details",
         description="Retrieve details of a specific group by ID.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Group ID',
+                required=True,
+            ),
+        ],
         responses={
             200: GroupOutputSerializer,
             404: {'description': 'Not Found'},
@@ -63,6 +72,15 @@ class CanManagePermissions(RoleBasedPermission):
     update=extend_schema(
         summary="Update group (full update)",
         description="Update all fields of a group.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Group ID',
+                required=True,
+            ),
+        ],
         request=GroupUpdateSerializer,
         responses={
             200: GroupOutputSerializer,
@@ -74,6 +92,15 @@ class CanManagePermissions(RoleBasedPermission):
     partial_update=extend_schema(
         summary="Partial update group",
         description="Update specific fields of a group.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Group ID',
+                required=True,
+            ),
+        ],
         request=GroupUpdateSerializer,
         responses={
             200: GroupOutputSerializer,
@@ -85,6 +112,15 @@ class CanManagePermissions(RoleBasedPermission):
     destroy=extend_schema(
         summary="Delete group",
         description="Delete a Django Group.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Group ID',
+                required=True,
+            ),
+        ],
         responses={
             204: {'description': 'No Content - Successfully deleted'},
             404: {'description': 'Not Found'},
@@ -100,6 +136,7 @@ class GroupViewSet(ViewSet):
     authentication_classes = [TenantJWTAuthentication]
     permission_classes = [IsAuthenticated, CanManageGroups]
     pagination_class = StandardResultsSetPagination
+    queryset = Group.objects.none()  # For drf-spectacular schema generation
     
     def list(self, request):
         """
@@ -248,6 +285,15 @@ class GroupViewSet(ViewSet):
     retrieve=extend_schema(
         summary="Get permission details",
         description="Retrieve details of a specific permission by ID.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Permission ID',
+                required=True,
+            ),
+        ],
         responses={
             200: PermissionSerializer,
             404: {'description': 'Not Found'},
@@ -264,6 +310,7 @@ class PermissionViewSet(ViewSet):
     authentication_classes = [TenantJWTAuthentication]
     permission_classes = [IsAuthenticated]
     pagination_class = StandardResultsSetPagination
+    queryset = Permission.objects.none()  # For drf-spectacular schema generation
     
     def list(self, request):
         """
