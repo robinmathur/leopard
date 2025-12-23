@@ -43,9 +43,10 @@ export interface QualificationUpdateRequest {
 /**
  * Get qualifications for a specific client
  */
-export const getQualifications = async (clientId: number): Promise<Qualification[]> => {
+export const getQualifications = async (clientId: number, signal?: AbortSignal): Promise<Qualification[]> => {
   const response = await httpClient.get<{ results: Qualification[] }>('/v1/qualifications/', {
     params: { client_id: clientId },
+    signal,
   });
   return response.data.results;
 };

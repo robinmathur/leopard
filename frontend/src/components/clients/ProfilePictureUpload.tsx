@@ -96,26 +96,44 @@ export const ProfilePictureUpload = ({
 
   // Fetch profile picture on mount
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchPicture = async () => {
       setIsLoading(true);
       setError(null);
       
       try {
-        const picture = await getProfilePicture(clientId);
-        setProfilePicture(picture);
+        const picture = await getProfilePicture(clientId, abortController.signal);
+        if (isMounted) {
+          setProfilePicture(picture);
+        }
       } catch (err) {
+        // Ignore abort errors
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
         // 404 means no picture exists, which is fine
         if ((err as { response?: { status?: number } }).response?.status === 404) {
-          setProfilePicture(null);
+          if (isMounted) {
+            setProfilePicture(null);
+          }
         } else {
           console.error('Failed to load profile picture:', err);
         }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchPicture();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Handle file selection

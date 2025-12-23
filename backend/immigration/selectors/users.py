@@ -9,63 +9,69 @@ from django.db.models import QuerySet, Q
 from immigration.models.user import User
 
 
-def user_list(*, user: User) -> QuerySet[User]:
+def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
     """
     List users visible to the current user based on their group.
-    
+
+    Multi-tenant: Schema isolation provides automatic tenant scoping.
+
     Filtering rules:
-    - SUPER_SUPER_ADMIN: All users across all tenants
-    - SUPER_ADMIN: All users in their tenant
+    - SUPER_ADMIN: All users in current tenant schema
     - REGION_MANAGER: Users in their assigned regions
     - BRANCH_ADMIN: Users in their assigned branches
     - CONSULTANT: Only themselves
-    
+
     Args:
         user: The requesting user
-        
+        search: Optional search term to filter by name, email, or username
+
     Returns:
         QuerySet of users visible to the requesting user
     """
-    # SUPER_SUPER_ADMIN sees all users
-    if user.is_in_group('SUPER_SUPER_ADMIN'):
-        return User.objects.all()
-    
-    # SUPER_ADMIN sees all users in their tenant
+    # Build base queryset based on user's group
+    # REMOVED: SUPER_SUPER_ADMIN check (operates in public schema, not tenant schemas)
     if user.is_in_group('SUPER_ADMIN'):
-        return User.objects.filter(tenant=user.tenant)
-    
-    # REGION_MANAGER sees users in their assigned regions
-    if user.is_in_group('REGION_MANAGER'):
+        # SUPER_ADMIN sees all users in current tenant schema (automatic)
+        qs = User.objects.all()
+    elif user.is_in_group('REGION_MANAGER'):
         user_regions = user.regions.all()
         if not user_regions.exists():
-            return User.objects.none()
-        
-        # Get all branches in those regions
-        from immigration.models.branch import Branch
-        region_branches = Branch.objects.filter(
-            region__in=user_regions
-        ).values_list('id', flat=True)
-        
-        # Return users in those branches + users managing those regions
-        return User.objects.filter(
-            tenant=user.tenant
-        ).filter(
-            Q(branches__in=region_branches) |
-            Q(regions__in=user_regions)
-        ).distinct()
-    
-    # BRANCH_ADMIN sees users in their assigned branches
-    if user.is_in_group('BRANCH_ADMIN'):
+            qs = User.objects.none()
+        else:
+            # Get all branches in those regions
+            from immigration.models.branch import Branch
+            region_branches = Branch.objects.filter(
+                region__in=user_regions
+            ).values_list('id', flat=True)
+
+            # Return users in those branches + users managing those regions
+            # REMOVED: tenant FK filter (schema provides isolation)
+            qs = User.objects.filter(
+                Q(branches__in=region_branches) |
+                Q(regions__in=user_regions)
+            ).distinct()
+    elif user.is_in_group('BRANCH_ADMIN'):
         user_branches = user.branches.all()
         if not user_branches.exists():
-            return User.objects.none()
-        
-        return User.objects.filter(
-            branches__in=user_branches
-        ).distinct()
+            qs = User.objects.none()
+        else:
+            qs = User.objects.filter(
+                branches__in=user_branches
+            ).distinct()
+    else:
+        # CONSULTANT (or any other group) sees only themselves
+        qs = User.objects.filter(id=user.id)
     
-    # CONSULTANT (or any other group) sees only themselves
-    return User.objects.filter(id=user.id)
+    # Apply search filter if provided
+    if search:
+        qs = qs.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search) |
+            Q(username__icontains=search)
+        )
+    
+    return qs
 
 
 def user_get(*, user_id: int, requesting_user: User) -> Optional[User]:

@@ -17,7 +17,6 @@ from immigration.constants import (
     GROUP_BRANCH_ADMIN,
     GROUP_REGION_MANAGER,
     GROUP_SUPER_ADMIN,
-    GROUP_SUPER_SUPER_ADMIN,
 )
 
 
@@ -114,8 +113,8 @@ def visa_application_create(*, data: VisaApplicationCreateInput, user) -> VisaAp
         PermissionError: If user lacks permission for the operation
         ValueError: If validation fails
     """
-    from immigration.client.client import Client
-    from immigration.visa.visa_type import VisaType
+    from immigration.models.client import Client
+    from immigration.models.visa import VisaType
     from immigration.selectors.clients import client_get
     
     # Validate client exists and user has access
@@ -229,7 +228,7 @@ def visa_application_update(
     update_fields = ['updated_by']
     
     if data.visa_type_id is not None:
-        from immigration.visa.visa_type import VisaType
+        from immigration.models.visa import VisaType
         try:
             visa_type = VisaType.objects.get(id=data.visa_type_id)
             application.visa_type = visa_type

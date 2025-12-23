@@ -45,7 +45,7 @@ export const VisaApplicationsPage = () => {
             Track visa and permit applications
           </Typography>
         </Box>
-        <Protect permission="create_application">
+        <Protect permission="add_visaapplication">
           <Button variant="contained" startIcon={<AddIcon />} size="small">
             New Application
           </Button>
@@ -80,7 +80,7 @@ export const VisaApplicationsPage = () => {
                   </TableCell>
                   <TableCell>{app.submittedAt}</TableCell>
                   <TableCell align="right">
-                    <Protect permission="edit_application">
+                    <Protect permission="change_visaapplication">
                       <Button size="small" variant="text">
                         View
                       </Button>

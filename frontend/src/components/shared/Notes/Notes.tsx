@@ -36,7 +36,7 @@ const NotesSkeleton = () => (
  * Notes Component
  */
 export const Notes = ({
-  entityId,
+  entityId: _entityId,
   isLoading = false,
   error = null,
   showAddForm: showAddFormProp = false,

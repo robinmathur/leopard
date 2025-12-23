@@ -21,7 +21,6 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from immigration.models import (
-    Tenant,
     Region,
     Branch,
     Client,
@@ -129,44 +128,8 @@ class Command(BaseCommand):
         User.objects.filter(is_superuser=False).delete()
         Branch.objects.all().delete()
         Region.objects.all().delete()
-        Tenant.objects.all().delete()
         self.stdout.write(self.style.SUCCESS('  ✓ Existing data cleared'))
 
-    def seed_tenants(self):
-        """Create tenant organizations."""
-        self.stdout.write('Creating tenants...')
-        
-        tenant_data = [
-            {
-                'name': 'Global Immigration Services',
-                'domain': 'globalimmigration.com',
-                'is_active': True,
-                'subscription_status': 'ACTIVE',
-                'settings': {'timezone': 'UTC', 'language': 'en'}
-            },
-            {
-                'name': 'Visa Express Solutions',
-                'domain': 'visaexpress.com',
-                'is_active': True,
-                'subscription_status': 'ACTIVE',
-                'settings': {'timezone': 'America/New_York', 'language': 'en'}
-            },
-            {
-                'name': 'Migration Partners Ltd',
-                'domain': 'migrationpartners.com',
-                'is_active': True,
-                'subscription_status': 'TRIAL',
-                'settings': {'timezone': 'Europe/London', 'language': 'en'}
-            },
-        ]
-        
-        tenants = []
-        for data in tenant_data:
-            tenant = Tenant.objects.create(**data)
-            tenants.append(tenant)
-            self.stdout.write(f'  ✓ Created tenant: {tenant.name}')
-        
-        return tenants
 
     def seed_regions(self, tenants):
         """Create regions for each tenant."""

@@ -16,6 +16,10 @@ import { ApiError } from '@/services/api/httpClient';
 
 // Module-level AbortController to track and cancel in-flight fetchClients requests
 let fetchClientsAbortController: AbortController | null = null;
+// Module-level AbortController for fetchClientById
+let fetchClientByIdAbortController: AbortController | null = null;
+// Module-level AbortController for fetchStageCounts
+let fetchStageCountsAbortController: AbortController | null = null;
 
 interface Pagination {
   count: number;
@@ -47,6 +51,8 @@ interface ClientStore {
   setPage: (page: number) => void;
   setPageSize: (pageSize: number) => void;
   cancelFetchClients: () => void;
+  cancelFetchClientById: () => void;
+  cancelFetchStageCounts: () => void;
 }
 
 export const useClientStore = create<ClientStore>((set, get) => ({
@@ -109,15 +115,25 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 
   /**
    * Fetch a single client by ID
+   * Automatically cancels any in-flight request to prevent race conditions
    */
   fetchClientById: async (id: number) => {
+    // Abort any in-flight request to prevent race conditions
+    fetchClientByIdAbortController?.abort();
+    fetchClientByIdAbortController = new AbortController();
+    const signal = fetchClientByIdAbortController.signal;
+
     set({ loading: true, error: null });
 
     try {
-      const client = await clientApi.getById(id);
+      const client = await clientApi.getById(id, signal);
       set({ selectedClient: client, loading: false });
       return client;
     } catch (error) {
+      // Ignore abort errors - request was intentionally cancelled
+      if ((error as Error).name === 'CanceledError' || signal.aborted) {
+        return null;
+      }
       set({
         loading: false,
         error: error as ApiError,
@@ -128,14 +144,24 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 
   /**
    * Fetch stage counts for all client stages
+   * Automatically cancels any in-flight request to prevent race conditions
    */
   fetchStageCounts: async () => {
+    // Abort any in-flight request to prevent race conditions
+    fetchStageCountsAbortController?.abort();
+    fetchStageCountsAbortController = new AbortController();
+    const signal = fetchStageCountsAbortController.signal;
+
     set({ stageCountsLoading: true });
 
     try {
-      const counts = await clientApi.getStageCounts();
+      const counts = await clientApi.getStageCounts(signal);
       set({ stageCounts: counts, stageCountsLoading: false });
     } catch (error) {
+      // Ignore abort errors - request was intentionally cancelled
+      if ((error as Error).name === 'CanceledError' || signal.aborted) {
+        return;
+      }
       set({
         stageCountsLoading: false,
         error: error as ApiError,
@@ -292,6 +318,24 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   cancelFetchClients: () => {
     fetchClientsAbortController?.abort();
     fetchClientsAbortController = null;
+  },
+
+  /**
+   * Cancel any in-flight fetchClientById request
+   * Useful for cleanup on component unmount
+   */
+  cancelFetchClientById: () => {
+    fetchClientByIdAbortController?.abort();
+    fetchClientByIdAbortController = null;
+  },
+
+  /**
+   * Cancel any in-flight fetchStageCounts request
+   * Useful for cleanup on component unmount
+   */
+  cancelFetchStageCounts: () => {
+    fetchStageCountsAbortController?.abort();
+    fetchStageCountsAbortController = null;
   },
 }));
 

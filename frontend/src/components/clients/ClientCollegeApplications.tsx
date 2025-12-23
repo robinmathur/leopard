@@ -142,25 +142,42 @@ export const ClientCollegeApplications = ({ clientId }: ClientCollegeApplication
 
   // Fetch application data
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const data = await getApplications(clientId);
-        // Sort by created_at (most recent first)
-        const sorted = data.sort((a, b) => {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-        setApplications(sorted);
+        const data = await getApplications(clientId, abortController.signal);
+        if (isMounted) {
+          // Sort by created_at (most recent first)
+          const sorted = data.sort((a, b) => {
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+          setApplications(sorted);
+        }
       } catch (err) {
-        setError((err as Error).message || 'Failed to load applications');
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        if (isMounted) {
+          setError((err as Error).message || 'Failed to load applications');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Loading state

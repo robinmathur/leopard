@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from immigration.authentication import TenantJWTAuthentication
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from django.contrib.auth import get_user_model
 
@@ -22,6 +22,7 @@ from immigration.api.v1.serializers.users import (
     UserCreateSerializer,
     UserUpdateSerializer
 )
+from immigration.api.v1.serializers.groups import UserPermissionAssignmentSerializer
 from immigration.selectors.users import user_list, user_get
 from immigration.services.users import (
     user_create,
@@ -49,6 +50,12 @@ User = get_user_model()
         Query parameters allow filtering by role, email, branch, region, etc.
         """,
         parameters=[
+            OpenApiParameter(
+                name='search',
+                type=str,
+                description='Search across first name, last name, email, and username (partial match, case-insensitive)',
+                required=False,
+            ),
             OpenApiParameter(
                 name='group',
                 type=str,
@@ -114,6 +121,15 @@ User = get_user_model()
     retrieve=extend_schema(
         summary="Get user details",
         description="Retrieve details of a specific user by ID. Requesting user must have access based on their role and scope.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='User ID',
+                required=True,
+            ),
+        ],
         responses={
             200: UserOutputSerializer,
             401: {'description': 'Unauthorized'},
@@ -134,6 +150,15 @@ User = get_user_model()
         
         Scope changes are validated against updater's permissions.
         """,
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='User ID',
+                required=True,
+            ),
+        ],
         request=UserUpdateSerializer,
         responses={
             200: UserOutputSerializer,
@@ -151,8 +176,10 @@ class UserViewSet(ViewSet):
 
     Enforces strict role hierarchy for all operations.
     """
+    
+    queryset = User.objects.none()  # For drf-spectacular schema generation
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanCreateUsers]
     pagination_class = StandardResultsSetPagination
     
@@ -173,7 +200,8 @@ class UserViewSet(ViewSet):
         GET /api/v1/users/
         """
         # Get filtered users using selector
-        users = user_list(user=request.user)
+        search = request.query_params.get('search')
+        users = user_list(user=request.user, search=search)
         
         # Apply query param filters
         role = request.query_params.get('role')
@@ -409,3 +437,55 @@ class UserViewSet(ViewSet):
         user_data['permissions'] = permissions_data
         
         return Response(user_data)
+    
+    @extend_schema(
+        summary="Assign permissions to user",
+        description="Assign permissions directly to a user. Replaces existing direct permissions.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='User ID',
+                required=True,
+            ),
+        ],
+        request=UserPermissionAssignmentSerializer,
+        responses={
+            200: UserOutputSerializer,
+            400: {'description': 'Bad Request - Validation errors'},
+            404: {'description': 'Not Found'},
+        },
+        tags=['users'],
+    )
+    @action(detail=True, methods=['post'], url_path='assign-permissions')
+    def assign_permissions(self, request, pk=None):
+        """
+        Assign permissions directly to a user.
+        POST /api/v1/users/{id}/assign-permissions/
+        """
+        from django.contrib.auth.models import Permission
+        from immigration.api.v1.serializers.groups import UserPermissionAssignmentSerializer
+        
+        try:
+            target_user = user_get(user_id=int(pk), requesting_user=request.user)
+            if target_user is None:
+                return Response(
+                    {'detail': 'User not found or access denied'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except ValueError:
+            return Response(
+                {'detail': 'User not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = UserPermissionAssignmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        permission_ids = serializer.validated_data['permission_ids']
+        permissions = Permission.objects.filter(id__in=permission_ids)
+        target_user.user_permissions.set(permissions)
+        
+        output_serializer = UserOutputSerializer(target_user)
+        return Response(output_serializer.data)

@@ -11,6 +11,7 @@ from immigration.models import (
     Passport,
     Proficiency,
     Qualification,
+    Employment,
 )
 from immigration.selectors.clients import client_get
 from immigration.constants import (
@@ -18,7 +19,6 @@ from immigration.constants import (
     GROUP_BRANCH_ADMIN,
     GROUP_REGION_MANAGER,
     GROUP_SUPER_ADMIN,
-    GROUP_SUPER_SUPER_ADMIN,
 )
 
 
@@ -149,3 +149,30 @@ def passport_get(*, user, client_id: int) -> Passport:
         return passport_list(user=user).get(client_id=client_id)
     except Passport.DoesNotExist:
         raise Passport.DoesNotExist(f"Passport for client id={client_id} does not exist")
+
+
+def employment_list(*, user, filters: Optional[Dict[str, Any]] = None) -> QuerySet[Employment]:
+    """
+    List employment records scoped by client visibility.
+    """
+    filters = filters or {}
+    qs = Employment.objects.select_related("client__branch__tenant")
+    qs = _scope_by_user(qs, user)
+
+    if client_id := filters.get("client_id"):
+        qs = qs.filter(client_id=client_id)
+
+    return qs
+
+
+def employment_get(*, user, employment_id: int) -> Employment:
+    """
+    Retrieve an employment record with scope validation.
+    """
+    qs = employment_list(user=user)
+    try:
+        return qs.get(id=employment_id)
+    except Employment.DoesNotExist:
+        if Employment.objects.filter(id=employment_id).exists():
+            raise PermissionError("You do not have access to this employment record")
+        raise

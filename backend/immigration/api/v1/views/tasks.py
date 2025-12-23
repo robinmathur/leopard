@@ -58,6 +58,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         from immigration.models.task import Task
         from django.contrib.contenttypes.models import ContentType
         
+        # Handle schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return Task.objects.none()
+        
         # Start with tasks assigned to the user
         queryset = Task.objects.filter(assigned_to=self.request.user)
         

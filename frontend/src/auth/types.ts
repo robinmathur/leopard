@@ -11,43 +11,36 @@ export type UserRole = 'super_admin' | 'branch_manager' | 'agent' | 'intern';
  */
 export type Permission =
   // Client permissions
-  | 'view_clients'
-  | 'create_client'
-  | 'edit_client'
+  | 'view_client'
+  | 'add_client'
+  | 'change_client'
   | 'delete_client'
   | 'view_contact_info'
   | 'view_client_documents'
   
-  // Lead permissions
-  | 'view_leads'
-  | 'create_lead'
-  | 'edit_lead'
-  | 'delete_lead'
-  | 'assign_lead'
-  
   // Visa Application permissions
-  | 'view_applications'
-  | 'create_application'
-  | 'edit_application'
-  | 'delete_application'
-  | 'submit_application'
+  | 'view_visaapplication'
+  | 'add_visaapplication'
+  | 'change_visaapplication'
+  | 'delete_visaapplication'
+  | 'submit_visaapplication'
   
   // Institute permissions
-  | 'view_institutes'
-  | 'create_institute'
-  | 'edit_institute'
+  | 'view_institute'
+  | 'add_institute'
+  | 'change_institute'
   | 'delete_institute'
   
   // Agent permissions (Admin only)
-  | 'view_agents'
-  | 'create_agent'
-  | 'edit_agent'
+  | 'view_agent'
+  | 'add_agent'
+  | 'change_agent'
   | 'delete_agent'
   | 'manage_permissions'
   
   // Financial permissions
   | 'view_finance'
-  | 'edit_finance'
+  | 'change_finance'
   | 'approve_payments'
   
   // Branch permissions
@@ -58,7 +51,79 @@ export type Permission =
   // Dashboard permissions
   | 'view_dashboard'
   | 'view_analytics'
-  | 'export_data';
+  | 'export_data'
+  
+  // Note permissions
+  | 'add_note'
+  | 'change_note'
+  | 'delete_note'
+  | 'view_note'
+
+  // Course Level permission
+  | 'add_courselevel'
+  | 'change_courselevel'
+  | 'delete_courselevel'
+  | 'view_courselevel'
+
+  // Narrow Field permission
+  | 'add_narrowfield'
+  | 'change_narrowfield'
+  | 'delete_narrowfield'
+  | 'view_narrowfield'
+
+  // Institute Contact Person Permission
+  | 'add_institutecontactperson'
+  | 'change_institutecontactperson'
+  | 'delete_institutecontactperson'
+  | 'view_institutecontactperson'
+
+  // Institute Requirement permission
+  | 'add_instituterequirement'
+  | 'change_instituterequirement'
+  | 'delete_instituterequirement'
+  | 'view_instituterequirement'
+
+  // Institute Location permission
+  | 'add_institutelocation'
+  | 'change_institutelocation'
+  | 'delete_institutelocation'
+  | 'view_institutelocation'
+
+  // Course permission
+  | 'add_course'
+  | 'change_course'
+  | 'delete_course'
+  | 'view_course'
+
+  // Broad Field permission
+  | 'add_broadfield'
+  | 'change_broadfield'
+  | 'delete_broadfield'
+  | 'view_broadfield'
+
+  // Institute Intake permission
+  | 'add_instituteintake'
+  | 'change_instituteintake'
+  | 'delete_instituteintake'
+  | 'view_instituteintake'
+  
+  // User management permissions
+  | 'view_user'
+  | 'add_user'
+  | 'change_user'
+  | 'delete_user'
+  
+  // Group management permissions
+  | 'view_group'
+  | 'add_group'
+  | 'change_group'
+  | 'delete_group'
+  
+  // Permission management permissions
+  | 'view_permission'
+  | 'add_permission'
+  | 'change_permission'
+  | 'delete_permission';
 
 /**
  * JWT Token pair for authentication
@@ -147,100 +212,6 @@ export interface AuthState {
 }
 
 /**
- * Role-based permission sets
- * Define what each role can do by default
- */
-export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  super_admin: [
-    // Full access to everything
-    'view_clients',
-    'create_client',
-    'edit_client',
-    'delete_client',
-    'view_contact_info',
-    'view_client_documents',
-    'view_leads',
-    'create_lead',
-    'edit_lead',
-    'delete_lead',
-    'assign_lead',
-    'view_applications',
-    'create_application',
-    'edit_application',
-    'delete_application',
-    'submit_application',
-    'view_institutes',
-    'create_institute',
-    'edit_institute',
-    'delete_institute',
-    'view_agents',
-    'create_agent',
-    'edit_agent',
-    'delete_agent',
-    'manage_permissions',
-    'view_finance',
-    'edit_finance',
-    'approve_payments',
-    'view_branch_data',
-    'manage_branch',
-    'view_all_branches',
-    'view_dashboard',
-    'view_analytics',
-    'export_data',
-  ],
-  branch_manager: [
-    // Branch-level management
-    'view_clients',
-    'create_client',
-    'edit_client',
-    'view_contact_info',
-    'view_client_documents',
-    'view_leads',
-    'create_lead',
-    'edit_lead',
-    'assign_lead',
-    'view_applications',
-    'create_application',
-    'edit_application',
-    'submit_application',
-    'view_institutes',
-    'view_agents',
-    'view_finance',
-    'edit_finance',
-    'view_branch_data',
-    'manage_branch',
-    'view_dashboard',
-    'view_analytics',
-    'export_data',
-  ],
-  agent: [
-    // Agent-level access
-    'view_clients',
-    'create_client',
-    'edit_client',
-    'view_contact_info',
-    'view_client_documents',
-    'view_leads',
-    'create_lead',
-    'edit_lead',
-    'view_applications',
-    'create_application',
-    'edit_application',
-    'submit_application',
-    'view_institutes',
-    'view_dashboard',
-  ],
-  intern: [
-    // Read-only access
-    'view_clients',
-    'view_leads',
-    'view_applications',
-    'view_institutes',
-    'view_dashboard',
-  ],
-};
-
-/**
  * Mock user for development/demo
  */
 export const MOCK_USERS: Record<string, User> = {
@@ -252,19 +223,19 @@ export const MOCK_USERS: Record<string, User> = {
     lastName: 'Admin',
     role: 'super_admin',
     tenantId: 'tenant-7',
-    permissions: ROLE_PERMISSIONS.super_admin,
+    permissions: [],
     createdAt: new Date().toISOString(),
   },
   manager: {
     id: '2',
-    username: 'branch_34',
-    email: 'branch_106@a.com',
+    username: 'branch_1',
+    email: 'branch.1@globalimmigration.com',
     firstName: 'Branch',
-    lastName: 'Manager',
+    lastName: 'Administrator',
     role: 'branch_manager',
     branchId: 'branch-1',
     tenantId: 'tenant-1',
-    permissions: ROLE_PERMISSIONS.branch_manager,
+    permissions: [],
     createdAt: new Date().toISOString(),
   },
   agent: {
@@ -276,7 +247,7 @@ export const MOCK_USERS: Record<string, User> = {
     role: 'agent',
     branchId: 'branch-1',
     tenantId: 'tenant-1',
-    permissions: ROLE_PERMISSIONS.agent,
+    permissions: [],
     createdAt: new Date().toISOString(),
   },
 };

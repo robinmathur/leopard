@@ -6,6 +6,9 @@ import { create } from 'zustand';
 import { ClientActivity, getTimeline, TimelineListParams } from '@/services/api/timelineApi';
 import type { ApiError } from '@/services/api/httpClient';
 
+// Module-level AbortController for fetchTimeline
+let fetchTimelineAbortController: AbortController | null = null;
+
 interface TimelineStore {
   // State
   activities: ClientActivity[];
@@ -22,6 +25,7 @@ interface TimelineStore {
   loadMore: (clientId: number) => Promise<void>;
   clearError: () => void;
   resetStore: () => void;
+  cancelFetchTimeline: () => void;
 }
 
 const initialState = {
@@ -39,8 +43,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
 
   /**
    * Fetch timeline activities for a specific client
+   * Automatically cancels any in-flight request
    */
   fetchTimeline: async (clientId: number, params?: TimelineListParams) => {
+    // Abort any in-flight request
+    fetchTimelineAbortController?.abort();
+    fetchTimelineAbortController = new AbortController();
+    const signal = fetchTimelineAbortController.signal;
+
     set({ isLoading: true, error: null });
 
     try {
@@ -49,7 +59,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
         ...params,
         page,
         page_size: 25,
-      });
+      }, signal);
 
       set({
         activities: response.results,
@@ -59,6 +69,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
         isLoading: false,
       });
     } catch (error) {
+      // Ignore abort errors
+      if ((error as Error).name === 'CanceledError' || signal.aborted) {
+        return;
+      }
       set({
         error: error as ApiError,
         isLoading: false,
@@ -121,6 +135,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
    */
   resetStore: () => {
     set(initialState);
+  },
+
+  /**
+   * Cancel any in-flight fetchTimeline request
+   */
+  cancelFetchTimeline: () => {
+    fetchTimelineAbortController?.abort();
+    fetchTimelineAbortController = null;
   },
 }));
 

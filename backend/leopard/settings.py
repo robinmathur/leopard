@@ -13,53 +13,132 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
+# Initialize django-environ
+# Note: Required variables don't have defaults - they must be set in .env files
+env = environ.Env(
+    # Set casting for variables
+    DEBUG=(bool, False),
+    SECRET_KEY=(str, None),
+    DB_NAME=(str, None),
+    DB_USER=(str, None),
+    DB_PASSWORD=(str, None),
+    DB_HOST=(str, 'localhost'),
+    DB_PORT=(str, '5432'),
+)
+
+# Determine which .env file to load based on DJANGO_ENV
+# Default to 'development' if not set
+DJANGO_ENV = os.environ.get('DJANGO_ENV', 'development')
+env_file = BASE_DIR / f'.env.{DJANGO_ENV}'
+
+# Require environment-specific file to exist - fail fast if missing
+if not env_file.exists():
+    raise FileNotFoundError(
+        f"Environment file not found: {env_file}\n"
+        f"Please create .env.{DJANGO_ENV} file or set DJANGO_ENV to an environment with an existing .env file.\n"
+        f"Available environments: development, production, staging, test"
+    )
+
+# Read .env file
+environ.Env.read_env(env_file)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['SECRET_KEY']
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ['DEBUG']
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['*']
+# ==================== DOMAIN CONFIGURATION ====================
+# 4-level subdomain architecture: tenant.app.company.com
+
+# Application subdomain (fixed across all environments)
+APP_SUBDOMAIN = env('APP_SUBDOMAIN', default='immigrate')
+
+# Base domain (changes per environment)
+BASE_DOMAIN = env('BASE_DOMAIN', default='localhost')  # Development default
+
+# Allowed hosts for 4-level subdomain structure
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    # Development: *.app.localhost
+    f'*.{APP_SUBDOMAIN}.localhost',
+    f'{APP_SUBDOMAIN}.localhost',
+    # Production: *.app.company.com (set via environment)
+    f'*.{APP_SUBDOMAIN}.{BASE_DOMAIN}',
+    f'{APP_SUBDOMAIN}.{BASE_DOMAIN}',
+    BASE_DOMAIN,
+]
+
+# In DEBUG mode, we'll use a custom host validation in middleware
+# to allow any tenant subdomain pattern dynamically
+if DEBUG:
+    # Allow all hosts in DEBUG (security risk in production!)
+    # The middleware will still validate tenant existence
+    ALLOWED_HOSTS = ['*']
 
 
-# Application definition
+# ==================== MULTI-TENANT CONFIGURATION ====================
 
-INSTALLED_APPS = [
-    "daphne",
-    'django.contrib.admin',
-    'django.contrib.auth',
+# Tenant models
+TENANT_MODEL = "tenants.Tenant"
+TENANT_DOMAIN_MODEL = "tenants.Domain"
+
+# Shared apps (stored in public schema)
+SHARED_APPS = [
+    'django_tenants',  # MUST BE FIRST
     'django.contrib.contenttypes',
+    'django.contrib.auth',  # For public schema Super Super Admins
+    # REMOVED: 'django.contrib.admin' - admin only needed in tenant schemas
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'tenants',  # Tenant management app
+]
+
+# Tenant-specific apps (each tenant gets their own schema)
+TENANT_APPS = [
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
+    'django.contrib.admin',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+
+    'immigration',  # ALL immigration models go here
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
-    'drf_spectacular',  # OpenAPI generation
-    'immigration',
-    'whitenoise.runserver_nostatic',
-    'corsheaders',
+    'drf_spectacular',
     'django_countries',
     'djmoney',
+    'corsheaders',
+    'whitenoise.runserver_nostatic',
 ]
 
+# Combined (django-tenants requires this)
+INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
+# Add daphne at the beginning
+INSTALLED_APPS.insert(0, 'daphne')
+
+# ==================== MIDDLEWARE ====================
+# CRITICAL: TenantMainMiddleware MUST BE FIRST
 MIDDLEWARE = [
+    'tenants.middleware.FourLevelSubdomainMiddleware',  # CUSTOM - 4-level subdomain support
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'tenants.csrf_middleware.MultiTenantCsrfMiddleware',  # CUSTOM - Auto-trust tenant subdomains
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'immigration.middleware.CurrentUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -68,20 +147,24 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'leopard.urls'
 
-# CORS_ALLOW_ALL_ORIGINS = True
-CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ORIGIN_WHITELIST = [
-#      'http://localhost:3000'
+# CORS Configuration for 4-level subdomain architecture
+# Allow all subdomains of app.company.com
+CORS_ALLOW_ALL_ORIGINS = True  # For development
+# For production, use:
+# CORS_ALLOWED_ORIGIN_REGEXES = [
+#     r"^https://\w+\.app\.company\.com$",  # tenant.app.company.com
+#     r"^http://\w+\.app\.localhost$",      # tenant.app.localhost (dev)
 # ]
-# CORS_ALLOW_METHODS = [
-#     "DELETE",
-#     "GET",
-#     "OPTIONS",
-#     "PATCH",
-#     "POST",
-#     "PUT",
-# ]
-# CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+CORS_ALLOW_HEADERS = ['*']
 
 TEMPLATES = [
     {
@@ -102,19 +185,60 @@ TEMPLATES = [
 # WSGI_APPLICATION = 'leopard.wsgi.application'
 ASGI_APPLICATION = 'leopard.asgi.application'
 
-# Database
+# ==================== DATABASE ====================
+# CRITICAL: Using django_tenants PostgreSQL backend for schema-per-tenant
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['DB_NAME'],
-        'USER': os.environ['DB_USER'],
-        'PASSWORD': os.environ['DB_PASSWORD'],
-        'HOST': os.environ['DB_HOST'],
-        'PORT': os.environ['DB_PORT']
+        'ENGINE': 'django_tenants.postgresql_backend',  # CHANGED for multi-tenancy
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT')
     }
 }
+
+# Database router for multi-tenant setup
+DATABASE_ROUTERS = [
+    'django_tenants.routers.TenantSyncRouter',
+]
+
+# ==================== DATABASE CONNECTION POOLING ====================
+# Persistent database connections for better performance in Docker
+DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+
+# ==================== DOCKER PRODUCTION SECURITY SETTINGS ====================
+# Security settings for production Docker deployment with nginx reverse proxy
+# These settings are only applied when DEBUG=False
+if not DEBUG:
+    # SSL/HTTPS Settings
+    SECURE_SSL_REDIRECT = True  # Redirect all HTTP to HTTPS
+    SESSION_COOKIE_SECURE = True  # Only send session cookies over HTTPS
+    CSRF_COOKIE_SECURE = True  # Only send CSRF cookies over HTTPS
+
+    # Security Headers
+    SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS filter
+    SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
+    X_FRAME_OPTIONS = 'SAMEORIGIN'  # Prevent clickjacking
+
+    # HSTS (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Trust proxy headers from nginx container
+    # This is critical for Docker deployments where nginx is the reverse proxy
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True
+
+    # CORS for production - restrict to actual tenant domains
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, BASE_DOMAIN.replace('.', r'\.')),
+    ]
 
 
 # Password validation
@@ -143,7 +267,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         # 'rest_framework.authentication.BasicAuthentication',
         # 'rest_framework.authentication.SessionAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'immigration.authentication.TenantJWTAuthentication',  # CHANGED: Tenant-bound JWT
     ],
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_PAGINATION_CLASS': 'immigration.pagination.StandardResultsSetPagination',
@@ -151,13 +275,25 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# CSRF exemption for JWT token endpoints
+# CSRF Configuration
+# For multi-tenant architecture with JWT, we allow all subdomains
+# Development: Allow all *.immigrate.localhost origins
 CSRF_TRUSTED_ORIGINS = [
+    # Backend
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    # Frontend (all tenant subdomains)
     'http://localhost:5173',
+    'http://main.immigrate.localhost:5173',
+    'http://demo.immigrate.localhost:5173',
+    'http://acme.immigrate.localhost:5173',
+    # Add more as needed, or disable CSRF for API endpoints (recommended for JWT)
     'http://192.168.0.196:62718'
 ]
+
+# Alternative: Disable CSRF for API endpoints using @csrf_exempt
+# Since we're using JWT authentication, CSRF protection is redundant for API endpoints
+# The JWT token itself provides protection against CSRF attacks
 
 SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
@@ -207,7 +343,7 @@ AUTH_USER_MODEL = 'immigration.User'
 def _int_env(var_name, default):
     """Safely parse integer environment variable with fallback to default."""
     try:
-        return int(os.getenv(var_name, default))
+        return env.int(var_name, default=default)
     except (TypeError, ValueError):
         return int(default)
 
@@ -217,13 +353,33 @@ def _validate_required_env_vars():
     Validate required environment variables at startup.
     Fails fast if critical variables are missing or invalid.
     """
-    required_vars = ['SECRET_KEY', 'DEBUG', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT']
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    required_vars = {
+        'SECRET_KEY': str,
+        'DEBUG': bool,
+        'DB_NAME': str,
+        'DB_USER': str,
+        'DB_PASSWORD': str,
+        'DB_HOST': str,
+        'DB_PORT': str,
+    }
+    missing_vars = []
+    
+    for var, var_type in required_vars.items():
+        try:
+            if var_type == bool:
+                value = env.bool(var)
+            else:
+                value = env(var)
+            # Check if value is None or empty string
+            if value is None or (isinstance(value, str) and value.strip() == ''):
+                missing_vars.append(var)
+        except (ValueError, environ.ImproperlyConfigured):
+            missing_vars.append(var)
     
     if missing_vars:
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing_vars)}. "
-            f"Please ensure all required variables are set in your .env file."
+            f"Please ensure all required variables are set in your .env.{DJANGO_ENV} file."
         )
     
     # Validate TASKS_DUE_SOON_DEFAULT_DAYS is a positive integer
@@ -240,9 +396,9 @@ _validate_required_env_vars()
 
 # Environment-specific settings with validated defaults
 TASKS_DUE_SOON_DEFAULT_DAYS = _int_env('TASKS_DUE_SOON_DEFAULT_DAYS', 3)
-TASKS_INCLUDE_OVERDUE_DEFAULT = os.getenv('TASKS_INCLUDE_OVERDUE_DEFAULT', 'true')
-NOTIFICATIONS_INCLUDE_READ_DEFAULT = os.getenv('NOTIFICATIONS_INCLUDE_READ_DEFAULT', 'true')
-NOTIFICATION_STREAM_ALLOWED_ORIGIN = os.getenv('NOTIFICATION_STREAM_ALLOWED_ORIGIN', '*')
+TASKS_INCLUDE_OVERDUE_DEFAULT = env('TASKS_INCLUDE_OVERDUE_DEFAULT', default='true')
+NOTIFICATIONS_INCLUDE_READ_DEFAULT = env('NOTIFICATIONS_INCLUDE_READ_DEFAULT', default='true')
+NOTIFICATION_STREAM_ALLOWED_ORIGIN = env('NOTIFICATION_STREAM_ALLOWED_ORIGIN', default='*')
 
 CHANNEL_LAYERS = {
     'default': {
@@ -270,4 +426,55 @@ SPECTACULAR_SETTINGS = {
     },
     'COMPONENT_SPLIT_REQUEST': True,
     'SORT_OPERATIONS': False,
+    'ENUM_NAME_OVERRIDES': {
+        'agent_type': 'AgentTypeEnum',
+        'gender': 'GenderEnum',
+        'stage': 'StageEnum',
+        'priority': 'PriorityEnum',
+        'status': 'StatusEnum',
+    },
+    'SCHEMA_PATH_PREFIX': '/api/v1',
+}
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'immigration.events': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Enable debug logging for events framework
+            'propagate': False,
+        },
+        'immigration.authentication': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Enable debug logging for authentication
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }

@@ -14,6 +14,9 @@ import {
 } from '@/services/api/noteApi';
 import type { ApiError } from '@/services/api/httpClient';
 
+// Module-level AbortController for fetchNotes
+let fetchNotesAbortController: AbortController | null = null;
+
 interface NoteStore {
   // State
   notes: Note[];
@@ -30,6 +33,7 @@ interface NoteStore {
   removeNote: (id: number) => Promise<boolean>;
   clearError: () => void;
   resetStore: () => void;
+  cancelFetchNotes: () => void;
 }
 
 const initialState = {
@@ -41,17 +45,23 @@ const initialState = {
   hasMore: false,
 };
 
-export const useNoteStore = create<NoteStore>((set, get) => ({
+export const useNoteStore = create<NoteStore>((set) => ({
   ...initialState,
 
   /**
    * Fetch notes for a specific client
+   * Automatically cancels any in-flight request
    */
   fetchNotes: async (clientId: number, page = 1) => {
+    // Abort any in-flight request
+    fetchNotesAbortController?.abort();
+    fetchNotesAbortController = new AbortController();
+    const signal = fetchNotesAbortController.signal;
+
     set({ isLoading: true, error: null });
 
     try {
-      const response = await listNotes({ client: clientId, page, page_size: 25 });
+      const response = await listNotes({ client: clientId, page, page_size: 25 }, signal);
       
       set({
         notes: response.results,
@@ -61,6 +71,10 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         isLoading: false,
       });
     } catch (error) {
+      // Ignore abort errors
+      if ((error as Error).name === 'CanceledError' || signal.aborted) {
+        return;
+      }
       set({
         error: error as ApiError,
         isLoading: false,
@@ -159,6 +173,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
    */
   resetStore: () => {
     set(initialState);
+  },
+
+  /**
+   * Cancel any in-flight fetchNotes request
+   */
+  cancelFetchNotes: () => {
+    fetchNotesAbortController?.abort();
+    fetchNotesAbortController = null;
   },
 }));
 

@@ -4,6 +4,11 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SchoolIcon from '@mui/icons-material/School';
 import BadgeIcon from '@mui/icons-material/Badge';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import CategoryIcon from '@mui/icons-material/Category';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import GroupIcon from '@mui/icons-material/Group';
 import { Permission } from '@/auth/types';
 
 /**
@@ -35,34 +40,88 @@ export const navigationConfig: NavItem[] = [
     label: 'Clients',
     path: '/clients',
     icon: PeopleIcon,
-    permission: 'view_clients',
+    permission: 'view_client',
   },
   {
     id: 'leads',
     label: 'Leads',
     path: '/leads',
     icon: TrendingUpIcon,
+    permission: 'view_client'
   },
   {
-    id: 'visa-applications',
-    label: 'Visa Applications',
-    path: '/visa-applications',
+    id: 'visa-manager',
+    label: 'Visa Manager',
+    path: '/visa-manager',
     icon: DescriptionIcon,
-    permission: 'view_applications',
+    permission: 'view_visaapplication',
+    children: [
+      {
+        id: 'visa-dashboard',
+        label: 'Visa Dashboard',
+        path: '/visa-manager/dashboard',
+        icon: AssignmentIcon,
+        permission: 'view_visaapplication',
+      },
+      {
+        id: 'visa-tracker',
+        label: 'Visa Tracker',
+        path: '/visa-manager/tracker',
+        icon: TimelineIcon,
+        permission: 'view_visaapplication',
+      },
+      {
+        id: 'visa-applications',
+        label: 'Visa Applications',
+        path: '/visa-manager/applications',
+        icon: DescriptionIcon,
+        permission: 'view_visaapplication',
+      },
+      {
+        id: 'visa-types',
+        label: 'Visa Type',
+        path: '/visa-manager/types',
+        icon: CategoryIcon,
+        permission: 'view_visaapplication',
+      },
+    ],
   },
   {
     id: 'institute',
     label: 'Institute',
     path: '/institute',
     icon: SchoolIcon,
-    permission: 'view_institutes',
+    permission: 'view_institute'
   },
   {
     id: 'agent',
     label: 'Agent',
     path: '/agent',
     icon: BadgeIcon,
-    permission: 'view_agents',
+    permission: 'view_agent',
+  },
+  {
+    id: 'user-management',
+    label: 'User Management',
+    path: '/user-management',
+    icon: AdminPanelSettingsIcon,
+    permission: 'view_user',
+    children: [
+      {
+        id: 'users',
+        label: 'Users',
+        path: '/user-management/users',
+        icon: PeopleIcon,
+        permission: 'view_user',
+      },
+      {
+        id: 'groups',
+        label: 'Groups',
+        path: '/user-management/groups',
+        icon: GroupIcon,
+        permission: 'view_group',
+      },
+    ],
   },
 ];
 

@@ -42,9 +42,9 @@ export interface PassportUpdateRequest {
 /**
  * Get passport for a specific client
  */
-export const getPassport = async (clientId: number): Promise<Passport | null> => {
+export const getPassport = async (clientId: number, signal?: AbortSignal): Promise<Passport | null> => {
   try {
-    const response = await httpClient.get<Passport>(`/v1/passports/${clientId}/`);
+    const response = await httpClient.get<Passport>(`/v1/passports/${clientId}/`, { signal });
     return response.data;
   } catch (error: any) {
     // If 404, no passport exists for this client - this is expected behavior

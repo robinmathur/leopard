@@ -9,6 +9,7 @@ are defined in one file and imported by views.
 """
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from immigration.models.notification import Notification
 from immigration.constants import NotificationType
 
@@ -53,12 +54,14 @@ class NotificationOutputSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_assigned_to_name(self, obj):
         """Get assigned user's full name if exists."""
         if obj.assigned_to:
             return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}".strip()
         return None
     
+    @extend_schema_field(serializers.BooleanField())
     def get_is_overdue(self, obj):
         """Check if notification is overdue."""
         return obj.is_overdue

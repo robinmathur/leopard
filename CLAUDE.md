@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -148,6 +148,10 @@ The backend follows a strict **service/selector pattern** to separate read and w
 - `shared/`: Reusable components (TaskList, Notes, Timeline)
 - `clients/`, `leads/`, etc.: Feature-specific components
 - Follows Atomic Design principles per constitution
+
+**Permission Format**
+- Djano provides default permission for the models in for like  add_<modelName>, change_<modelName>, delete_<modelName>, view_<modelName>
+- E.g  `view_client`, `change_client`, `view_client` and `delete_client`
 
 ### Constitution & Development Standards
 

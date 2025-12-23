@@ -1,8 +1,9 @@
 /**
  * TimelineItem Component
- * Displays a single timeline activity
+ * Displays a single timeline activity with linked entities and reminder dates
  */
-import { Box, Typography, Paper, Chip } from '@mui/material';
+import { Box, Typography, Paper, Chip, Button, Link } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { TimelineItemProps, ACTIVITY_TYPE_CONFIG } from './types';
 
 /**
@@ -32,12 +33,46 @@ const formatDate = (dateString: string): string => {
   }
 };
 
+/**
+ * Format reminder date for display
+ */
+const formatReminderDate = (dateString?: string, timeString?: string): string => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    const dateStr = date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    if (timeString) {
+      const [hours, minutes] = timeString.split(':');
+      return `${dateStr} ${hours}:${minutes}`;
+    }
+    return dateStr;
+  } catch {
+    return dateString;
+  }
+};
+
 export const TimelineItem = ({ activity }: TimelineItemProps) => {
+  const navigate = useNavigate();
   const config = ACTIVITY_TYPE_CONFIG[activity.activity_type] || {
     label: activity.activity_type_display || activity.activity_type,
     color: '#757575',
     icon: '•',
   };
+
+  const metadata = activity.metadata || {};
+  const reminderDate = metadata.reminder_date as string | undefined;
+  const reminderTime = metadata.reminder_time as string | undefined;
+  const taskId = metadata.task_id as number | undefined;
+  const visaApplicationId = metadata.visa_application_id as number | undefined;
+  const applicationId = metadata.application_id as number | undefined;
+  const noteId = metadata.note_id as number | undefined;
+
+  // Check if this is a note with reminder
+  const hasReminder = reminderDate && activity.activity_type === 'NOTE_ADDED';
 
   return (
     <Paper
@@ -47,11 +82,12 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
         borderLeft: 4,
         borderColor: config.color,
         position: 'relative',
+        bgcolor: 'background.paper',
       }}
     >
       {/* Activity Type Badge */}
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Typography component="span" sx={{ fontSize: '1.2rem' }}>
             {config.icon}
           </Typography>
@@ -82,13 +118,17 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
         {activity.description}
       </Typography>
 
-      {/* Performer Information */}
-      <Typography variant="caption" color="text.secondary">
-        by {activity.performed_by_name}
-      </Typography>
+      {/* Reminder Date (for notes with reminders) */}
+      {hasReminder && (
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            <strong>Reminder Date:</strong> {formatReminderDate(reminderDate, reminderTime)}
+          </Typography>
+        </Box>
+      )}
 
-      {/* Metadata (if any) */}
-      {activity.metadata && Object.keys(activity.metadata).length > 0 && (
+      {/* Linked Entities */}
+      {(taskId || visaApplicationId || applicationId) && (
         <Box
           sx={{
             mt: 1,
@@ -97,18 +137,59 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
             borderColor: 'divider',
           }}
         >
-          <Typography variant="caption" color="text.secondary" component="div">
-            {Object.entries(activity.metadata).map(([key, value]) => (
-              <Box key={key} sx={{ display: 'flex', gap: 1 }}>
-                <Typography variant="caption" fontWeight={600}>
-                  {key}:
-                </Typography>
-                <Typography variant="caption">{String(value)}</Typography>
-              </Box>
-            ))}
-          </Typography>
+          {visaApplicationId && (
+            <Box sx={{ mb: 0.5 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => navigate(`/visa-manager/applications?applicationId=${visaApplicationId}`)}
+                sx={{ textTransform: 'none' }}
+              >
+                View Application
+              </Button>
+            </Box>
+          )}
+          {applicationId && (
+            <Box sx={{ mb: 0.5 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => navigate(`/visa-manager/applications?applicationId=${applicationId}`)}
+                sx={{ textTransform: 'none' }}
+              >
+                View Application
+              </Button>
+            </Box>
+          )}
+          {taskId && (
+            <Box sx={{ mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Task ID: {taskId}
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
+
+      {/* Additional Metadata (for other fields) */}
+      {metadata && Object.keys(metadata).length > 0 && (
+        <Box
+          sx={{
+            mt: 1,
+            pt: 1,
+            borderTop: 1,
+            borderColor: 'divider',
+            display: 'none', // Hide raw metadata, we show specific fields above
+          }}
+        >
+          {/* Keep this hidden but available for debugging */}
+        </Box>
+      )}
+
+      {/* Performer Information */}
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+        by {activity.performed_by_name}
+      </Typography>
     </Paper>
   );
 };

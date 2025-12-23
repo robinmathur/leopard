@@ -4,7 +4,7 @@ ClientActivity serializers for API layer.
 These serializers handle JSON serialization/deserialization for timeline/activity endpoints.
 ClientActivity is read-only (no create/update serializers needed).
 """
-
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from immigration.models import ClientActivity
 
@@ -37,8 +37,19 @@ class ClientActivityOutput(serializers.ModelSerializer):
             'metadata',
             'created_at',
         ]
-        read_only_fields = '__all__'  # All fields are read-only
+        read_only_fields = [
+            'id',
+            'client',
+            'activity_type',
+            'activity_type_display',
+            'performed_by',
+            'performed_by_name',
+            'description',
+            'metadata',
+            'created_at',
+        ]  # All fields are read-only
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_performed_by_name(self, obj):
         """Get performer's full name if exists."""
         if obj.performed_by:

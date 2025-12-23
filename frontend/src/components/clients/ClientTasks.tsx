@@ -14,7 +14,6 @@ import {
   DialogActions,
   Alert,
   IconButton,
-  Tooltip,
   CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -32,7 +31,8 @@ import {
   deleteTask,
   completeTask,
 } from '@/services/api/taskApi';
-import { getAllActiveUsers, User } from '@/services/api/userApi';
+import { userApi } from '@/services/api/userApi';
+import type { User } from '@/types/user';
 import { CLIENT_CONTENT_TYPE_ID } from '@/services/api/reminderApi';
 
 export interface ClientTasksProps {
@@ -59,12 +59,80 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
 
   // Fetch tasks when component mounts or clientId changes
   useEffect(() => {
-    fetchTasks();
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    const loadTasks = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await getTasks(clientId, abortController.signal);
+        if (isMounted) {
+          // Sort by due_date (earliest first, then by created_at)
+          const sorted = data.sort((a, b) => {
+            const dateA = new Date(a.due_date).getTime();
+            const dateB = new Date(b.due_date).getTime();
+            if (dateA === dateB) {
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            }
+            return dateA - dateB;
+          });
+          setTasks(sorted);
+        }
+      } catch (err) {
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        if (isMounted) {
+          setError((err as Error).message || 'Failed to load tasks');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadTasks();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Fetch users when component mounts
   useEffect(() => {
-    fetchUsers();
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    const loadUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const data = await userApi.getAllActiveUsers(abortController.signal);
+        if (isMounted) {
+          setUsers(data);
+        }
+      } catch (err) {
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        console.error('Failed to load users:', err);
+        // Don't set error state, just log it
+      } finally {
+        if (isMounted) {
+          setUsersLoading(false);
+        }
+      }
+    };
+
+    loadUsers();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, []);
 
   const fetchTasks = async () => {
@@ -93,7 +161,7 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      const data = await getAllActiveUsers();
+      const data = await userApi.getAllActiveUsers();
       setUsers(data);
     } catch (err) {
       console.error('Failed to load users:', err);
@@ -104,13 +172,13 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
   };
 
   // Handle task creation
-  const handleCreate = async (data: TaskCreateRequest) => {
+  const handleCreate = async (data: TaskCreateRequest | TaskUpdateRequest) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const newTask = await createTask({
-        ...data,
+      await createTask({
+        ...(data as TaskCreateRequest),
         content_type: CLIENT_CONTENT_TYPE_ID,
         object_id: clientId,
       });
@@ -125,14 +193,14 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
   };
 
   // Handle task update
-  const handleUpdate = async (data: TaskUpdateRequest) => {
+  const handleUpdate = async (data: TaskCreateRequest | TaskUpdateRequest) => {
     if (!selectedTask) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await updateTask(selectedTask.id, data);
+      await updateTask(selectedTask.id, data as TaskUpdateRequest);
       // Refresh tasks list to get the latest data
       await fetchTasks();
       setEditDialogOpen(false);

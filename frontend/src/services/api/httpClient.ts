@@ -1,19 +1,43 @@
 /**
  * HTTP Client
  * Axios instance with interceptors for authentication and error handling
+ *
+ * 4-Level Subdomain Architecture: tenant.app.company.com
+ * - Automatically constructs API URL based on current tenant subdomain
+ * - Handles cross-tenant token validation
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getApiBaseUrl } from '../../config/domain.config';
 
-// Get base URL from environment or default to API path
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+/**
+ * Get the API base URL dynamically
+ * This function is called on each request to ensure the correct tenant URL is used
+ */
+function getBaseURL(): string {
+  // Check for manual override first
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
 
-// Create axios instance
+  // Try to get tenant-specific API URL
+  try {
+    const apiUrl = getApiBaseUrl();
+    console.log('🌐 API Base URL:', apiUrl); // Debug log
+    return apiUrl;
+  } catch (error) {
+    // Fallback for non-tenant pages (login, tenant selection, etc.)
+    console.warn('⚠️ No tenant detected in URL, using relative API path');
+    return '/api/v1';
+  }
+}
+
+// Create axios instance without baseURL (will be set dynamically)
 export const httpClient = axios.create({
-  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
+  withCredentials: false, // Set to true if using cookies for auth
 });
 
 // Flag to prevent multiple refresh attempts
@@ -35,10 +59,15 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 /**
- * Request interceptor - adds Authorization header
+ * Request interceptor - sets dynamic baseURL and adds Authorization header
  */
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Dynamically set baseURL for each request
+    const baseURL = getBaseURL();
+    config.baseURL = baseURL;
+
+    // Add authentication token
     const tokensStr = localStorage.getItem('auth_tokens');
     if (tokensStr) {
       try {
@@ -102,8 +131,9 @@ httpClient.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        // Attempt to refresh the token
-        const response = await axios.post(`${BASE_URL}/token/refresh/`, {
+        // Attempt to refresh the token (use dynamic baseURL)
+        const baseURL = getBaseURL();
+        const response = await axios.post(`${baseURL}/token/refresh/`, {
           refresh: tokens.refresh,
         });
 

@@ -54,6 +54,9 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Get notifications for the authenticated user based on filters.
         """
+        # Handle schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return Notification.objects.none()
         include_read_default = str(settings.NOTIFICATIONS_INCLUDE_READ_DEFAULT).lower() == 'true'
         include_read = self.request.query_params.get('include_read', str(include_read_default)).lower() == 'true'
         notification_type = self.request.query_params.get('type')

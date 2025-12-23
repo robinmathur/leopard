@@ -28,8 +28,8 @@ export interface LanguageExamUpdateRequest {
 /**
  * Get all language exams
  */
-export const getLanguageExams = async (): Promise<LanguageExam[]> => {
-  const response = await httpClient.get<{ results: LanguageExam[] }>('/v1/language-exams/');
+export const getLanguageExams = async (signal?: AbortSignal): Promise<LanguageExam[]> => {
+  const response = await httpClient.get<{ results: LanguageExam[] }>('/v1/language-exams/', { signal });
   return response.data.results;
 };
 

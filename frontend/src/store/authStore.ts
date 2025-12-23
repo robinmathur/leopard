@@ -37,26 +37,6 @@ const STORAGE_KEYS = {
  */
 function mapPermissions(backendPermissions: Array<{ codename: string }>): Permission[] {
   const permissionMap: Record<string, Permission> = {
-    'view_client': 'view_clients',
-    'add_client': 'create_client',
-    'change_client': 'edit_client',
-    'delete_client': 'delete_client',
-    'view_lead': 'view_leads',
-    'add_lead': 'create_lead',
-    'change_lead': 'edit_lead',
-    'delete_lead': 'delete_lead',
-    'view_visaapplication': 'view_applications',
-    'add_visaapplication': 'create_application',
-    'change_visaapplication': 'edit_application',
-    'delete_visaapplication': 'delete_application',
-    'view_institute': 'view_institutes',
-    'add_institute': 'create_institute',
-    'change_institute': 'edit_institute',
-    'delete_institute': 'delete_institute',
-    'view_agent': 'view_agents',
-    'add_agent': 'create_agent',
-    'change_agent': 'edit_agent',
-    'delete_agent': 'delete_agent',
   };
 
   const mappedPermissions: Permission[] = [];
@@ -84,16 +64,26 @@ function mapPermissions(backendPermissions: Array<{ codename: string }>): Permis
 
 function isValidPermission(value: string): value is Permission {
   const validPermissions: Permission[] = [
-    'view_clients', 'create_client', 'edit_client', 'delete_client',
+    'view_client', 'add_client', 'change_client', 'delete_client',
     'view_contact_info', 'view_client_documents',
-    'view_leads', 'create_lead', 'edit_lead', 'delete_lead', 'assign_lead',
-    'view_applications', 'create_application', 'edit_application', 
-    'delete_application', 'submit_application',
-    'view_institutes', 'create_institute', 'edit_institute', 'delete_institute',
-    'view_agents', 'create_agent', 'edit_agent', 'delete_agent', 'manage_permissions',
-    'view_finance', 'edit_finance', 'approve_payments',
+    'view_visaapplication', 'add_visaapplication', 'change_visaapplication',
+    'delete_visaapplication', 'submit_visaapplication',
+    'view_agent', 'add_agent', 'change_agent', 'delete_agent', 'manage_permissions',
+    'view_finance', 'change_finance', 'approve_payments',
     'view_branch_data', 'manage_branch', 'view_all_branches',
     'view_dashboard', 'view_analytics', 'export_data',
+    'add_courselevel', 'change_courselevel', 'delete_courselevel', 'view_courselevel',
+    'add_narrowfield', 'change_narrowfield', 'delete_narrowfield', 'view_narrowfield',
+    'add_institutecontactperson', 'change_institutecontactperson', 'delete_institutecontactperson', 'view_institutecontactperson',
+    'add_institute', 'change_institute', 'delete_institute', 'view_institute',
+    'add_instituterequirement', 'change_instituterequirement', 'delete_instituterequirement', 'view_instituterequirement',
+    'add_institutelocation', 'change_institutelocation', 'delete_institutelocation', 'view_institutelocation',
+    'add_course', 'change_course', 'delete_course', 'view_course',
+    'add_broadfield', 'change_broadfield', 'delete_broadfield', 'view_broadfield',
+    'add_instituteintake', 'change_instituteintake', 'delete_instituteintake', 'view_instituteintake',
+    'view_user', 'add_user', 'change_user', 'delete_user',
+    'view_group', 'add_group', 'change_group', 'delete_group',
+    'view_permission', 'add_permission', 'change_permission', 'delete_permission',
   ];
   return validPermissions.includes(value as Permission);
 }

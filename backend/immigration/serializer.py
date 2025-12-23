@@ -47,4 +47,13 @@ class ForeignKeySerializer(serializers.RelatedField):
         return obj
 
     def to_internal_value(self, data):
-        return self.get_queryset().get(pk=data['id'])
+        # Accept both formats: integer (pk) or object with 'id' key
+        if isinstance(data, int):
+            pk = data
+        elif isinstance(data, dict) and 'id' in data:
+            pk = data['id']
+        else:
+            raise serializers.ValidationError(
+                f"Invalid format. Expected integer or object with 'id' key, got {type(data).__name__}"
+            )
+        return self.get_queryset().get(pk=pk)

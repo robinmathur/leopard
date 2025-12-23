@@ -6,6 +6,7 @@ They follow the pattern: CreateRequest, UpdateRequest, and Output serializers.
 """
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from immigration.models import Note
 
 
@@ -85,6 +86,7 @@ class NoteOutput(serializers.ModelSerializer):
             'updated_at',
         ]
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_author_name(self, obj):
         """Get author's full name if exists."""
         if obj.author:

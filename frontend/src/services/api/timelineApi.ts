@@ -34,11 +34,12 @@ export interface PaginatedResponse<T> {
  */
 export const getTimeline = async (
   clientId: number,
-  params?: TimelineListParams
+  params?: TimelineListParams,
+  signal?: AbortSignal
 ): Promise<PaginatedResponse<ClientActivity>> => {
   const response = await httpClient.get<PaginatedResponse<ClientActivity>>(
     `/v1/clients/${clientId}/timeline/`,
-    { params }
+    { params, signal }
   );
   return response.data;
 };

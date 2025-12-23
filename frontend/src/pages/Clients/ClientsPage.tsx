@@ -266,7 +266,7 @@ export const ClientsPage = () => {
             Manage your active client database
           </Typography>
         </Box>
-        <Protect permission="create_client">
+        <Protect permission="add_client">
           <Button
             variant="contained"
             startIcon={<AddIcon />}

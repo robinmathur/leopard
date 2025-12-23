@@ -53,9 +53,10 @@ export const listReminders = async (params: {
   object_id?: number;
   page?: number;
   page_size?: number;
-}): Promise<PaginatedResponse<Reminder>> => {
+}, signal?: AbortSignal): Promise<PaginatedResponse<Reminder>> => {
   const response = await httpClient.get<PaginatedResponse<Reminder>>('/v1/reminders/', {
     params,
+    signal,
   });
   return response.data;
 };

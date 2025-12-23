@@ -69,7 +69,7 @@ export const Example1_FieldProtection = () => {
 // ============================================================================
 
 export const Example2_ActionButtons = () => {
-  const { hasPermission, hasAnyPermission } = usePermission();
+  const { hasPermission: _hasPermission, hasAnyPermission: _hasAnyPermission } = usePermission();
 
   return (
     <Box sx={{ display: 'flex', gap: 1 }}>
@@ -88,7 +88,7 @@ export const Example2_ActionButtons = () => {
       </Protect>
       
       {/* Show if user has ANY of the permissions */}
-      {hasAnyPermission(['edit_client', 'delete_client']) && (
+      {_hasAnyPermission(['edit_client', 'delete_client']) && (
         <Button variant="text" size="small">
           More Actions
         </Button>
@@ -253,12 +253,7 @@ export const Example4_ConditionalForm = () => {
 // ============================================================================
 
 export const Example5_StatusBadge = () => {
-  const { hasPermission } = usePermission();
-  
-  const application = {
-    status: 'pending_approval',
-    financialStatus: 'payment_required',
-  };
+  const { hasPermission: _hasPermission } = usePermission();
 
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -285,7 +280,7 @@ export const Example5_StatusBadge = () => {
 // ============================================================================
 
 export const Example6_ComplexPermissions = () => {
-  const { hasPermission, hasAllPermissions, hasAnyPermission, role } = usePermission();
+  const { hasPermission, hasAllPermissions: _hasAllPermissions, hasAnyPermission: _hasAnyPermission, role } = usePermission();
 
   return (
     <Box>

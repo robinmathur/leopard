@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from immigration.authentication import TenantJWTAuthentication
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
 from immigration.api.v1.permissions import CanManageClients
@@ -20,6 +20,7 @@ from immigration.api.v1.serializers.clients import (
     ClientUpdateSerializer,
     ClientStageCountSerializer
 )
+from immigration.api.v1.serializers.client_activity import ClientActivityOutput
 from immigration.selectors.clients import client_list, client_get, deleted_clients_list
 from immigration.services.clients import (
     client_create,
@@ -49,6 +50,12 @@ from django.db.models import Count
         """,
         parameters=[
             OpenApiParameter(
+                name='search',
+                type=str,
+                description='Search across first name, last name, and email (partial match, case-insensitive)',
+                required=False,
+            ),
+            OpenApiParameter(
                 name='email',
                 type=str,
                 description='Filter by email (partial match, case-insensitive)',
@@ -57,9 +64,9 @@ from django.db.models import Count
             OpenApiParameter(
                 name='stage',
                 type=str,
-                description='Filter by client stage (LE, FU, CT, CL)',
+                description='Filter by client stage (LEAD, FOLLOW_UP, CLIENT, CLOSE)',
                 required=False,
-                enum=['LE', 'FU', 'CT', 'CL'],
+                enum=['LEAD', 'FOLLOW_UP', 'CLIENT', 'CLOSE'],
             ),
             OpenApiParameter(
                 name='active',
@@ -122,6 +129,15 @@ from django.db.models import Count
     retrieve=extend_schema(
         summary="Get client details",
         description="Retrieve details of a specific client by ID. User must have access to this client based on their role and scope.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+        ],
         responses={
             200: ClientOutputSerializer,
             401: {'description': 'Unauthorized'},
@@ -133,6 +149,15 @@ from django.db.models import Count
     update=extend_schema(
         summary="Update client (full update)",
         description="Update all fields of a client. User must have access to this client based on their role and scope.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+        ],
         request=ClientUpdateSerializer,
         responses={
             200: ClientOutputSerializer,
@@ -146,6 +171,15 @@ from django.db.models import Count
     partial_update=extend_schema(
         summary="Partial update client",
         description="Update specific fields of a client. Only provided fields are updated.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+        ],
         request=ClientUpdateSerializer,
         responses={
             200: ClientOutputSerializer,
@@ -159,6 +193,15 @@ from django.db.models import Count
     destroy=extend_schema(
         summary="Delete client (soft delete)",
         description="Soft delete a client. Sets deleted_at timestamp without removing from database.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+        ],
         responses={
             204: {'description': 'No Content - Successfully deleted'},
             401: {'description': 'Unauthorized'},
@@ -170,6 +213,15 @@ from django.db.models import Count
     restore=extend_schema(
         summary="Restore soft-deleted client",
         description="Restore a previously soft-deleted client. Only administrators can restore clients.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+        ],
         responses={
             200: ClientOutputSerializer,
             400: {'description': 'Bad Request - Client is not soft-deleted'},
@@ -188,9 +240,10 @@ class ClientViewSet(ViewSet):
     and selectors (read operations), keeping views thin.
     """
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [TenantJWTAuthentication]
     permission_classes = [CanManageClients]
     pagination_class = StandardResultsSetPagination
+    queryset = Client.objects.none()  # For drf-spectacular schema generation
     
     def list(self, request):
         """
@@ -200,6 +253,7 @@ class ClientViewSet(ViewSet):
         """
         # Extract filters from query params
         filters = {
+            'search': request.query_params.get('search'),
             'email': request.query_params.get('email'),
             'stage': request.query_params.get('stage'),
             'first_name': request.query_params.get('first_name'),
@@ -484,7 +538,7 @@ class ClientViewSet(ViewSet):
                 required=False,
             ),
         ],
-        responses={200: 'ClientActivityOutput'},
+        responses={200: ClientActivityOutput(many=True)},
         tags=['clients'],
     )
     @action(detail=True, methods=['get'], url_path='timeline')
@@ -495,7 +549,6 @@ class ClientViewSet(ViewSet):
         GET /api/v1/clients/{id}/timeline/
         """
         from immigration.services.timeline import timeline_list
-        from immigration.api.v1.serializers.client_activity import ClientActivityOutput
         
         activity_type = request.query_params.get('activity_type')
         
@@ -517,14 +570,68 @@ class ClientViewSet(ViewSet):
         return Response(serializer.data)
     
     @extend_schema(
+        methods=['GET'],
         summary="Get client profile picture",
-        description="""
-        Get the profile picture for a client.
-        
-        GET /api/v1/clients/{id}/profile-picture/
-        """,
+        description="Get the profile picture for a client.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+        ],
         responses={
-            200: 'ProfilePictureOutput',
+            200: {'description': 'Profile picture data'},
+            404: {'description': 'Profile picture not found'},
+        },
+        tags=['clients'],
+    )
+    @extend_schema(
+        methods=['POST'],
+        summary="Upload client profile picture",
+        description="Upload or replace a client's profile picture.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+            OpenApiParameter(
+                name='file',
+                type={'type': 'string', 'format': 'binary'},
+                location=OpenApiParameter.QUERY,
+                description='Profile picture file',
+                required=True,
+            ),
+        ],
+        request={'type': 'object', 'properties': {'file': {'type': 'string', 'format': 'binary'}}},
+        responses={
+            201: {'description': 'Profile picture uploaded successfully'},
+            400: {'description': 'Bad Request - No file provided'},
+            403: {'description': 'Forbidden - Insufficient permissions'},
+        },
+        tags=['clients'],
+    )
+    @extend_schema(
+        methods=['DELETE'],
+        summary="Delete client profile picture",
+        description="Delete a client's profile picture.",
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Client ID',
+                required=True,
+            ),
+        ],
+        responses={
+            204: {'description': 'No Content - Successfully deleted'},
+            403: {'description': 'Forbidden - Insufficient permissions'},
             404: {'description': 'Profile picture not found'},
         },
         tags=['clients'],

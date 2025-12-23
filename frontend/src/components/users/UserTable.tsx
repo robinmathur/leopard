@@ -1,0 +1,180 @@
+/**
+ * UserTable Component
+ * Displays users in a paginated table
+ */
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Chip,
+  Typography,
+  CircularProgress,
+  IconButton,
+  Tooltip,
+} from '@mui/material';
+import { Edit, Security, Visibility } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { Protect } from '@/components/protected/Protect';
+import type { User } from '@/types/user';
+
+interface UserTableProps {
+  users: User[];
+  loading?: boolean;
+  pagination: {
+    count: number;
+    page: number;
+    pageSize: number;
+  };
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  onEdit: (user: User) => void;
+  onAssignPermissions: (user: User) => void;
+}
+
+/**
+ * Format date for display
+ */
+const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-AU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return dateString;
+  }
+};
+
+export const UserTable = ({
+  users,
+  loading = false,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+  onEdit,
+  onAssignPermissions,
+}: UserTableProps) => {
+  const navigate = useNavigate();
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    onPageChange(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onPageSizeChange(parseInt(event.target.value, 10));
+  };
+
+  const handleViewUser = (userId: number) => {
+    navigate(`/user-management/users/${userId}`);
+  };
+
+  return (
+    <TableContainer>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>ID</TableCell>
+            <TableCell>Username</TableCell>
+            <TableCell>Full Name</TableCell>
+            <TableCell>Email</TableCell>
+            <TableCell>Primary Group</TableCell>
+            <TableCell>Tenant</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell>Joined</TableCell>
+            <TableCell align="right">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                <CircularProgress size={32} />
+              </TableCell>
+            </TableRow>
+          ) : users.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                <Typography variant="body2" color="text.secondary">
+                  No users found
+                </Typography>
+              </TableCell>
+            </TableRow>
+          ) : (
+            users.map((user) => (
+              <TableRow key={user.id} hover>
+                <TableCell>{user.id}</TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontWeight={500}>
+                    {user.username}
+                  </Typography>
+                </TableCell>
+                <TableCell>{user.full_name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  {user.primary_group ? (
+                    <Chip
+                      label={user.primary_group}
+                      size="small"
+                      color="primary"
+                    />
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell>{user.tenant_name || '-'}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={user.is_active ? 'Active' : 'Inactive'}
+                    size="small"
+                    color={user.is_active ? 'success' : 'default'}
+                  />
+                </TableCell>
+                <TableCell>{formatDate(user.date_joined)}</TableCell>
+                <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                  <Tooltip title="View">
+                    <IconButton size="small" onClick={() => handleViewUser(user.id)}>
+                      <Visibility fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Protect permission="change_user">
+                    <Tooltip title="Edit">
+                      <IconButton size="small" onClick={() => onEdit(user)}>
+                        <Edit fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Protect>
+                  <Protect permission="change_user">
+                    <Tooltip title="Assign Permissions">
+                      <IconButton size="small" onClick={() => onAssignPermissions(user)} color="primary">
+                        <Security fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Protect>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      {!loading && users.length > 0 && (
+        <TablePagination
+          component="div"
+          count={pagination.count}
+          page={pagination.page}
+          onPageChange={handleChangePage}
+          rowsPerPage={pagination.pageSize}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+        />
+      )}
+    </TableContainer>
+  );
+};
+

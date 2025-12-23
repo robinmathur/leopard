@@ -3,6 +3,8 @@ Branch services for write operations with business logic.
 
 This module implements the service pattern for branch operations,
 providing validation, scope checking, and transactional integrity.
+
+Multi-tenant: Schema isolation provides automatic tenant scoping.
 """
 
 from django.db import transaction
@@ -14,9 +16,12 @@ from immigration.constants import GROUP_SUPER_SUPER_ADMIN
 
 
 class BranchCreateInput(BaseModel):
-    """Input model for branch creation with validation."""
+    """Input model for branch creation with validation.
 
-    tenant_id: int
+    Multi-tenant: No tenant_id needed - schema provides isolation.
+    """
+
+    # REMOVED: tenant_id (schema provides isolation)
     region_id: Optional[int] = None
     name: str = Field(..., min_length=1, max_length=100)
     phone: Optional[str] = Field(None, max_length=15)
@@ -52,10 +57,11 @@ def branch_create(*, data: BranchCreateInput, user) -> Branch:
     """
     Create a new branch with scope validation.
 
+    Multi-tenant: Schema isolation provides automatic tenant scoping.
+    Branches are automatically created in the current tenant schema.
+
     Business rules:
-    - SUPER_SUPER_ADMIN can create branches for any tenant
-    - SUPER_ADMIN can only create branches for their tenant
-    - Branch name must be unique within tenant
+    - Branch name must be unique within current tenant schema
 
     Args:
         data: BranchCreateInput with branch details
@@ -68,35 +74,26 @@ def branch_create(*, data: BranchCreateInput, user) -> Branch:
         PermissionError: If user lacks permission
         ValueError: If validation fails
     """
-    from immigration.models.tenant import Tenant
     from immigration.models.region import Region
 
-    # Validate tenant access
-    try:
-        tenant = Tenant.objects.get(id=data.tenant_id)
-    except Tenant.DoesNotExist:
-        raise ValueError(f"Tenant with id={data.tenant_id} does not exist")
-
-    if not user.is_in_group(GROUP_SUPER_SUPER_ADMIN) and tenant.id != user.tenant_id:
-        raise PermissionError("Cannot create branches for other tenants")
+    # REMOVED: tenant validation (schema provides isolation)
 
     # Validate region if provided
     region = None
     if data.region_id:
         try:
             region = Region.objects.get(id=data.region_id)
-            if region.tenant_id != tenant.id:
-                raise ValueError("Region does not belong to the specified tenant")
+            # REMOVED: tenant FK check (schema ensures region belongs to current tenant)
         except Region.DoesNotExist:
             raise ValueError(f"Region with id={data.region_id} does not exist")
 
-    # Check for duplicate branch name within tenant
-    if Branch.objects.filter(tenant=tenant, name=data.name).exists():
-        raise ValueError(f"Branch with name '{data.name}' already exists in this tenant")
+    # Check for duplicate branch name (within current tenant schema)
+    if Branch.objects.filter(name=data.name).exists():
+        raise ValueError(f"Branch with name '{data.name}' already exists")
 
-    # Create branch
+    # Create branch (no tenant FK needed - schema provides isolation)
     branch = Branch.objects.create(
-        tenant=tenant,
+        # REMOVED: tenant assignment
         region=region,
         name=data.name,
         phone=data.phone or '',
@@ -118,9 +115,11 @@ def branch_update(*, branch: Branch, data: BranchUpdateInput, user) -> Branch:
     """
     Update an existing branch with scope validation.
 
+    Multi-tenant: Schema isolation provides automatic tenant scoping.
+    Branches can only be updated within their current tenant schema.
+
     Business rules:
-    - User must have access to the branch's tenant
-    - Branch name uniqueness is maintained within tenant
+    - Branch name uniqueness is maintained within current tenant schema
 
     Args:
         branch: Existing Branch instance to update
@@ -134,18 +133,16 @@ def branch_update(*, branch: Branch, data: BranchUpdateInput, user) -> Branch:
         PermissionError: If user lacks permission
         ValueError: If validation fails
     """
-    # Check tenant access
-    if not user.is_in_group(GROUP_SUPER_SUPER_ADMIN) and branch.tenant_id != user.tenant_id:
-        raise PermissionError("Cannot update branches for other tenants")
+    # REMOVED: tenant access check (schema provides isolation)
 
     # Update only provided fields
     update_fields = ['updated_by']
 
     if data.name is not None:
-        # Check for name conflicts if name is changing
+        # Check for name conflicts if name is changing (within current tenant schema)
         if data.name != branch.name:
-            if Branch.objects.filter(tenant=branch.tenant, name=data.name).exists():
-                raise ValueError(f"Branch with name '{data.name}' already exists in this tenant")
+            if Branch.objects.filter(name=data.name).exists():
+                raise ValueError(f"Branch with name '{data.name}' already exists")
         branch.name = data.name
         update_fields.append('name')
 
@@ -192,6 +189,8 @@ def branch_delete(*, branch: Branch, user) -> None:
     """
     Soft delete a branch (sets deleted_at timestamp).
 
+    Multi-tenant: Schema isolation provides automatic tenant scoping.
+
     Args:
         branch: Branch instance to delete
         user: Authenticated user performing the deletion
@@ -199,9 +198,7 @@ def branch_delete(*, branch: Branch, user) -> None:
     Raises:
         PermissionError: If user lacks permission
     """
-    # Check tenant access
-    if not user.is_in_group(GROUP_SUPER_SUPER_ADMIN) and branch.tenant_id != user.tenant_id:
-        raise PermissionError("Cannot delete branches for other tenants")
+    # REMOVED: tenant access check (schema provides isolation)
 
     branch.delete()  # Soft delete sets deleted_at field
 
@@ -210,6 +207,8 @@ def branch_delete(*, branch: Branch, user) -> None:
 def branch_restore(*, branch: Branch, user) -> Branch:
     """
     Restore a soft-deleted branch.
+
+    Multi-tenant: Schema isolation provides automatic tenant scoping.
 
     Args:
         branch: Soft-deleted Branch instance to restore
@@ -222,9 +221,7 @@ def branch_restore(*, branch: Branch, user) -> Branch:
         PermissionError: If user lacks permission
         ValueError: If branch is not soft-deleted
     """
-    # Check tenant access
-    if not user.is_in_group(GROUP_SUPER_SUPER_ADMIN) and branch.tenant_id != user.tenant_id:
-        raise PermissionError("Cannot restore branches for other tenants")
+    # REMOVED: tenant access check (schema provides isolation)
 
     if not branch.is_deleted:
         raise ValueError("Branch is not soft-deleted")

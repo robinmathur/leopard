@@ -16,6 +16,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import { getVisaApplications, VisaApplication, VisaApplicationStatus } from '@/services/api/visaApplicationApi';
+import {Protect} from "@/components/protected/Protect.tsx";
 
 export interface ClientVisaApplicationsProps {
   /** Client ID */
@@ -27,8 +28,8 @@ export interface ClientVisaApplicationsProps {
  */
 const STATUS_COLORS: Record<VisaApplicationStatus, 'default' | 'info' | 'warning' | 'success' | 'error'> = {
   TO_BE_APPLIED: 'default',
-  APPLIED: 'info',
-  OPEN: 'warning',
+  VISA_APPLIED: 'info',
+  CASE_OPENED: 'warning',
   GRANTED: 'success',
   REJECTED: 'error',
   WITHDRAWN: 'default',
@@ -39,8 +40,8 @@ const STATUS_COLORS: Record<VisaApplicationStatus, 'default' | 'info' | 'warning
  */
 const STATUS_LABELS: Record<VisaApplicationStatus, string> = {
   TO_BE_APPLIED: 'To Be Applied',
-  APPLIED: 'Applied',
-  OPEN: 'Open',
+  VISA_APPLIED: 'Visa Applied',
+  CASE_OPENED: 'Case Opened',
   GRANTED: 'Granted',
   REJECTED: 'Rejected',
   WITHDRAWN: 'Withdrawn',
@@ -168,25 +169,42 @@ export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps
 
   // Fetch visa application data
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const data = await getVisaApplications(clientId);
-        // Sort by created_at (most recent first)
-        const sorted = data.sort((a, b) => {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-        setApplications(sorted);
+        const data = await getVisaApplications(clientId, abortController.signal);
+        if (isMounted) {
+          // Sort by created_at (most recent first)
+          const sorted = data.sort((a, b) => {
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+          setApplications(sorted);
+        }
       } catch (err) {
-        setError((err as Error).message || 'Failed to load visa applications');
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        if (isMounted) {
+          setError((err as Error).message || 'Failed to load visa applications');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Loading state
@@ -218,7 +236,7 @@ export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Visa Applications</Typography>
         <Button
-          variant="outlined"
+          variant="contained"
           size="small"
           startIcon={<AddIcon />}
           onClick={() => {
@@ -242,19 +260,11 @@ export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps
           <Typography variant="body1" gutterBottom>
             No visa applications yet
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Create a visa application for this client
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              // TODO: Open visa application add form
-              alert('New Visa Application form - Coming in future enhancement');
-            }}
-          >
-            New Application
-          </Button>
+          <Protect permission={'add_client'}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Create a visa application for this client
+            </Typography>
+          </Protect>
         </Box>
       ) : (
         <>

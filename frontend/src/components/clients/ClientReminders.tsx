@@ -234,6 +234,9 @@ export const ClientReminders = ({ clientId }: ClientRemindersProps) => {
 
   // Fetch reminders
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
@@ -243,30 +246,44 @@ export const ClientReminders = ({ clientId }: ClientRemindersProps) => {
         const response = await listReminders({
           content_type: CLIENT_CONTENT_TYPE_ID,
           object_id: clientId,
-        });
+        }, abortController.signal);
         
-        // Sort by date/time (upcoming first, then past)
-        const sorted = response.results.sort((a, b) => {
-          const aUpcoming = isUpcoming(a.reminder_date, a.reminder_time);
-          const bUpcoming = isUpcoming(b.reminder_date, b.reminder_time);
+        if (isMounted) {
+          // Sort by date/time (upcoming first, then past)
+          const sorted = response.results.sort((a, b) => {
+            const aUpcoming = isUpcoming(a.reminder_date, a.reminder_time);
+            const bUpcoming = isUpcoming(b.reminder_date, b.reminder_time);
+            
+            if (aUpcoming && !bUpcoming) return -1;
+            if (!aUpcoming && bUpcoming) return 1;
+            
+            const dateA = new Date(a.reminder_date || '').getTime();
+            const dateB = new Date(b.reminder_date || '').getTime();
+            return dateB - dateA;
+          });
           
-          if (aUpcoming && !bUpcoming) return -1;
-          if (!aUpcoming && bUpcoming) return 1;
-          
-          const dateA = new Date(a.reminder_date || '').getTime();
-          const dateB = new Date(b.reminder_date || '').getTime();
-          return dateB - dateA;
-        });
-        
-        setReminders(sorted);
+          setReminders(sorted);
+        }
       } catch (err) {
-        setError((err as Error).message || 'Failed to load reminders');
+        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
+          return;
+        }
+        if (isMounted) {
+          setError((err as Error).message || 'Failed to load reminders');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Handle add reminder

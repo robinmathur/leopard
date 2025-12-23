@@ -26,6 +26,7 @@ export const ClientTimeline = ({ clientId }: ClientTimelineProps) => {
     fetchTimeline,
     setFilter,
     loadMore,
+    cancelFetchTimeline,
   } = useTimelineStore();
 
   // Fetch timeline when component mounts or clientId/filter changes
@@ -33,7 +34,10 @@ export const ClientTimeline = ({ clientId }: ClientTimelineProps) => {
     fetchTimeline(clientId, {
       activity_type: activeFilter || undefined,
     });
-  }, [clientId, activeFilter, fetchTimeline]);
+    return () => {
+      cancelFetchTimeline();
+    };
+  }, [clientId, activeFilter, fetchTimeline, cancelFetchTimeline]);
 
   // Handle filter change
   const handleFilterChange = (activityType: string | null) => {

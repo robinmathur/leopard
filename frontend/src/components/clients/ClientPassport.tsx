@@ -137,25 +137,36 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
   });
 
   // Fetch passport data
-  const fetchPassport = async () => {
+  const fetchPassport = async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await getPassport(clientId);
-      setPassport(data); // Will be null if no passport exists (404)
+      const data = await getPassport(clientId, signal);
+      if (!signal?.aborted) {
+        setPassport(data); // Will be null if no passport exists (404)
+      }
     } catch (err) {
+      if ((err as Error).name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       // Only set error for non-404 errors
       // 404 is handled by getPassport returning null
       console.error('Error fetching passport:', err);
       setError((err as Error).message || 'Failed to load passport');
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchPassport();
+    const abortController = new AbortController();
+    fetchPassport(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Open form dialog

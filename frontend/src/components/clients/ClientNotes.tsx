@@ -3,7 +3,7 @@
  * Client-specific notes component using shared Notes
  */
 import { useEffect } from 'react';
-import { Box, Paper } from '@mui/material';
+import { Paper } from '@mui/material';
 import { Notes } from '@/components/shared/Notes';
 import { useNoteStore } from '@/store/noteStore';
 import { usePermission } from '@/auth/hooks/usePermission';
@@ -26,6 +26,7 @@ export const ClientNotes = ({ clientId }: ClientNotesProps) => {
     addNote,
     editNote,
     removeNote,
+    cancelFetchNotes,
   } = useNoteStore();
   
   const { hasPermission } = usePermission();
@@ -38,7 +39,10 @@ export const ClientNotes = ({ clientId }: ClientNotesProps) => {
   // Fetch notes when component mounts or clientId changes
   useEffect(() => {
     fetchNotes(clientId);
-  }, [clientId, fetchNotes]);
+    return () => {
+      cancelFetchNotes();
+    };
+  }, [clientId, fetchNotes, cancelFetchNotes]);
 
   // Handle adding a note
   const handleAddNote = async (content: string) => {

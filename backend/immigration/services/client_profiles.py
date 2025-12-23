@@ -13,6 +13,7 @@ from immigration.models import (
     Passport,
     Proficiency,
     Qualification,
+    Employment,
 )
 from immigration.selectors.clients import client_get
 
@@ -43,12 +44,12 @@ class LPEInput(BaseModel):
 class ProficiencyInput(BaseModel):
     client_id: int
     test_name_id: int
-    overall_score: Optional[float] = None
-    speaking_score: Optional[float] = None
-    reading_score: Optional[float] = None
-    listening_score: Optional[float] = None
-    writing_score: Optional[float] = None
-    test_date: Optional[date] = None
+    overall_score: float
+    speaking_score: float
+    reading_score: float
+    listening_score: float
+    writing_score: float
+    test_date: date
 
     @validator(
         "overall_score",
@@ -58,8 +59,6 @@ class ProficiencyInput(BaseModel):
         "writing_score",
     )
     def validate_score(cls, value):
-        if value is None:
-            return value
         if value < 0 or value > 9:
             raise ValueError("Scores must be between 0 and 9")
         return value
@@ -68,12 +67,12 @@ class ProficiencyInput(BaseModel):
 class QualificationInput(BaseModel):
     client_id: int
     course: str = Field(..., max_length=100)
-    institute: Optional[str] = Field(None, max_length=100)
-    degree: Optional[str] = Field(None, max_length=100)
-    field_of_study: Optional[str] = Field(None, max_length=100)
-    enroll_date: Optional[date] = None
-    completion_date: Optional[date] = None
-    country: Optional[str] = Field(None, min_length=2, max_length=2)
+    institute: str = Field(..., max_length=100)
+    degree: str = Field(..., max_length=100)
+    field_of_study: str = Field(..., max_length=100)
+    enroll_date: date
+    completion_date: date
+    country: str = Field(..., min_length=2, max_length=2)
 
     class Config:
         str_strip_whitespace = True
@@ -224,12 +223,12 @@ def qualification_create(*, data: QualificationInput, user) -> Qualification:
     qualification = Qualification(
         client=client,
         course=data.course,
-        institute=data.institute or "",
-        degree=data.degree or "",
-        field_of_study=data.field_of_study or "",
+        institute=data.institute,
+        degree=data.degree,
+        field_of_study=data.field_of_study,
         enroll_date=data.enroll_date,
         completion_date=data.completion_date,
-        country=data.country or "",
+        country=data.country,
         created_by=user,
         updated_by=user,
     )
@@ -248,12 +247,12 @@ def qualification_update(*, qualification: Qualification, data: QualificationInp
         qualification.client_id = data.client_id
 
     qualification.course = data.course
-    qualification.institute = data.institute or ""
-    qualification.degree = data.degree or ""
-    qualification.field_of_study = data.field_of_study or ""
+    qualification.institute = data.institute
+    qualification.degree = data.degree
+    qualification.field_of_study = data.field_of_study
     qualification.enroll_date = data.enroll_date
     qualification.completion_date = data.completion_date
-    qualification.country = data.country or ""
+    qualification.country = data.country
     qualification.updated_by = user
 
     qualification.full_clean()
@@ -264,3 +263,62 @@ def qualification_update(*, qualification: Qualification, data: QualificationInp
 @transaction.atomic
 def qualification_delete(*, qualification: Qualification, user) -> None:
     qualification.delete()
+
+
+class EmploymentInput(BaseModel):
+    client_id: int
+    employer_name: str = Field(..., max_length=200)
+    position: str = Field(..., max_length=200)
+    start_date: date
+    end_date: date
+    country: str = Field(..., min_length=2, max_length=2)
+
+    class Config:
+        str_strip_whitespace = True
+
+
+@transaction.atomic
+def employment_create(*, data: EmploymentInput, user) -> Employment:
+    """
+    Create an employment record scoped to the user's client access.
+    """
+    client = client_get(user=user, client_id=data.client_id)
+    employment = Employment(
+        client=client,
+        employer_name=data.employer_name,
+        position=data.position,
+        start_date=data.start_date,
+        end_date=data.end_date,
+        country=data.country,
+        created_by=user,
+        updated_by=user,
+    )
+    employment.full_clean()
+    employment.save()
+    return employment
+
+
+@transaction.atomic
+def employment_update(*, employment: Employment, data: EmploymentInput, user) -> Employment:
+    """
+    Update an employment record.
+    """
+    if employment.client_id != data.client_id:
+        client_get(user=user, client_id=data.client_id)
+        employment.client_id = data.client_id
+
+    employment.employer_name = data.employer_name
+    employment.position = data.position
+    employment.start_date = data.start_date
+    employment.end_date = data.end_date
+    employment.country = data.country
+    employment.updated_by = user
+
+    employment.full_clean()
+    employment.save()
+    return employment
+
+
+@transaction.atomic
+def employment_delete(*, employment: Employment, user) -> None:
+    employment.delete()

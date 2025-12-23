@@ -13,11 +13,9 @@ from datetime import date
 from immigration.models import Client
 from immigration.constants import (
     ClientStage,
-    GROUP_CONSULTANT,
     GROUP_BRANCH_ADMIN,
     GROUP_REGION_MANAGER,
     GROUP_SUPER_ADMIN,
-    GROUP_SUPER_SUPER_ADMIN,
 )
 
 
@@ -133,13 +131,13 @@ def client_create(*, data: ClientCreateInput, user) -> Client:
                 raise PermissionError(
                     "Region Manager cannot assign clients to users outside their regions"
                 )
-        
-        elif user.is_in_group(GROUP_SUPER_ADMIN):
-            # Check tenant boundary
-            if assigned_user.tenant_id != user.tenant_id:
-                raise PermissionError(
-                    "Cannot assign clients to users outside your tenant"
-                )
+
+        # REMOVED: SUPER_ADMIN tenant check (schema provides isolation)
+        # elif user.is_in_group(GROUP_SUPER_ADMIN):
+        #     if assigned_user.tenant_id != user.tenant_id:
+        #         raise PermissionError("Cannot assign clients to users outside your tenant")
+
+        # SUPER_ADMIN can assign to any user in current tenant schema (automatic isolation)
     
     # Create client instance
     client = Client(

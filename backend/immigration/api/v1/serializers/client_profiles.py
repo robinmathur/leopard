@@ -4,7 +4,7 @@ Serializers for client supporting resources.
 
 from rest_framework import serializers
 
-from immigration.models import LPE, Passport, Proficiency, Qualification
+from immigration.models import LPE, Passport, Proficiency, Qualification, Employment
 
 
 class LPESerializer(serializers.ModelSerializer):
@@ -45,12 +45,12 @@ class ProficiencyOutputSerializer(serializers.ModelSerializer):
 class ProficiencyCreateUpdateSerializer(serializers.Serializer):
     client_id = serializers.IntegerField()
     test_name_id = serializers.IntegerField()
-    overall_score = serializers.DecimalField(max_digits=4, decimal_places=1, required=False, allow_null=True)
-    speaking_score = serializers.DecimalField(max_digits=4, decimal_places=1, required=False, allow_null=True)
-    reading_score = serializers.DecimalField(max_digits=4, decimal_places=1, required=False, allow_null=True)
-    listening_score = serializers.DecimalField(max_digits=4, decimal_places=1, required=False, allow_null=True)
-    writing_score = serializers.DecimalField(max_digits=4, decimal_places=1, required=False, allow_null=True)
-    test_date = serializers.DateField(required=False, allow_null=True)
+    overall_score = serializers.DecimalField(max_digits=4, decimal_places=1)
+    speaking_score = serializers.DecimalField(max_digits=4, decimal_places=1)
+    reading_score = serializers.DecimalField(max_digits=4, decimal_places=1)
+    listening_score = serializers.DecimalField(max_digits=4, decimal_places=1)
+    writing_score = serializers.DecimalField(max_digits=4, decimal_places=1)
+    test_date = serializers.DateField()
 
 
 class QualificationOutputSerializer(serializers.ModelSerializer):
@@ -75,12 +75,12 @@ class QualificationOutputSerializer(serializers.ModelSerializer):
 class QualificationCreateUpdateSerializer(serializers.Serializer):
     client_id = serializers.IntegerField()
     course = serializers.CharField(max_length=100)
-    institute = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    degree = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    field_of_study = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    enroll_date = serializers.DateField(required=False, allow_null=True)
-    completion_date = serializers.DateField(required=False, allow_null=True)
-    country = serializers.CharField(max_length=2, required=False, allow_blank=True)
+    institute = serializers.CharField(max_length=100)
+    degree = serializers.CharField(max_length=100)
+    field_of_study = serializers.CharField(max_length=100)
+    enroll_date = serializers.DateField()
+    completion_date = serializers.DateField()
+    country = serializers.CharField(max_length=2)
 
 
 class PassportOutputSerializer(serializers.ModelSerializer):
@@ -110,4 +110,30 @@ class PassportCreateUpdateSerializer(serializers.Serializer):
     place_of_issue = serializers.CharField(max_length=100, required=False, allow_blank=True)
     country_of_birth = serializers.CharField(max_length=2)
     nationality = serializers.CharField(max_length=2)
+
+
+class EmploymentOutputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employment
+        fields = [
+            "id",
+            "client_id",
+            "employer_name",
+            "position",
+            "start_date",
+            "end_date",
+            "country",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class EmploymentCreateUpdateSerializer(serializers.Serializer):
+    client_id = serializers.IntegerField()
+    employer_name = serializers.CharField(max_length=200)
+    position = serializers.CharField(max_length=200)
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+    country = serializers.CharField(max_length=2)
 

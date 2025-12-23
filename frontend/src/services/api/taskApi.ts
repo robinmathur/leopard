@@ -45,12 +45,13 @@ export interface PaginatedResponse<T> {
  * Get tasks for a specific client
  * Uses content_type and object_id for generic FK filtering
  */
-export const getTasks = async (clientId: number): Promise<Task[]> => {
+export const getTasks = async (clientId: number, signal?: AbortSignal): Promise<Task[]> => {
   const response = await httpClient.get<PaginatedResponse<Task>>('/v1/tasks/', {
     params: {
       content_type: 10, // CLIENT_CONTENT_TYPE_ID
       object_id: clientId,
     },
+    signal,
   });
   return response.data.results;
 };

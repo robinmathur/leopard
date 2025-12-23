@@ -198,28 +198,39 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
   });
 
   // Fetch qualifications
-  const fetchQualifications = async () => {
+  const fetchQualifications = async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await getQualifications(clientId);
-      // Sort by start date (most recent first)
-      const sorted = data.sort((a, b) => {
-        if (!a.enroll_date) return 1;
-        if (!b.enroll_date) return -1;
-        return new Date(b.enroll_date).getTime() - new Date(a.enroll_date).getTime();
-      });
-      setQualifications(sorted);
+      const data = await getQualifications(clientId, signal);
+      if (!signal?.aborted) {
+        // Sort by start date (most recent first)
+        const sorted = data.sort((a, b) => {
+          if (!a.enroll_date) return 1;
+          if (!b.enroll_date) return -1;
+          return new Date(b.enroll_date).getTime() - new Date(a.enroll_date).getTime();
+        });
+        setQualifications(sorted);
+      }
     } catch (err) {
+      if ((err as Error).name === 'CanceledError' || signal?.aborted) {
+        return;
+      }
       setError((err as Error).message || 'Failed to load qualifications');
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchQualifications();
+    const abortController = new AbortController();
+    fetchQualifications(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, [clientId]);
 
   // Open form dialog
@@ -398,6 +409,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 label="Institute"
                 value={formData.institute}
                 onChange={(e) => setFormData({ ...formData, institute: e.target.value })}
+                required
                 fullWidth
               />
 
@@ -405,6 +417,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 label="Degree"
                 value={formData.degree}
                 onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+                required
                 fullWidth
                 placeholder="e.g., Bachelor's, Master's, PhD"
               />
@@ -413,6 +426,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 label="Field of Study"
                 value={formData.field_of_study}
                 onChange={(e) => setFormData({ ...formData, field_of_study: e.target.value })}
+                required
                 fullWidth
                 placeholder="e.g., Computer Science, Business Administration"
               />
@@ -422,6 +436,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 select
+                required
                 fullWidth
               >
                 <MenuItem value="">Select Country</MenuItem>
@@ -437,6 +452,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 type="date"
                 value={formData.enroll_date}
                 onChange={(e) => setFormData({ ...formData, enroll_date: e.target.value })}
+                required
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -446,9 +462,9 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 type="date"
                 value={formData.completion_date}
                 onChange={(e) => setFormData({ ...formData, completion_date: e.target.value })}
+                required
                 fullWidth
                 InputLabelProps={{ shrink: true }}
-                helperText="Leave blank if in progress"
               />
             </Box>
           </DialogContent>

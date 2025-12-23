@@ -1,6 +1,9 @@
 /**
  * ClientDetailPage
- * Full client detail view page with tabbed interface and lazy loading
+ * Client detail page with tabbed interface
+ * - Overview tab: Client basic details (left) + Timeline (right)
+ * - Profile tab: Full client details
+ * - Other tabs: Notes, Documents, Applications, Tasks, Reminders
  */
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -12,22 +15,30 @@ import {
   Alert,
   Tabs,
   Tab,
+  Grid,
+  Paper,
+  Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
 import { useClientStore } from '@/store/clientStore';
 import { useClientDetailStore } from '@/store/clientDetailStore';
+import { useTimelineStore } from '@/store/timelineStore';
 import {
   STAGE_LABELS,
   STAGE_COLORS,
+  GENDER_LABELS,
+  COUNTRIES,
 } from '@/types/client';
 import { Protect } from '@/components/protected/Protect';
 import { ClientOverview, ClientOverviewSkeleton } from '@/components/clients/ClientOverview';
+import { ProfilePictureUpload } from '@/components/clients/ProfilePictureUpload';
+import { TimelineWithNotes } from '@/components/shared/Timeline/TimelineWithNotes';
 import { ClientNotes } from '@/components/clients/ClientNotes';
-import { ClientTimeline } from '@/components/clients/ClientTimeline';
 import { ClientPassport } from '@/components/clients/ClientPassport';
 import { ClientProficiency } from '@/components/clients/ClientProficiency';
 import { ClientQualifications } from '@/components/clients/ClientQualifications';
+import { ClientEmployment } from '@/components/clients/ClientEmployment';
 import { ClientVisaApplications } from '@/components/clients/ClientVisaApplications';
 import { ClientCollegeApplications } from '@/components/clients/ClientCollegeApplications';
 import { ClientTasks } from '@/components/clients/ClientTasks';
@@ -36,7 +47,7 @@ import { ClientReminders } from '@/components/clients/ClientReminders';
 /**
  * Tab value type
  */
-type TabValue = 'overview' | 'notes' | 'timeline' | 'documents' | 'applications' | 'tasks' | 'reminders';
+type TabValue = 'overview' | 'profile' | 'notes' | 'documents' | 'applications' | 'tasks' | 'reminders';
 
 /**
  * Tab panel component
@@ -60,35 +71,116 @@ const TabPanel = ({ children, value, currentValue }: TabPanelProps) => {
   );
 };
 
+/**
+ * Get country name from code
+ */
+const getCountryName = (code: string): string => {
+  const country = COUNTRIES.find((c) => c.code === code);
+  return country?.name || code;
+};
+
+/**
+ * Format date for display
+ */
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return '-';
+  try {
+    return new Date(dateString).toLocaleDateString();
+  } catch {
+    return dateString;
+  }
+};
+
+/**
+ * Detail row component
+ */
+const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <Box sx={{ mb: 2 }}>
+    <Typography variant="caption" color="text.secondary" display="block">
+      {label}
+    </Typography>
+    <Typography variant="body2">{value || '-'}</Typography>
+  </Box>
+);
+
 export const ClientDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = (location.state as { from?: string })?.from || '/clients';
-  const backLabel = fromPath === '/leads' ? 'Back to Leads' : 'Back to Clients';
-  const { selectedClient, loading, error, fetchClientById, clearError } = useClientStore();
+  
+  // Determine back button label based on where user came from
+  let backLabel = 'Back to Clients';
+  if (fromPath === '/leads') {
+    backLabel = 'Back to Leads';
+  } else if (fromPath === '/visa-manager/applications') {
+    backLabel = 'Back to Visa Applications';
+  } else if (fromPath === '/visa-manager/tracker') {
+    backLabel = 'Back to Visa Tracker';
+  }
+
+  const { selectedClient, loading, error, fetchClientById, clearError, cancelFetchClientById } = useClientStore();
   const { setCurrentTab, markSectionLoaded, loadedSections, resetStore } = useClientDetailStore();
+  const {
+    activities,
+    isLoading: timelineLoading,
+    error: timelineError,
+    hasMore,
+    activeFilter,
+    fetchTimeline,
+    setFilter,
+    loadMore,
+    cancelFetchTimeline,
+  } = useTimelineStore();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
 
-  // Fetch client on mount
+  // Fetch client and timeline on mount
   useEffect(() => {
     if (id) {
       fetchClientById(parseInt(id, 10));
+      fetchTimeline(parseInt(id, 10));
       markSectionLoaded('overview');
     }
     return () => {
+      cancelFetchClientById();
+      cancelFetchTimeline();
       clearError();
-      resetStore(); // Reset client detail store on unmount
+      resetStore();
     };
-  }, [id, fetchClientById, clearError, markSectionLoaded, resetStore]);
+  }, [id, fetchClientById, cancelFetchClientById, clearError, markSectionLoaded, resetStore, fetchTimeline, cancelFetchTimeline]);
+
+  // Handle refresh timeline after note is added
+  const handleNoteAdded = () => {
+    if (id) {
+      fetchTimeline(parseInt(id, 10), {
+        activity_type: activeFilter || undefined,
+      });
+    }
+  };
+
+  // Handle filter change
+  const handleFilterChange = (activityType: string | null) => {
+    setFilter(activityType);
+    if (id) {
+      fetchTimeline(parseInt(id, 10), {
+        activity_type: activityType || undefined,
+        page: 1,
+      });
+    }
+  };
+
+  // Handle load more
+  const handleLoadMore = () => {
+    if (id) {
+      loadMore(parseInt(id, 10));
+    }
+  };
 
   const handleBack = () => {
     navigate(fromPath);
   };
 
   const handleEdit = () => {
-    // Navigate back to origin page where edit dialog can be opened
-    // In a more complex app, we might open an edit page or modal here
     navigate(fromPath, { state: { editClientId: id } });
   };
 
@@ -190,8 +282,8 @@ export const ClientDetailPage = () => {
           scrollButtons="auto"
         >
           <Tab label="Overview" value="overview" id="client-tab-overview" />
+          <Tab label="Profile" value="profile" id="client-tab-profile" />
           <Tab label="Notes" value="notes" id="client-tab-notes" />
-          <Tab label="Timeline" value="timeline" id="client-tab-timeline" />
           <Tab label="Documents" value="documents" id="client-tab-documents" />
           <Tab label="Applications" value="applications" id="client-tab-applications" />
           <Tab label="Tasks" value="tasks" id="client-tab-tasks" />
@@ -200,10 +292,112 @@ export const ClientDetailPage = () => {
       </Box>
 
       {/* Tab Panels */}
+      {/* Overview Tab: Client Details (Left) + Timeline (Right) */}
       <TabPanel value="overview" currentValue={activeTab}>
+        <Grid container spacing={3}>
+          {/* Left Side: Client Basic Details */}
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
+              {/* Profile Picture */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+                <ProfilePictureUpload
+                  clientId={client.id}
+                  clientName={fullName}
+                  size={120}
+                  editable={true}
+                />
+                <Typography variant="h6" sx={{ mt: 2, textAlign: 'center' }}>
+                  {fullName}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <Chip
+                    label={STAGE_LABELS[client.stage]}
+                    color={STAGE_COLORS[client.stage]}
+                    size="small"
+                  />
+                  {!client.active && (
+                    <Chip label="Archived" color="default" size="small" variant="outlined" />
+                  )}
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Personal Information */}
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Personal Information
+              </Typography>
+              <DetailRow label="First Name" value={client.first_name} />
+              <DetailRow label="Last Name" value={client.last_name} />
+              <DetailRow label="Gender" value={GENDER_LABELS[client.gender]} />
+              <DetailRow label="Date of Birth" value={formatDate(client.dob)} />
+              <DetailRow label="Country" value={getCountryName(client.country)} />
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Contact Information */}
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Contact Information
+              </Typography>
+              <DetailRow label="Email" value={client.email} />
+              <DetailRow label="Phone Number" value={client.phone_number} />
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Assignment & Status */}
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Assignment & Status
+              </Typography>
+              <DetailRow
+                label="Stage"
+                value={
+                  <Chip
+                    label={STAGE_LABELS[client.stage]}
+                    color={STAGE_COLORS[client.stage]}
+                    size="small"
+                  />
+                }
+              />
+              <DetailRow label="Assigned To" value={client.assigned_to_name} />
+              <DetailRow label="Agent" value={client.agent_name} />
+              <DetailRow label="Visa Category" value={client.visa_category_name} />
+              <DetailRow label="Last Updated" value={formatDate(client.updated_at)} />
+              <DetailRow
+                label="Status"
+                value={client.active ? 'Active' : 'Archived'}
+              />
+            </Paper>
+          </Grid>
+
+          {/* Right Side: Timeline */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                Timeline
+              </Typography>
+              <TimelineWithNotes
+                clientId={client.id}
+                activities={activities}
+                isLoading={timelineLoading}
+                error={timelineError?.message || null}
+                hasMore={hasMore}
+                onLoadMore={handleLoadMore}
+                activeFilter={activeFilter}
+                onFilterChange={handleFilterChange}
+                showFilters={true}
+                onNoteAdded={handleNoteAdded}
+              />
+            </Paper>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Profile Tab: Full Client Details */}
+      <TabPanel value="profile" currentValue={activeTab}>
         <ClientOverview client={client} loading={loading} />
       </TabPanel>
 
+      {/* Notes Tab */}
       <TabPanel value="notes" currentValue={activeTab}>
         {loadedSections.notes ? (
           <ClientNotes clientId={client.id} />
@@ -212,14 +406,7 @@ export const ClientDetailPage = () => {
         )}
       </TabPanel>
 
-      <TabPanel value="timeline" currentValue={activeTab}>
-        {loadedSections.timeline ? (
-          <ClientTimeline clientId={client.id} />
-        ) : (
-          <Alert severity="info">Click on Timeline tab to load activities</Alert>
-        )}
-      </TabPanel>
-
+      {/* Documents Tab */}
       <TabPanel value="documents" currentValue={activeTab}>
         {loadedSections.documents ? (
           <Box>
@@ -230,12 +417,16 @@ export const ClientDetailPage = () => {
             <Box sx={{ mt: 3 }}>
               <ClientQualifications clientId={client.id} />
             </Box>
+            <Box sx={{ mt: 3 }}>
+              <ClientEmployment clientId={client.id} />
+            </Box>
           </Box>
         ) : (
           <Alert severity="info">Click on Documents tab to load documents</Alert>
         )}
       </TabPanel>
 
+      {/* Applications Tab */}
       <TabPanel value="applications" currentValue={activeTab}>
         {loadedSections.applications ? (
           <Box>
@@ -249,6 +440,7 @@ export const ClientDetailPage = () => {
         )}
       </TabPanel>
 
+      {/* Tasks Tab */}
       <TabPanel value="tasks" currentValue={activeTab}>
         {loadedSections.tasks ? (
           <ClientTasks clientId={client.id} />
@@ -257,6 +449,7 @@ export const ClientDetailPage = () => {
         )}
       </TabPanel>
 
+      {/* Reminders Tab */}
       <TabPanel value="reminders" currentValue={activeTab}>
         {loadedSections.reminders ? (
           <ClientReminders clientId={client.id} />

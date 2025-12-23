@@ -8,9 +8,17 @@ import { Dashboard } from './pages/Dashboard/Dashboard';
 import { ClientsPage } from './pages/Clients/ClientsPage';
 import { ClientDetailPage } from './pages/Clients/ClientDetailPage';
 import { LeadsPage } from './pages/Leads/LeadsPage';
-import { VisaApplicationsPage } from './pages/VisaApplications/VisaApplicationsPage';
 import { InstitutePage } from './pages/Institute/InstitutePage';
+import { InstituteDetailPage } from './pages/Institute/InstituteDetailPage';
 import { AgentPage } from './pages/Agent/AgentPage';
+import { AgentDetailPage } from './pages/Agent/AgentDetailPage';
+import { VisaDashboard } from './pages/VisaManager/VisaDashboard';
+import { VisaTracker } from './pages/VisaManager/VisaTracker';
+import { VisaTypePage } from './pages/VisaManager/VisaTypePage';
+import { VisaApplicationsManagementPage } from './pages/VisaManager/VisaApplicationsManagementPage';
+import { UsersPage } from './pages/Users/UsersPage';
+import { UserDetailPage } from './pages/Users/UserDetailPage';
+import { GroupsPage } from './pages/Groups/GroupsPage';
 
 /**
  * Protected Route Component
@@ -51,9 +59,25 @@ function App() {
             <Route path="clients/add" element={<ClientsPage />} />
             <Route path="clients/:id" element={<ClientDetailPage />} />
             <Route path="leads" element={<LeadsPage />} />
-            <Route path="visa-applications" element={<VisaApplicationsPage />} />
+            
+            {/* Visa Manager Routes */}
+            <Route path="visa-manager/dashboard" element={<VisaDashboard />} />
+            <Route path="visa-manager/tracker" element={<VisaTracker />} />
+            <Route path="visa-manager/applications" element={<VisaApplicationsManagementPage />} />
+            <Route path="visa-manager/types" element={<VisaTypePage />} />
+            
+            {/* Legacy route - redirect to Visa Dashboard */}
+            <Route path="visa-applications" element={<Navigate to="/visa-manager/dashboard" replace />} />
+            
             <Route path="institute" element={<InstitutePage />} />
+            <Route path="institute/:id" element={<InstituteDetailPage />} />
             <Route path="agent" element={<AgentPage />} />
+            <Route path="agent/:id" element={<AgentDetailPage />} />
+            
+            {/* User Management Routes */}
+            <Route path="user-management/users" element={<UsersPage />} />
+            <Route path="user-management/users/:id" element={<UserDetailPage />} />
+            <Route path="user-management/groups" element={<GroupsPage />} />
           </Route>
 
           {/* Catch-all redirect */}

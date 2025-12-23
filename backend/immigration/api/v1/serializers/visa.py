@@ -6,6 +6,7 @@ They are thin wrappers - business logic lives in services.
 """
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from immigration.models import VisaApplication
 
 
@@ -66,18 +67,21 @@ class VisaApplicationOutputSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_client_name(self, obj):
         """Get client full name."""
         if obj.client:
             return f"{obj.client.first_name} {obj.client.last_name}"
         return None
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_assigned_to_name(self, obj):
         """Get assigned user name if exists."""
         if obj.assigned_to:
             return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}"
         return None
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_created_by_name(self, obj):
         """Get creator name if exists."""
         if obj.created_by:

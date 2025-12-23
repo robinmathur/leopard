@@ -15,10 +15,11 @@ from django.db import transaction
 
 from immigration.constants import ALL_GROUPS, GROUP_DISPLAY_NAMES
 from immigration.models import (
-    User, Client, Branch, Region, Tenant,
+    User, Client, Branch, Region,
     VisaApplication, Task, Notification,
     Note, ClientActivity, ProfilePicture
 )
+from immigration.institute import Institute
 
 
 class Command(BaseCommand):
@@ -59,11 +60,11 @@ class Command(BaseCommand):
             Notification: ['view', 'add', 'change', 'delete'],
             Branch: ['view', 'add', 'change', 'delete'],
             Region: ['view', 'add', 'change', 'delete'],
-            Tenant: ['view', 'add', 'change', 'delete'],
             User: ['view', 'add', 'change', 'delete'],
             Note: ['view', 'add', 'change', 'delete'],
             ClientActivity: ['view'],  # Read-only - created via signals
             ProfilePicture: ['view', 'add', 'change', 'delete'],
+            Institute: ['view', 'add', 'change', 'delete'],
         }
         
         # Define role-specific permissions
@@ -82,6 +83,7 @@ class Command(BaseCommand):
                 Note: ['view', 'add', 'change'],  # Can add and edit notes
                 ClientActivity: ['view'],  # Can view timeline
                 ProfilePicture: ['view', 'add', 'change'],  # Can upload profile pictures
+                Institute: ['view'],  # Can view institutes
             },
             'BRANCH_ADMIN': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -93,6 +95,7 @@ class Command(BaseCommand):
                 Note: ['view', 'add', 'change', 'delete'],  # Full note access
                 ClientActivity: ['view'],  # Can view timeline
                 ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
+                Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
             },
             'REGION_MANAGER': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -105,6 +108,7 @@ class Command(BaseCommand):
                 Note: ['view', 'add', 'change', 'delete'],  # Full note access
                 ClientActivity: ['view'],  # Can view timeline
                 ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
+                Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
             },
             'COUNTRY_MANAGER': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -113,7 +117,6 @@ class Command(BaseCommand):
                 Notification: ['view', 'add', 'change'],
                 Branch: ['view', 'add', 'change', 'delete'],
                 Region: ['view', 'add', 'change', 'delete'],
-                Tenant: ['view'],
                 User: ['view', 'change', 'delete'],  # Deprecated role, no user creation
                 Note: ['view', 'add', 'change', 'delete'],  # Full note access
                 ClientActivity: ['view'],  # Can view timeline
@@ -126,24 +129,11 @@ class Command(BaseCommand):
                 Notification: ['view', 'add', 'change', 'delete'],
                 Branch: ['view', 'add', 'change', 'delete'],
                 Region: ['view', 'add', 'change', 'delete'],
-                Tenant: ['view', 'add', 'change'],
                 User: ['view', 'add', 'change', 'delete'],  # CAN create users
                 Note: ['view', 'add', 'change', 'delete'],  # Full note access
                 ClientActivity: ['view'],  # Can view timeline
                 ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
-            },
-            'SUPER_SUPER_ADMIN': {
-                Client: ['view', 'add', 'change', 'delete'],
-                VisaApplication: ['view', 'add', 'change', 'delete'],
-                Task: ['view', 'add', 'change', 'delete'],
-                Notification: ['view', 'add', 'change', 'delete'],
-                Branch: ['view', 'add', 'change', 'delete'],
-                Region: ['view', 'add', 'change', 'delete'],
-                Tenant: ['view', 'add', 'change', 'delete'],
-                User: ['view', 'add', 'change', 'delete'],  # CAN create users
-                Note: ['view', 'add', 'change', 'delete'],  # Full note access
-                ClientActivity: ['view'],  # Can view timeline
-                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
+                Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
             },
         }
         
