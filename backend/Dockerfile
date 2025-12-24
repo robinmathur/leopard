@@ -14,8 +14,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv package manager
-RUN pip install --no-cache-dir uv
+# Install uv package manager to user location
+RUN pip install --user --no-cache-dir uv
+
+# Add uv to PATH for builder stage
+ENV PATH="/root/.local/bin:$PATH"
 
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
@@ -29,7 +32,8 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PATH="/root/.local/bin:$PATH"
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -44,11 +48,13 @@ RUN groupadd -r django && useradd -r -g django django
 # Set working directory
 WORKDIR /app
 
-# Copy uv and installed dependencies from builder
+# Copy uv from builder
 COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
 
-# Copy uv.lock and pyproject.toml for uv to work
+# Copy virtual environment from builder
+COPY --from=builder /app/.venv /app/.venv
+
+# Copy uv.lock and pyproject.toml
 COPY pyproject.toml uv.lock ./
 
 # Copy application code
@@ -57,8 +63,8 @@ COPY . .
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
 
-# Collect static files during build
-RUN python manage.py collectstatic --noinput || echo "collectstatic skipped"
+# Collect static files during build using venv
+RUN /app/.venv/bin/python manage.py collectstatic --noinput || echo "collectstatic skipped"
 
 # Change ownership to django user
 RUN chown -R django:django /app

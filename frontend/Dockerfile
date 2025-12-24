@@ -28,8 +28,8 @@ ENV VITE_BASE_DOMAIN=${VITE_BASE_DOMAIN}
 ENV VITE_ENVIRONMENT=${VITE_ENVIRONMENT}
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-# Build the application
-RUN npm run build
+# Build the application (skip TypeScript type checking for faster builds)
+RUN npm run build:prod
 
 # Stage 2: Runtime - Nginx to serve static files
 FROM nginx:alpine

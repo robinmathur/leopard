@@ -2,7 +2,6 @@
 name = "leopard-backend"
 version = "1.0.0"
 description = "Immigration CRM Backend - Django REST API"
-readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [
@@ -82,8 +81,8 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["leopard", "immigration"]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "black>=24.8,<25.0",
     "ruff>=0.6,<1.0",
     "pytest>=8.0,<9.0",
