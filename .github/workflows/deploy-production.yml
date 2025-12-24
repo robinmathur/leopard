@@ -89,24 +89,16 @@ jobs:
             exit 1
           fi
 
-      - name: Run database migrations
-        run: |
-          echo "Running database migrations..."
-          docker-compose up -d backend
-          sleep 10
-          docker-compose exec -T backend python manage.py migrate --noinput
-          echo "✓ Migrations completed"
-
-      - name: Collect static files
-        run: |
-          echo "Collecting static files..."
-          docker-compose exec -T backend python manage.py collectstatic --noinput
-          echo "✓ Static files collected"
-
       - name: Start all containers
         run: |
           echo "Starting all containers..."
           docker-compose up -d
+
+      - name: Wait for backend initialization
+        run: |
+          echo "Waiting for backend to complete initialization (migrations, collectstatic)..."
+          sleep 30
+          echo "Backend should now be ready"
 
       - name: Wait for services to be healthy
         run: |
