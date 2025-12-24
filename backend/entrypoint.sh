@@ -7,8 +7,29 @@ set -e
 
 echo "=== Leopard Backend Entrypoint ==="
 
+# Check if virtual environment exists
+if [ ! -d "/app/.venv" ]; then
+    echo "ERROR: Virtual environment not found at /app/.venv"
+    echo "Listing /app directory:"
+    ls -la /app
+    exit 1
+fi
+
 # Activate virtual environment
+echo "Activating virtual environment..."
 source /app/.venv/bin/activate
+
+# Verify Python and Django are available
+echo "Verifying Python installation..."
+python --version
+echo "Python path: $(which python)"
+echo "Checking Django installation..."
+python -c "import django; print(f'Django version: {django.get_version()}')" || {
+    echo "ERROR: Django not found in virtual environment"
+    echo "Installed packages:"
+    pip list
+    exit 1
+}
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."

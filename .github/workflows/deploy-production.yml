@@ -106,6 +106,13 @@ jobs:
           sleep 30
           docker-compose ps
 
+          # Check if backend is healthy
+          if ! docker-compose ps | grep -q "leopard-backend.*Up"; then
+            echo "Backend container is not healthy! Showing logs..."
+            docker-compose logs --tail=100 backend
+            exit 1
+          fi
+
       - name: Health check - Backend
         run: |
           echo "Checking backend health..."
