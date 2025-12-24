@@ -7,6 +7,9 @@ set -e
 
 echo "=== Leopard Backend Entrypoint ==="
 
+# Activate virtual environment
+source /app/.venv/bin/activate
+
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."
 until pg_isready -h ${DB_HOST:-postgres} -p ${DB_PORT:-5432} -U ${DB_USER:-leopard}; do
