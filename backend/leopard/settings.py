@@ -36,16 +36,24 @@ env = environ.Env(
 DJANGO_ENV = os.environ.get('DJANGO_ENV', 'development')
 env_file = BASE_DIR / f'.env.{DJANGO_ENV}'
 
-# Require environment-specific file to exist - fail fast if missing
-if not env_file.exists():
-    raise FileNotFoundError(
-        f"Environment file not found: {env_file}\n"
-        f"Please create .env.{DJANGO_ENV} file or set DJANGO_ENV to an environment with an existing .env file.\n"
-        f"Available environments: development, production, staging, test"
-    )
-
-# Read .env file
-environ.Env.read_env(env_file)
+# Load .env file if it exists
+# In Docker, environment variables are passed directly, so .env file is optional
+if env_file.exists():
+    print(f"Loading environment from: {env_file}")
+    environ.Env.read_env(env_file)
+else:
+    # Check if critical environment variables are already set (e.g., in Docker)
+    if not os.environ.get('SECRET_KEY'):
+        raise FileNotFoundError(
+            f"Environment file not found: {env_file}\n"
+            f"And required environment variables (like SECRET_KEY) are not set.\n"
+            f"Please either:\n"
+            f"  1. Create .env.{DJANGO_ENV} file, or\n"
+            f"  2. Set environment variables directly (e.g., in Docker)\n"
+            f"Available environments: development, production, staging, test"
+        )
+    else:
+        print(f"Environment file not found at {env_file}, using environment variables from system/Docker")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
