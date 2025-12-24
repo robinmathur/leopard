@@ -1,8 +1,6 @@
 # Docker Compose for Leopard Immigration CRM - Production
 # Services: PostgreSQL, Backend (Django+Daphne), Frontend (React), Nginx Reverse Proxy, Certbot
 
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -33,12 +31,28 @@ services:
         DJANGO_ENV: ${DJANGO_ENV:-production}
     container_name: leopard-backend
     restart: always
-    env_file:
-      - ./backend/.env.${DJANGO_ENV:-production}
     environment:
-      # Override database connection to use postgres service
+      # Django settings
+      DJANGO_ENV: ${DJANGO_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+
+      # Database connection
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: postgres
       DB_PORT: 5432
+
+      # Domain configuration
+      APP_SUBDOMAIN: ${APP_SUBDOMAIN:-immigrate}
+      BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
+
+      # Feature toggles
+      TASKS_DUE_SOON_DEFAULT_DAYS: ${TASKS_DUE_SOON_DEFAULT_DAYS:-3}
+      TASKS_INCLUDE_OVERDUE_DEFAULT: ${TASKS_INCLUDE_OVERDUE_DEFAULT:-true}
+      NOTIFICATIONS_INCLUDE_READ_DEFAULT: ${NOTIFICATIONS_INCLUDE_READ_DEFAULT:-true}
+      NOTIFICATION_STREAM_ALLOWED_ORIGIN: ${NOTIFICATION_STREAM_ALLOWED_ORIGIN:-*}
     volumes:
       # Shared volumes for static and media files
       - staticfiles:/app/staticfiles

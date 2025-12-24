@@ -1,8 +1,6 @@
 # Docker Compose for Leopard Immigration CRM - Development
 # Optimized for hot-reload, debugging, and local development
 
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
