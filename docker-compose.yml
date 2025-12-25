@@ -118,16 +118,16 @@ services:
     # Reload nginx every 6 hours to pick up renewed certificates
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  # Certbot for Let's Encrypt SSL certificate auto-renewal
-  certbot:
-    image: certbot/certbot
-    container_name: leopard-certbot
-    restart: unless-stopped
-    volumes:
-      - certbot-conf:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
-    # Renew certificates every 12 hours
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  # Certbot for Let's Encrypt SSL certificate auto-renewal/ Disabled for now, will rerun in case of manual/auto renewal
+#  certbot:
+#    image: certbot/certbot
+#    container_name: leopard-certbot
+#    restart: unless-stopped
+#    volumes:
+#      - certbot-conf:/etc/letsencrypt
+#      - certbot-www:/var/www/certbot
+#    # Renew certificates every 30 days
+#    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 720h & wait $${!}; done;'"
 
 networks:
   leopard-network:
