@@ -131,12 +131,13 @@ class FourLevelSubdomainMiddleware(BaseTenantMainMiddleware):
         Override to allow public access to certain paths.
 
         Public paths (no tenant required):
+        - /health/ - Health check endpoint (for Docker and monitoring)
         - /public/ - Public tenant management pages
         - /static/ - Static files
         - /media/ - Media files
         """
         # Check if this is a public path that doesn't require tenant context
-        public_paths = ['/static/', '/media/']
+        public_paths = ['/health/', '/static/', '/media/']
 
         if any(request.path.startswith(path) for path in public_paths):
             # Use public schema for these requests
