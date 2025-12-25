@@ -190,10 +190,6 @@ jobs:
             if [ "${{ steps.changes.outputs.build_frontend }}" = "true" ]; then
               SERVICES_TO_STOP="$SERVICES_TO_STOP frontend"
             fi
-#            if [ "${{ steps.changes.outputs.build_nginx }}" = "true" ]; then
-#              SERVICES_TO_STOP="$SERVICES_TO_STOP nginx certbot"
-#            fi
-            
             if [ -n "$SERVICES_TO_STOP" ]; then
               docker-compose stop $SERVICES_TO_STOP || true
             else
@@ -247,10 +243,6 @@ jobs:
           if [ "${{ steps.changes.outputs.build_frontend }}" = "true" ]; then
             SERVICES_TO_START="$SERVICES_TO_START frontend"
           fi
-#          if [ "${{ steps.changes.outputs.build_nginx }}" = "true" ]; then
-#            SERVICES_TO_START="$SERVICES_TO_START nginx certbot"
-#          fi
-          
           if [ -n "$SERVICES_TO_START" ]; then
             echo "Starting services with force recreate:$SERVICES_TO_START"
             # Force recreate to ensure new images are used (without --no-deps to handle dependencies)
