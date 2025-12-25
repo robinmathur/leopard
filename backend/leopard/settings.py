@@ -77,11 +77,8 @@ BASE_DOMAIN = env('BASE_DOMAIN', default='localhost')  # Development default
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    # Development: *.app.localhost
-    f'*.{APP_SUBDOMAIN}.localhost',
-    f'{APP_SUBDOMAIN}.localhost',
     # Production: *.app.company.com (set via environment)
-    f'*.{APP_SUBDOMAIN}.{BASE_DOMAIN}',
+    f'.{APP_SUBDOMAIN}.{BASE_DOMAIN}',
     f'{APP_SUBDOMAIN}.{BASE_DOMAIN}',
     BASE_DOMAIN,
 ]
@@ -92,7 +89,6 @@ if DEBUG:
     # Allow all hosts in DEBUG (security risk in production!)
     # The middleware will still validate tenant existence
     ALLOWED_HOSTS = ['*']
-
 
 # ==================== MULTI-TENANT CONFIGURATION ====================
 
@@ -271,7 +267,6 @@ if not DEBUG:
             r"^http://{0}\.{1}$".format(APP_SUBDOMAIN, base_domain_escaped),  # Also allow app subdomain without tenant
         ]
 
-
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -352,7 +347,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
@@ -369,6 +363,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom user model
 AUTH_USER_MODEL = 'immigration.User'
+
 
 # Environment-specific toggles for task/notification flows
 def _int_env(var_name, default):
@@ -394,7 +389,7 @@ def _validate_required_env_vars():
         'DB_PORT': str,
     }
     missing_vars = []
-    
+
     for var, var_type in required_vars.items():
         try:
             if var_type == bool:
@@ -406,13 +401,13 @@ def _validate_required_env_vars():
                 missing_vars.append(var)
         except (ValueError, environ.ImproperlyConfigured):
             missing_vars.append(var)
-    
+
     if missing_vars:
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing_vars)}. "
             f"Please ensure all required variables are set in your .env.{DJANGO_ENV} file."
         )
-    
+
     # Validate TASKS_DUE_SOON_DEFAULT_DAYS is a positive integer
     try:
         days = _int_env('TASKS_DUE_SOON_DEFAULT_DAYS', 3)
