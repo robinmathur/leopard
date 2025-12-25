@@ -42,12 +42,10 @@ class Command(BaseCommand):
         # Validate tenant exists in public schema
         with schema_context('public'):
             try:
-                tenant = Tenant.objects.get(name=tenant_name)
+                tenant = Tenant.objects.get(schema_name=f'tenant_{tenant_name}')
             except Tenant.DoesNotExist:
-                available_tenants = list(Tenant.objects.values_list('name', flat=True))
                 raise CommandError(
-                    f'Tenant "{tenant_name}" not found.\n'
-                    f'Available tenants: {", ".join(available_tenants) if available_tenants else "None"}'
+                    f'Tenant "{tenant_name}" not found.'
                 )
             
             schema_name = tenant.schema_name
