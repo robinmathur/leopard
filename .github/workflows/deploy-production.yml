@@ -210,19 +210,34 @@ jobs:
           docker-compose up -d postgres
 
       - name: Wait for database to be healthy
+        if: steps.db_status.outputs.status != 'healthy'
         run: |
-          echo "Waiting for database to be healthy (using docker-compose healthcheck)..."
-          docker-compose wait postgres || {
-            echo "Error: Database failed to become healthy"
-            docker-compose logs postgres
-            exit 1
-          }
-          echo "✓ Database is healthy"
+          echo "Waiting for database to be healthy..."
+          timeout=60
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            # Check if postgres container is healthy using docker inspect
+            if docker inspect --format='{{.State.Health.Status}}' $(docker-compose ps -q postgres) 2>/dev/null | grep -q "healthy"; then
+              echo "✓ Database is healthy"
+              exit 0
+            fi
+            # Also check with pg_isready as fallback
+            if docker-compose exec -T postgres pg_isready -U ${DB_USER:-leopard} >/dev/null 2>&1; then
+              echo "✓ Database is ready (pg_isready check)"
+              exit 0
+            fi
+            echo "Waiting for database... ($elapsed/$timeout seconds)"
+            sleep 2
+            elapsed=$((elapsed+2))
+          done
+          echo "Error: Database failed to become healthy within $timeout seconds"
+          docker-compose logs postgres
+          exit 1
 
-      - name: Start all containers (conditional)
+      - name: Start all containers (conditional with force recreate)
         if: env.skip_build != 'true'
         run: |
-          echo "Starting affected containers..."
+          echo "Starting affected containers with new images..."
           
           SERVICES_TO_START=""
           if [ "${{ steps.changes.outputs.build_backend }}" = "true" ]; then
@@ -236,8 +251,9 @@ jobs:
           fi
           
           if [ -n "$SERVICES_TO_START" ]; then
-            echo "Starting services:$SERVICES_TO_START"
-            docker-compose up -d $SERVICES_TO_START
+            echo "Starting services with force recreate:$SERVICES_TO_START"
+            # Force recreate to ensure new images are used (without --no-deps to handle dependencies)
+            docker-compose up -d --force-recreate $SERVICES_TO_START
           else
             echo "No services to start"
           fi
@@ -246,10 +262,69 @@ jobs:
           echo "Ensuring all services are running..."
           docker-compose up -d
 
-      - name: Ensure services running (no changes detected)
+      - name: Check and start services (no changes detected)
         if: env.skip_build == 'true'
         run: |
-          echo "No changes detected - ensuring all services are running..."
+          echo "No changes detected - checking service status and starting if needed..."
+          
+          # Check which services are not running or don't exist
+          SERVICES_TO_START=""
+          
+          # Check backend (container exists and is running)
+          if ! docker-compose ps backend 2>/dev/null | grep -qE "(Up|running)"; then
+            SERVICES_TO_START="$SERVICES_TO_START backend"
+            echo "Backend is down or doesn't exist, will start"
+          fi
+          
+          # Check frontend (container exists and is running)
+          if ! docker-compose ps frontend 2>/dev/null | grep -qE "(Up|running)"; then
+            SERVICES_TO_START="$SERVICES_TO_START frontend"
+            echo "Frontend is down or doesn't exist, will start"
+          fi
+          
+          # Check nginx (container exists and is running)
+          if ! docker-compose ps nginx 2>/dev/null | grep -qE "(Up|running)"; then
+            SERVICES_TO_START="$SERVICES_TO_START nginx certbot"
+            echo "Nginx is down or doesn't exist, will start"
+          fi
+          
+          # Check database
+          if [ "${{ steps.db_status.outputs.status }}" != "healthy" ]; then
+            SERVICES_TO_START="postgres $SERVICES_TO_START"
+            echo "Database is down or not healthy, will start"
+          fi
+          
+          if [ -n "$SERVICES_TO_START" ]; then
+            echo "Starting services:$SERVICES_TO_START"
+            docker-compose up -d $SERVICES_TO_START
+            
+            # Wait for database if we started it
+            if echo "$SERVICES_TO_START" | grep -q "postgres"; then
+              echo "Waiting for database to be healthy..."
+              timeout=60
+              elapsed=0
+              while [ $elapsed -lt $timeout ]; do
+                if docker inspect --format='{{.State.Health.Status}}' $(docker-compose ps -q postgres) 2>/dev/null | grep -q "healthy"; then
+                  echo "✓ Database is healthy"
+                  break
+                fi
+                if docker-compose exec -T postgres pg_isready -U ${DB_USER:-leopard} >/dev/null 2>&1; then
+                  echo "✓ Database is ready"
+                  break
+                fi
+                echo "Waiting for database... ($elapsed/$timeout seconds)"
+                sleep 2
+                elapsed=$((elapsed+2))
+              done
+              if [ $elapsed -ge $timeout ]; then
+                echo "Warning: Database did not become healthy, but continuing..."
+              fi
+            fi
+          else
+            echo "✓ All services are already running"
+          fi
+          
+          # Final check - ensure all services are up
           docker-compose up -d
           echo "✓ All services verified running"
 
