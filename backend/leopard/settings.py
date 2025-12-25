@@ -29,6 +29,7 @@ env = environ.Env(
     DB_PASSWORD=(str, None),
     DB_HOST=(str, 'localhost'),
     DB_PORT=(str, '5432'),
+    USE_HTTPS=(bool, False),  # Enable HTTPS redirects (default: False for HTTP-only)
 )
 
 # Determine which .env file to load based on DJANGO_ENV
@@ -220,33 +221,52 @@ DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
 # ==================== DOCKER PRODUCTION SECURITY SETTINGS ====================
 # Security settings for production Docker deployment with nginx reverse proxy
 # These settings are only applied when DEBUG=False
-if not DEBUG:
-    # SSL/HTTPS Settings
-    SECURE_SSL_REDIRECT = True  # Redirect all HTTP to HTTPS
-    SESSION_COOKIE_SECURE = True  # Only send session cookies over HTTPS
-    CSRF_COOKIE_SECURE = True  # Only send CSRF cookies over HTTPS
 
-    # Security Headers
+# Check if HTTPS is enabled (default: False for HTTP-only deployments)
+USE_HTTPS = env('USE_HTTPS')
+
+if not DEBUG:
+    # SSL/HTTPS Settings (only enabled when USE_HTTPS=True)
+    if USE_HTTPS:
+        SECURE_SSL_REDIRECT = True  # Redirect all HTTP to HTTPS
+        SESSION_COOKIE_SECURE = True  # Only send session cookies over HTTPS
+        CSRF_COOKIE_SECURE = True  # Only send CSRF cookies over HTTPS
+
+        # HSTS (HTTP Strict Transport Security)
+        SECURE_HSTS_SECONDS = 31536000  # 1 year
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+
+        # Trust proxy headers from nginx container (only when HTTPS is enabled)
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    else:
+        # HTTP-only mode: Disable HTTPS redirects and secure cookie flags
+        SECURE_SSL_REDIRECT = False
+        SESSION_COOKIE_SECURE = False
+        CSRF_COOKIE_SECURE = False
+        # Don't set SECURE_PROXY_SSL_HEADER when using HTTP-only
+
+    # Security Headers (always enabled in production)
     SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS filter
     SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
     X_FRAME_OPTIONS = 'SAMEORIGIN'  # Prevent clickjacking
 
-    # HSTS (HTTP Strict Transport Security)
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-
-    # Trust proxy headers from nginx container
-    # This is critical for Docker deployments where nginx is the reverse proxy
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Trust proxy headers from nginx container (always needed for reverse proxy)
     USE_X_FORWARDED_HOST = True
     USE_X_FORWARDED_PORT = True
 
     # CORS for production - restrict to actual tenant domains
     CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^https://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, BASE_DOMAIN.replace('.', r'\.')),
-    ]
+    if USE_HTTPS:
+        # HTTPS mode: only allow HTTPS origins
+        CORS_ALLOWED_ORIGIN_REGEXES = [
+            r"^https://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, BASE_DOMAIN.replace('.', r'\.')),
+        ]
+    else:
+        # HTTP-only mode: allow HTTP origins
+        CORS_ALLOWED_ORIGIN_REGEXES = [
+            r"^http://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, BASE_DOMAIN.replace('.', r'\.')),
+        ]
 
 
 # Password validation
