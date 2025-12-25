@@ -27,18 +27,12 @@ class Command(BaseCommand):
         parser.add_argument('--subdomain', required=True, help='Tenant subdomain (e.g., acme)')
         parser.add_argument('--admin-email', required=True, help='Tenant admin email')
         parser.add_argument('--admin-password', required=True, help='Tenant admin password')
-        parser.add_argument(
-            '--use-wildcard',
-            action='store_true',
-            help='Use wildcard domain pattern (*.app.company.com) instead of specific subdomain'
-        )
 
     def handle(self, *args, **options):
         name = options['name']
         subdomain = options['subdomain']
         admin_email = options['admin_email']
         admin_password = options['admin_password']
-        use_wildcard = options.get('use_wildcard', False)
 
         # Get configuration from settings
         app_subdomain = getattr(settings, 'APP_SUBDOMAIN', 'app')
@@ -64,17 +58,8 @@ class Command(BaseCommand):
 
         # Create domain mapping with 4-level structure
         try:
-            if use_wildcard:
-                # Wildcard pattern: *.app.company.com
-                domain_name = f"*.{app_subdomain}.{base_domain}"
-                self.stdout.write(
-                    self.style.WARNING(
-                        f'Creating wildcard domain: {domain_name} (matches all subdomains)'
-                    )
-                )
-            else:
-                # Specific subdomain: acme.app.company.com
-                domain_name = f"{subdomain}.{app_subdomain}.{base_domain}"
+            # Specific subdomain: acme.app.company.com
+            domain_name = f"{subdomain}.{app_subdomain}.{base_domain}"
 
             domain = Domain(
                 domain=domain_name,
@@ -106,7 +91,7 @@ class Command(BaseCommand):
             return
 
         # Success summary
-        access_url = f"http://{subdomain}.{app_subdomain}.{base_domain}:8000" if not use_wildcard else f"http://<tenant>.{app_subdomain}.{base_domain}:8000"
+        access_url = f"http://{subdomain}.{app_subdomain}.{base_domain}:8000"
 
         self.stdout.write(
             self.style.SUCCESS(

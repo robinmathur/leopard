@@ -2,17 +2,19 @@
 Management command to set up role-based groups and permissions.
 
 This command creates Django Groups for each role and assigns appropriate
-permissions based on the role hierarchy.
+permissions based on the role hierarchy for a specific tenant.
 
 Usage:
-    python manage.py setup_role_permissions
+    python manage.py setup_role_permissions --tenant "Tenant Name"
 """
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django_tenants.utils import schema_context
 
+from tenants.models import Tenant
 from immigration.constants import ALL_GROUPS, GROUP_DISPLAY_NAMES
 from immigration.models import (
     User, Client, Branch, Region,
@@ -23,18 +25,60 @@ from immigration.institute import Institute
 
 
 class Command(BaseCommand):
-    help = 'Set up role-based groups and permissions for the CRM system'
+    help = 'Set up role-based groups and permissions for a specific tenant'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--tenant',
+            type=str,
+            required=True,
+            help='Tenant name (company/organization name)'
+        )
 
     def handle(self, *args, **options):
         """Execute the command."""
-        self.stdout.write('Setting up role-based groups and permissions...')
+        tenant_name = options['tenant']
         
-        with transaction.atomic():
-            self._create_groups()
-            self._assign_permissions()
-            self._sync_existing_users()
+        # Validate tenant exists in public schema
+        with schema_context('public'):
+            try:
+                tenant = Tenant.objects.get(name=tenant_name)
+            except Tenant.DoesNotExist:
+                available_tenants = list(Tenant.objects.values_list('name', flat=True))
+                raise CommandError(
+                    f'Tenant "{tenant_name}" not found.\n'
+                    f'Available tenants: {", ".join(available_tenants) if available_tenants else "None"}'
+                )
+            
+            schema_name = tenant.schema_name
         
-        self.stdout.write(self.style.SUCCESS('Successfully set up role permissions!'))
+        # Validate schema exists by attempting to switch to it
+        try:
+            with schema_context(schema_name):
+                # Test query to ensure schema is accessible
+                ContentType.objects.first()
+        except Exception as e:
+            raise CommandError(
+                f'Schema "{schema_name}" validation failed: {e}\n'
+                f'Please ensure the tenant schema exists and is accessible.'
+            )
+        
+        self.stdout.write(
+            f'Setting up role-based groups and permissions for tenant: {tenant_name} (schema: {schema_name})...'
+        )
+        
+        # Execute all operations within the tenant's schema context
+        with schema_context(schema_name):
+            with transaction.atomic():
+                self._create_groups()
+                self._assign_permissions()
+                self._sync_existing_users()
+        
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'Successfully set up role permissions for tenant: {tenant_name}!'
+            )
+        )
 
     def _create_groups(self):
         """Create a Group for each group name."""

@@ -55,65 +55,229 @@ jobs:
           echo "Environment variables loaded:"
           grep -v "PASSWORD\|SECRET" .env | head -5
 
-      - name: Stop existing containers
+      - name: Check database container status
+        id: db_status
         run: |
-          echo "Stopping existing containers..."
-          docker-compose down || true
+          echo "Checking database container status..."
+          if docker-compose ps postgres 2>/dev/null | grep -q "Up.*healthy"; then
+            echo "status=healthy" >> $GITHUB_OUTPUT
+            echo "✓ Database is running and healthy"
+          elif docker-compose ps postgres 2>/dev/null | grep -q "Up"; then
+            echo "status=running" >> $GITHUB_OUTPUT
+            echo "⚠ Database is running but not yet healthy"
+          else
+            echo "status=stopped" >> $GITHUB_OUTPUT
+            echo "Database is not running"
+          fi
 
-      - name: Build Docker images
+      - name: Detect changed services
+        id: changes
         run: |
-          echo "Building Docker images (this may take several minutes)..."
-          docker-compose build --no-cache --pull
+          echo "Detecting which services have changed..."
+          
+          # For manual workflow dispatch, always build all services
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "build_backend=true" >> $GITHUB_OUTPUT
+            echo "build_frontend=true" >> $GITHUB_OUTPUT
+            echo "build_nginx=true" >> $GITHUB_OUTPUT
+            echo "✓ Manual trigger - building all services"
+            exit 0
+          fi
+          
+          # Get the commit range (previous commit to current)
+          # For push events, use github.event.before if available, otherwise use HEAD~1
+          if [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            BEFORE="${{ github.event.before }}"
+          else
+            # Fallback: use previous commit (might be first push to branch)
+            BEFORE=$(git rev-parse HEAD~1 2>/dev/null || echo "")
+            if [ -z "$BEFORE" ]; then
+              echo "build_backend=true" >> $GITHUB_OUTPUT
+              echo "build_frontend=true" >> $GITHUB_OUTPUT
+              echo "build_nginx=true" >> $GITHUB_OUTPUT
+              echo "✓ First commit on branch - building all services"
+              exit 0
+            fi
+          fi
+          AFTER="${{ github.sha }}"
+          
+          # Check for changes in each service directory
+          BACKEND_CHANGED=false
+          FRONTEND_CHANGED=false
+          NGINX_CHANGED=false
+          
+          # Check backend changes
+          if git diff --name-only "$BEFORE" "$AFTER" -- backend/ docker-compose.yml docker-compose.dev.yml | grep -q .; then
+            BACKEND_CHANGED=true
+            echo "✓ Backend changes detected"
+          fi
+          
+          # Check frontend changes
+          if git diff --name-only "$BEFORE" "$AFTER" -- frontend/ docker-compose.yml docker-compose.dev.yml | grep -q .; then
+            FRONTEND_CHANGED=true
+            echo "✓ Frontend changes detected"
+          fi
+          
+          # Check nginx changes
+          if git diff --name-only "$BEFORE" "$AFTER" -- nginx/ docker-compose.yml docker-compose.dev.yml | grep -q .; then
+            NGINX_CHANGED=true
+            echo "✓ Nginx changes detected"
+          fi
+          
+          # Also check root-level files that affect all services
+          if git diff --name-only "$BEFORE" "$AFTER" -- .env .github/workflows/ | grep -q .; then
+            BACKEND_CHANGED=true
+            FRONTEND_CHANGED=true
+            NGINX_CHANGED=true
+            echo "✓ Root-level changes detected - building all services"
+          fi
+          
+          # Set output variables
+          echo "build_backend=$BACKEND_CHANGED" >> $GITHUB_OUTPUT
+          echo "build_frontend=$FRONTEND_CHANGED" >> $GITHUB_OUTPUT
+          echo "build_nginx=$NGINX_CHANGED" >> $GITHUB_OUTPUT
+          
+          # Summary
+          echo "=== Build Plan ==="
+          echo "Backend: $BACKEND_CHANGED"
+          echo "Frontend: $FRONTEND_CHANGED"
+          echo "Nginx: $NGINX_CHANGED"
 
-      - name: Start database container
+      - name: Build Docker images (conditional)
+        run: |
+          echo "Building Docker images (conditional based on changes)..."
+          echo "Building before stopping containers to avoid unnecessary downtime on failure"
+          
+          SERVICES_TO_BUILD=""
+          
+          if [ "${{ steps.changes.outputs.build_backend }}" = "true" ]; then
+            SERVICES_TO_BUILD="$SERVICES_TO_BUILD backend"
+            echo "✓ Will build backend"
+          fi
+          
+          if [ "${{ steps.changes.outputs.build_frontend }}" = "true" ]; then
+            SERVICES_TO_BUILD="$SERVICES_TO_BUILD frontend"
+            echo "✓ Will build frontend"
+          fi
+          
+          if [ "${{ steps.changes.outputs.build_nginx }}" = "true" ]; then
+            SERVICES_TO_BUILD="$SERVICES_TO_BUILD nginx"
+            echo "✓ Will build nginx"
+          fi
+          
+          if [ -z "$SERVICES_TO_BUILD" ]; then
+            echo "⚠ No services need rebuilding - no changes detected"
+            echo "skip_build=true" >> $GITHUB_ENV
+          else
+            echo "Building services:$SERVICES_TO_BUILD"
+            docker-compose build --no-cache --pull $SERVICES_TO_BUILD
+            echo "skip_build=false" >> $GITHUB_ENV
+          fi
+
+      - name: Stop existing containers (conditional)
+        if: env.skip_build != 'true'
+        run: |
+          echo "Build succeeded, stopping affected containers..."
+          # Only stop application containers, keep database running if it's healthy
+          if [ "${{ steps.db_status.outputs.status }}" = "healthy" ]; then
+            echo "Database is healthy, stopping only affected application containers..."
+            
+            SERVICES_TO_STOP=""
+            if [ "${{ steps.changes.outputs.build_backend }}" = "true" ]; then
+              SERVICES_TO_STOP="$SERVICES_TO_STOP backend"
+            fi
+            if [ "${{ steps.changes.outputs.build_frontend }}" = "true" ]; then
+              SERVICES_TO_STOP="$SERVICES_TO_STOP frontend"
+            fi
+            if [ "${{ steps.changes.outputs.build_nginx }}" = "true" ]; then
+              SERVICES_TO_STOP="$SERVICES_TO_STOP nginx certbot"
+            fi
+            
+            if [ -n "$SERVICES_TO_STOP" ]; then
+              docker-compose stop $SERVICES_TO_STOP || true
+            else
+              echo "No services to stop"
+            fi
+          else
+            echo "Stopping all containers..."
+            docker-compose down || true
+          fi
+
+      - name: Start database container (if needed)
+        if: steps.db_status.outputs.status != 'healthy'
         run: |
           echo "Starting PostgreSQL database..."
           docker-compose up -d postgres
 
       - name: Wait for database to be healthy
         run: |
-          echo "Waiting for database to be ready..."
-          timeout=60
-          while [ $timeout -gt 0 ]; do
-            if docker-compose exec -T postgres pg_isready -U ${DB_USER:-leopard}; then
-              echo "✓ Database is ready"
-              break
-            fi
-            echo "Waiting for database... ($timeout seconds remaining)"
-            sleep 2
-            timeout=$((timeout-2))
-          done
-          if [ $timeout -le 0 ]; then
-            echo "Error: Database failed to start"
+          echo "Waiting for database to be healthy (using docker-compose healthcheck)..."
+          docker-compose wait postgres || {
+            echo "Error: Database failed to become healthy"
             docker-compose logs postgres
             exit 1
-          fi
+          }
+          echo "✓ Database is healthy"
 
-      - name: Start all containers
+      - name: Start all containers (conditional)
+        if: env.skip_build != 'true'
         run: |
-          echo "Starting all containers..."
+          echo "Starting affected containers..."
+          
+          SERVICES_TO_START=""
+          if [ "${{ steps.changes.outputs.build_backend }}" = "true" ]; then
+            SERVICES_TO_START="$SERVICES_TO_START backend"
+          fi
+          if [ "${{ steps.changes.outputs.build_frontend }}" = "true" ]; then
+            SERVICES_TO_START="$SERVICES_TO_START frontend"
+          fi
+          if [ "${{ steps.changes.outputs.build_nginx }}" = "true" ]; then
+            SERVICES_TO_START="$SERVICES_TO_START nginx certbot"
+          fi
+          
+          if [ -n "$SERVICES_TO_START" ]; then
+            echo "Starting services:$SERVICES_TO_START"
+            docker-compose up -d $SERVICES_TO_START
+          else
+            echo "No services to start"
+          fi
+          
+          # Always ensure all services are up (in case some weren't rebuilt but need to be running)
+          echo "Ensuring all services are running..."
           docker-compose up -d
 
+      - name: Ensure services running (no changes detected)
+        if: env.skip_build == 'true'
+        run: |
+          echo "No changes detected - ensuring all services are running..."
+          docker-compose up -d
+          echo "✓ All services verified running"
+
       - name: Wait for backend initialization
+        if: env.skip_build != 'true' && steps.changes.outputs.build_backend == 'true'
         run: |
           echo "Waiting for backend to complete initialization (migrations, collectstatic)..."
           sleep 30
           echo "Backend should now be ready"
 
       - name: Wait for services to be healthy
+        if: env.skip_build != 'true'
         run: |
           echo "Waiting for all services to be healthy..."
           sleep 30
           docker-compose ps
 
-          # Check if backend is healthy
-          if ! docker-compose ps | grep -q "leopard-backend.*Up"; then
-            echo "Backend container is not healthy! Showing logs..."
-            docker-compose logs --tail=100 backend
-            exit 1
+          # Check if backend is healthy (only if backend was rebuilt)
+          if [ "${{ steps.changes.outputs.build_backend }}" = "true" ]; then
+            if ! docker-compose ps | grep -q "leopard-backend.*Up"; then
+              echo "Backend container is not healthy! Showing logs..."
+              docker-compose logs --tail=100 backend
+              exit 1
+            fi
           fi
 
       - name: Health check - Backend
+        if: env.skip_build != 'true' && steps.changes.outputs.build_backend == 'true'
         run: |
           echo "Checking backend health..."
           max_attempts=10
@@ -134,6 +298,7 @@ jobs:
           fi
 
       - name: Health check - Frontend (via nginx)
+        if: env.skip_build != 'true' && (steps.changes.outputs.build_frontend == 'true' || steps.changes.outputs.build_nginx == 'true')
         run: |
           echo "Checking frontend accessibility via nginx..."
           # Wait for nginx to be ready
