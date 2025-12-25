@@ -264,8 +264,11 @@ if not DEBUG:
         ]
     else:
         # HTTP-only mode: allow HTTP origins
+        # Match pattern: http://tenant.immigrate.logiclucent.in
+        base_domain_escaped = BASE_DOMAIN.replace('.', r'\.')
         CORS_ALLOWED_ORIGIN_REGEXES = [
-            r"^http://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, BASE_DOMAIN.replace('.', r'\.')),
+            r"^http://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, base_domain_escaped),
+            r"^http://{0}\.{1}$".format(APP_SUBDOMAIN, base_domain_escaped),  # Also allow app subdomain without tenant
         ]
 
 
