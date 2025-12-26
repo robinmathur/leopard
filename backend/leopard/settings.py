@@ -27,15 +27,15 @@ env = environ.Env(
     DB_NAME=(str, None),
     DB_USER=(str, None),
     DB_PASSWORD=(str, None),
-    DB_HOST=(str, 'localhost'),
-    DB_PORT=(str, '5432'),
+    DB_HOST=(str, "localhost"),
+    DB_PORT=(str, "5432"),
     USE_HTTPS=(bool, False),  # Enable HTTPS redirects (default: False for HTTP-only)
 )
 
 # Determine which .env file to load based on DJANGO_ENV
 # Default to 'development' if not set
-DJANGO_ENV = os.environ.get('DJANGO_ENV', 'development')
-env_file = BASE_DIR / f'.env.{DJANGO_ENV}'
+DJANGO_ENV = os.environ.get("DJANGO_ENV", "development")
+env_file = BASE_DIR / f".env.{DJANGO_ENV}"
 
 # Load .env file if it exists
 # In Docker, environment variables are passed directly, so .env file is optional
@@ -44,7 +44,7 @@ if env_file.exists():
     environ.Env.read_env(env_file)
 else:
     # Check if critical environment variables are already set (e.g., in Docker)
-    if not os.environ.get('SECRET_KEY'):
+    if not os.environ.get("SECRET_KEY"):
         raise FileNotFoundError(
             f"Environment file not found: {env_file}\n"
             f"And required environment variables (like SECRET_KEY) are not set.\n"
@@ -54,33 +54,42 @@ else:
             f"Available environments: development, production, staging, test"
         )
     else:
-        print(f"Environment file not found at {env_file}, using environment variables from system/Docker")
+        print(
+            f"Environment file not found at {env_file}, using environment variables from system/Docker"
+        )
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG')
+DEBUG = env("DEBUG")
 
 # ==================== DOMAIN CONFIGURATION ====================
-# 4-level subdomain architecture: tenant.app.company.com
+# FLATTENED SUBDOMAIN ARCHITECTURE (Cloudflare Free SSL Compatible)
+#
+# Pattern: tenant-app.company.com (instead of tenant.app.company.com)
+# Example: acme-immigrate.logiclucent.in
+#
+# Why flattened? Cloudflare Free Universal SSL only supports one level of
+# subdomains (*.logiclucent.in), not nested subdomains (*.*.logiclucent.in).
+# This allows us to use Cloudflare's free SSL instead of paying $10/mo for
+# Advanced Certificate Manager.
 
 # Application subdomain (fixed across all environments)
-APP_SUBDOMAIN = env('APP_SUBDOMAIN', default='immigrate')
+APP_SUBDOMAIN = env("APP_SUBDOMAIN", default="immigrate")
 
 # Base domain (changes per environment)
-BASE_DOMAIN = env('BASE_DOMAIN', default='localhost')  # Development default
+BASE_DOMAIN = env("BASE_DOMAIN", default="localhost")  # Development default
 
-# Allowed hosts for 4-level subdomain structure
+# Allowed hosts for FLATTENED subdomain structure
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    # Production: *.app.company.com (set via environment)
-    f'.{APP_SUBDOMAIN}.{BASE_DOMAIN}',
-    f'{APP_SUBDOMAIN}.{BASE_DOMAIN}',
-    BASE_DOMAIN,
+    "localhost",
+    "127.0.0.1",
+    # Flattened pattern: *.logiclucent.in (covers tenant-immigrate.logiclucent.in)
+    f".{BASE_DOMAIN}",  # Wildcard for all subdomains
+    BASE_DOMAIN,  # Root domain
 ]
 
 # In DEBUG mode, we'll use a custom host validation in middleware
@@ -88,7 +97,7 @@ ALLOWED_HOSTS = [
 if DEBUG:
     # Allow all hosts in DEBUG (security risk in production!)
     # The middleware will still validate tenant existence
-    ALLOWED_HOSTS = ['*']
+    ALLOWED_HOSTS = ["*"]
 
 # ==================== MULTI-TENANT CONFIGURATION ====================
 
@@ -98,59 +107,57 @@ TENANT_DOMAIN_MODEL = "tenants.Domain"
 
 # Shared apps (stored in public schema)
 SHARED_APPS = [
-    'django_tenants',  # MUST BE FIRST
-    'django.contrib.contenttypes',
-    'django.contrib.auth',  # For public schema Super Super Admins
+    "django_tenants",  # MUST BE FIRST
+    "django.contrib.contenttypes",
+    "django.contrib.auth",  # For public schema Super Super Admins
     # REMOVED: 'django.contrib.admin' - admin only needed in tenant schemas
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
-    'tenants',  # Tenant management app
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "tenants",  # Tenant management app
 ]
 
 # Tenant-specific apps (each tenant gets their own schema)
 TENANT_APPS = [
-    'django.contrib.contenttypes',
-    'django.contrib.auth',
-    'django.contrib.admin',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-
-    'immigration',  # ALL immigration models go here
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'django_filters',
-    'drf_spectacular',
-    'django_countries',
-    'djmoney',
-    'corsheaders',
-    'whitenoise.runserver_nostatic',
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "django.contrib.admin",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "immigration",  # ALL immigration models go here
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "django_filters",
+    "drf_spectacular",
+    "django_countries",
+    "djmoney",
+    "corsheaders",
+    "whitenoise.runserver_nostatic",
 ]
 
 # Combined (django-tenants requires this)
 INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
 # Add daphne at the beginning
-INSTALLED_APPS.insert(0, 'daphne')
+INSTALLED_APPS.insert(0, "daphne")
 
 # ==================== MIDDLEWARE ====================
 # CRITICAL: TenantMainMiddleware MUST BE FIRST
 MIDDLEWARE = [
-    'tenants.middleware.FourLevelSubdomainMiddleware',  # CUSTOM - 4-level subdomain support
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'tenants.csrf_middleware.MultiTenantCsrfMiddleware',  # CUSTOM - Auto-trust tenant subdomains
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'immigration.middleware.CurrentUserMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "tenants.middleware.FourLevelSubdomainMiddleware",  # CUSTOM - 4-level subdomain support
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "tenants.csrf_middleware.MultiTenantCsrfMiddleware",  # CUSTOM - Auto-trust tenant subdomains
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "immigration.middleware.CurrentUserMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'leopard.urls'
+ROOT_URLCONF = "leopard.urls"
 
 # CORS Configuration for 4-level subdomain architecture
 # Allow all subdomains of app.company.com
@@ -169,57 +176,57 @@ CORS_ALLOW_METHODS = [
     "POST",
     "PUT",
 ]
-CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_HEADERS = ["*"]
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
 # WSGI_APPLICATION = 'leopard.wsgi.application'
-ASGI_APPLICATION = 'leopard.asgi.application'
+ASGI_APPLICATION = "leopard.asgi.application"
 
 # ==================== DATABASE ====================
 # CRITICAL: Using django_tenants PostgreSQL backend for schema-per-tenant
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',  # CHANGED for multi-tenancy
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT')
+    "default": {
+        "ENGINE": "django_tenants.postgresql_backend",  # CHANGED for multi-tenancy
+        "NAME": env("DB_NAME"),
+        "USER": env("DB_USER"),
+        "PASSWORD": env("DB_PASSWORD"),
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT"),
     }
 }
 
 # Database router for multi-tenant setup
 DATABASE_ROUTERS = [
-    'django_tenants.routers.TenantSyncRouter',
+    "django_tenants.routers.TenantSyncRouter",
 ]
 
 # ==================== DATABASE CONNECTION POOLING ====================
 # Persistent database connections for better performance in Docker
-DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+DATABASES["default"]["CONN_MAX_AGE"] = 600  # 10 minutes
 
 # ==================== DOCKER PRODUCTION SECURITY SETTINGS ====================
 # Security settings for production Docker deployment with nginx reverse proxy
 # These settings are only applied when DEBUG=False
 
 # Check if HTTPS is enabled (default: False for HTTP-only deployments)
-USE_HTTPS = env('USE_HTTPS')
+USE_HTTPS = env("USE_HTTPS")
 
 if not DEBUG:
     # SSL/HTTPS Settings (only enabled when USE_HTTPS=True)
@@ -234,7 +241,7 @@ if not DEBUG:
         SECURE_HSTS_PRELOAD = True
 
         # Trust proxy headers from nginx container (only when HTTPS is enabled)
-        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     else:
         # HTTP-only mode: Disable HTTPS redirects and secure cookie flags
         SECURE_SSL_REDIRECT = False
@@ -245,7 +252,7 @@ if not DEBUG:
     # Security Headers (always enabled in production)
     SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS filter
     SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
-    X_FRAME_OPTIONS = 'SAMEORIGIN'  # Prevent clickjacking
+    X_FRAME_OPTIONS = "SAMEORIGIN"  # Prevent clickjacking
 
     # Trust proxy headers from nginx container (always needed for reverse proxy)
     USE_X_FORWARDED_HOST = True
@@ -256,15 +263,19 @@ if not DEBUG:
     if USE_HTTPS:
         # HTTPS mode: only allow HTTPS origins
         CORS_ALLOWED_ORIGIN_REGEXES = [
-            r"^https://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, BASE_DOMAIN.replace('.', r'\.')),
+            r"^https://\w+\.{0}\.{1}$".format(
+                APP_SUBDOMAIN, BASE_DOMAIN.replace(".", r"\.")
+            ),
         ]
     else:
         # HTTP-only mode: allow HTTP origins
         # Match pattern: http://tenant.immigrate.logiclucent.in
-        base_domain_escaped = BASE_DOMAIN.replace('.', r'\.')
+        base_domain_escaped = BASE_DOMAIN.replace(".", r"\.")
         CORS_ALLOWED_ORIGIN_REGEXES = [
             r"^http://\w+\.{0}\.{1}$".format(APP_SUBDOMAIN, base_domain_escaped),
-            r"^http://{0}\.{1}$".format(APP_SUBDOMAIN, base_domain_escaped),  # Also allow app subdomain without tenant
+            r"^http://{0}\.{1}$".format(
+                APP_SUBDOMAIN, base_domain_escaped
+            ),  # Also allow app subdomain without tenant
         ]
 
 # Password validation
@@ -272,33 +283,33 @@ if not DEBUG:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
         # 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    "DEFAULT_AUTHENTICATION_CLASSES": [
         # 'rest_framework.authentication.BasicAuthentication',
         # 'rest_framework.authentication.SessionAuthentication',
-        'immigration.authentication.TenantJWTAuthentication',  # CHANGED: Tenant-bound JWT
+        "immigration.authentication.TenantJWTAuthentication",  # CHANGED: Tenant-bound JWT
     ],
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    'DEFAULT_PAGINATION_CLASS': 'immigration.pagination.StandardResultsSetPagination',
-    'PAGE_SIZE': 25,
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "DEFAULT_PAGINATION_CLASS": "immigration.pagination.StandardResultsSetPagination",
+    "PAGE_SIZE": 25,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # CSRF Configuration
@@ -306,15 +317,15 @@ REST_FRAMEWORK = {
 # Development: Allow all *.immigrate.localhost origins
 CSRF_TRUSTED_ORIGINS = [
     # Backend
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
     # Frontend (all tenant subdomains)
-    'http://localhost:5173',
-    'http://main.immigrate.localhost:5173',
-    'http://demo.immigrate.localhost:5173',
-    'http://acme.immigrate.localhost:5173',
+    "http://localhost:5173",
+    "http://main.immigrate.localhost:5173",
+    "http://demo.immigrate.localhost:5173",
+    "http://acme.immigrate.localhost:5173",
     # Add more as needed, or disable CSRF for API endpoints (recommended for JWT)
-    'http://192.168.0.196:62718'
+    "http://192.168.0.196:62718",
 ]
 
 # Alternative: Disable CSRF for API endpoints using @csrf_exempt
@@ -322,26 +333,30 @@ CSRF_TRUSTED_ORIGINS = [
 # The JWT token itself provides protection against CSRF attacks
 
 SIMPLE_JWT = {
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=4),  # Configure how long the token should be valid
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # Total time within which the token can be refreshed
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',  # Use HMAC SHA256 for development (simpler than RSA)
-    'SIGNING_KEY': 'dev-jwt-secret-key-change-in-production-12345678901234567890',
-    'VERIFYING_KEY': None,  # Not needed for HMAC
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'TOKEN_TYPE_CLAIM': 'token_type',
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        hours=4
+    ),  # Configure how long the token should be valid
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=1
+    ),  # Total time within which the token can be refreshed
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",  # Use HMAC SHA256 for development (simpler than RSA)
+    "SIGNING_KEY": "dev-jwt-secret-key-change-in-production-12345678901234567890",
+    "VERIFYING_KEY": None,  # Not needed for HMAC
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "TOKEN_TYPE_CLAIM": "token_type",
 }
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -350,19 +365,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-MEDIA_URLS = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+MEDIA_URLS = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom user model
-AUTH_USER_MODEL = 'immigration.User'
+AUTH_USER_MODEL = "immigration.User"
 
 
 # Environment-specific toggles for task/notification flows
@@ -380,13 +395,13 @@ def _validate_required_env_vars():
     Fails fast if critical variables are missing or invalid.
     """
     required_vars = {
-        'SECRET_KEY': str,
-        'DEBUG': bool,
-        'DB_NAME': str,
-        'DB_USER': str,
-        'DB_PASSWORD': str,
-        'DB_HOST': str,
-        'DB_PORT': str,
+        "SECRET_KEY": str,
+        "DEBUG": bool,
+        "DB_NAME": str,
+        "DB_USER": str,
+        "DB_PASSWORD": str,
+        "DB_HOST": str,
+        "DB_PORT": str,
     }
     missing_vars = []
 
@@ -397,7 +412,7 @@ def _validate_required_env_vars():
             else:
                 value = env(var)
             # Check if value is None or empty string
-            if value is None or (isinstance(value, str) and value.strip() == ''):
+            if value is None or (isinstance(value, str) and value.strip() == ""):
                 missing_vars.append(var)
         except (ValueError, environ.ImproperlyConfigured):
             missing_vars.append(var)
@@ -410,7 +425,7 @@ def _validate_required_env_vars():
 
     # Validate TASKS_DUE_SOON_DEFAULT_DAYS is a positive integer
     try:
-        days = _int_env('TASKS_DUE_SOON_DEFAULT_DAYS', 3)
+        days = _int_env("TASKS_DUE_SOON_DEFAULT_DAYS", 3)
         if days <= 0:
             raise ValueError("TASKS_DUE_SOON_DEFAULT_DAYS must be a positive integer")
     except ValueError as e:
@@ -421,86 +436,82 @@ def _validate_required_env_vars():
 _validate_required_env_vars()
 
 # Environment-specific settings with validated defaults
-TASKS_DUE_SOON_DEFAULT_DAYS = _int_env('TASKS_DUE_SOON_DEFAULT_DAYS', 3)
-TASKS_INCLUDE_OVERDUE_DEFAULT = env('TASKS_INCLUDE_OVERDUE_DEFAULT', default='true')
-NOTIFICATIONS_INCLUDE_READ_DEFAULT = env('NOTIFICATIONS_INCLUDE_READ_DEFAULT', default='true')
-NOTIFICATION_STREAM_ALLOWED_ORIGIN = env('NOTIFICATION_STREAM_ALLOWED_ORIGIN', default='*')
+TASKS_DUE_SOON_DEFAULT_DAYS = _int_env("TASKS_DUE_SOON_DEFAULT_DAYS", 3)
+TASKS_INCLUDE_OVERDUE_DEFAULT = env("TASKS_INCLUDE_OVERDUE_DEFAULT", default="true")
+NOTIFICATIONS_INCLUDE_READ_DEFAULT = env(
+    "NOTIFICATIONS_INCLUDE_READ_DEFAULT", default="true"
+)
+NOTIFICATION_STREAM_ALLOWED_ORIGIN = env(
+    "NOTIFICATION_STREAM_ALLOWED_ORIGIN", default="*"
+)
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': "channels.layers.InMemoryChannelLayer"
-    }
-}
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 # drf-spectacular settings
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Immigration CRM API',
-    'DESCRIPTION': 'Multi-tenant CRM system for immigration agencies with role-based access control',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SECURITY': [
-        {
-            'BearerAuth': []
-        }
-    ],
-    'SECURITY_SCHEMES': {
-        'BearerAuth': {
-            'type': 'http',
-            'scheme': 'bearer',
-            'bearerFormat': 'JWT',
+    "TITLE": "Immigration CRM API",
+    "DESCRIPTION": "Multi-tenant CRM system for immigration agencies with role-based access control",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SECURITY": [{"BearerAuth": []}],
+    "SECURITY_SCHEMES": {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
         }
     },
-    'COMPONENT_SPLIT_REQUEST': True,
-    'SORT_OPERATIONS': False,
-    'ENUM_NAME_OVERRIDES': {
-        'agent_type': 'AgentTypeEnum',
-        'gender': 'GenderEnum',
-        'stage': 'StageEnum',
-        'priority': 'PriorityEnum',
-        'status': 'StatusEnum',
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": False,
+    "ENUM_NAME_OVERRIDES": {
+        "agent_type": "AgentTypeEnum",
+        "gender": "GenderEnum",
+        "stage": "StageEnum",
+        "priority": "PriorityEnum",
+        "status": "StatusEnum",
     },
-    'SCHEMA_PATH_PREFIX': '/api/v1',
+    "SCHEMA_PATH_PREFIX": "/api/v1",
 }
 
 # Logging configuration
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
     },
-    'loggers': {
-        'immigration.events': {
-            'handlers': ['console'],
-            'level': 'DEBUG',  # Enable debug logging for events framework
-            'propagate': False,
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "immigration.events": {
+            "handlers": ["console"],
+            "level": "DEBUG",  # Enable debug logging for events framework
+            "propagate": False,
         },
-        'immigration.authentication': {
-            'handlers': ['console'],
-            'level': 'DEBUG',  # Enable debug logging for authentication
-            'propagate': False,
+        "immigration.authentication": {
+            "handlers": ["console"],
+            "level": "DEBUG",  # Enable debug logging for authentication
+            "propagate": False,
         },
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }

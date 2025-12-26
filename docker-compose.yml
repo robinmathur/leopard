@@ -107,16 +107,16 @@ services:
       # Static and media files from backend
       - staticfiles:/app/staticfiles:ro
       - mediafiles:/app/mediafiles:ro
-      # Let's Encrypt certificates
-      - certbot-conf:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
+      # Cloudflare Origin CA Certificates (mounted from host)
+      # These are mounted to /etc/nginx/ssl/ which nginx.conf references
+      # IMPORTANT: Update paths in .env file to match your certificate location
+      - ${SSL_HOST_CERT_PATH:-/mnt/d/shared/certs/cert.pem}:/etc/nginx/ssl/cert.pem:ro
+      - ${SSL_HOST_KEY_PATH:-/mnt/d/shared/certs/key.pem}:/etc/nginx/ssl/key.pem:ro
     depends_on:
       - backend
       - frontend
     networks:
       - leopard-network
-    # Reload nginx every 6 hours to pick up renewed certificates
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
   # Certbot for Let's Encrypt SSL certificate auto-renewal/ Disabled for now, will rerun in case of manual/auto renewal
 #  certbot:

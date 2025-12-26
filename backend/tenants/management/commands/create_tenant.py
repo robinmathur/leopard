@@ -1,13 +1,16 @@
 """
 Management command to create a new tenant with its own schema.
 
-4-Level Subdomain Architecture: tenant.app.company.com
+FLATTENED Subdomain Architecture: tenant-app.company.com
 
 Creates:
 1. Tenant record in public schema
 2. PostgreSQL schema for the tenant
-3. Domain mapping for 4-level subdomain routing
+3. Domain mapping for FLATTENED subdomain routing (Cloudflare Free SSL compatible)
 4. Tenant Super Admin user in the tenant schema
+
+Why flattened? Cloudflare Free Universal SSL only supports one level of
+subdomains (*.company.com), not nested subdomains (*.*.company.com).
 """
 
 from django.core.management.base import BaseCommand
@@ -20,23 +23,27 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = 'Creates a new tenant with admin user and schema (4-level subdomain: tenant.app.company.com)'
+    help = "Creates a new tenant with admin user and schema (FLATTENED subdomain: tenant-app.company.com)"
 
     def add_arguments(self, parser):
-        parser.add_argument('--name', required=True, help='Company/Organization name')
-        parser.add_argument('--subdomain', required=True, help='Tenant subdomain (e.g., acme)')
-        parser.add_argument('--admin-email', required=True, help='Tenant admin email')
-        parser.add_argument('--admin-password', required=True, help='Tenant admin password')
+        parser.add_argument("--name", required=True, help="Company/Organization name")
+        parser.add_argument(
+            "--subdomain", required=True, help="Tenant subdomain (e.g., acme)"
+        )
+        parser.add_argument("--admin-email", required=True, help="Tenant admin email")
+        parser.add_argument(
+            "--admin-password", required=True, help="Tenant admin password"
+        )
 
     def handle(self, *args, **options):
-        name = options['name']
-        subdomain = options['subdomain']
-        admin_email = options['admin_email']
-        admin_password = options['admin_password']
+        name = options["name"]
+        subdomain = options["subdomain"]
+        admin_email = options["admin_email"]
+        admin_password = options["admin_password"]
 
         # Get configuration from settings
-        app_subdomain = getattr(settings, 'APP_SUBDOMAIN', 'app')
-        base_domain = getattr(settings, 'BASE_DOMAIN', 'localhost')
+        app_subdomain = getattr(settings, "APP_SUBDOMAIN", "app")
+        base_domain = getattr(settings, "BASE_DOMAIN", "localhost")
 
         schema_name = f"tenant_{subdomain}"
 
@@ -48,28 +55,27 @@ class Command(BaseCommand):
                 schema_name=schema_name,
                 name=name,
                 is_active=True,
-                subscription_status='TRIAL'
+                subscription_status="TRIAL",
             )
             tenant.save()
-            self.stdout.write(self.style.SUCCESS(f'✓ Tenant created with schema: {schema_name}'))
+            self.stdout.write(
+                self.style.SUCCESS(f"✓ Tenant created with schema: {schema_name}")
+            )
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'✗ Error creating tenant: {e}'))
+            self.stdout.write(self.style.ERROR(f"✗ Error creating tenant: {e}"))
             return
 
-        # Create domain mapping with 4-level structure
+        # Create domain mapping with FLATTENED structure (Cloudflare Free SSL compatible)
         try:
-            # Specific subdomain: acme.app.company.com
-            domain_name = f"{subdomain}.{app_subdomain}.{base_domain}"
+            # FLATTENED subdomain: acme-immigrate.logiclucent.in
+            # (instead of acme.immigrate.logiclucent.in)
+            domain_name = f"{subdomain}-{app_subdomain}.{base_domain}"
 
-            domain = Domain(
-                domain=domain_name,
-                tenant=tenant,
-                is_primary=True
-            )
+            domain = Domain(domain=domain_name, tenant=tenant, is_primary=True)
             domain.save()
-            self.stdout.write(self.style.SUCCESS(f'✓ Domain created: {domain_name}'))
+            self.stdout.write(self.style.SUCCESS(f"✓ Domain created: {domain_name}"))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'✗ Error creating domain: {e}'))
+            self.stdout.write(self.style.ERROR(f"✗ Error creating domain: {e}"))
             # Rollback tenant creation
             tenant.delete()
             return
@@ -78,20 +84,22 @@ class Command(BaseCommand):
         try:
             with schema_context(schema_name):
                 admin = User.objects.create_superuser(
-                    username=admin_email,
-                    email=admin_email,
-                    password=admin_password
+                    username=admin_email, email=admin_email, password=admin_password
                 )
-                self.stdout.write(self.style.SUCCESS(f'✓ Tenant admin created: {admin_email}'))
+                self.stdout.write(
+                    self.style.SUCCESS(f"✓ Tenant admin created: {admin_email}")
+                )
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'✗ Error creating tenant admin: {e}'))
+            self.stdout.write(self.style.ERROR(f"✗ Error creating tenant admin: {e}"))
             # Rollback
             domain.delete()
             tenant.delete()
             return
 
         # Success summary
-        access_url = f"http://{subdomain}.{app_subdomain}.{base_domain}:8000"
+        access_url = f"https://{subdomain}-{app_subdomain}.{base_domain}"
+        if base_domain == 'localhost':
+            access_url = f"http://{subdomain}-{app_subdomain}.{base_domain}:8000"
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -101,7 +109,7 @@ class Command(BaseCommand):
                 f'═══════════════════════════════════════════════\n'
                 f'  Company: {name}\n'
                 f'  Schema: {schema_name}\n'
-                f'  Domain Pattern: {domain_name}\n'
+                f'  Domain Pattern: {domain_name} (FLATTENED)\n'
                 f'  Admin: {admin_email}\n'
                 f'  Status: {tenant.subscription_status}\n'
                 f'\n'
@@ -117,6 +125,6 @@ class Command(BaseCommand):
                     f'\n⚠  Development Setup Required:\n'
                     f'   Add this line to /etc/hosts (macOS/Linux) or\n'
                     f'   C:\\Windows\\System32\\drivers\\etc\\hosts (Windows):\n\n'
-                    f'   127.0.0.1 {subdomain}.{app_subdomain}.{base_domain}\n'
+                    f'   127.0.0.1 {subdomain}-{app_subdomain}.{base_domain}\n'
                 )
             )
