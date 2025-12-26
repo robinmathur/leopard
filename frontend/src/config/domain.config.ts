@@ -53,7 +53,7 @@ export const getDomainConfig = (): DomainConfig => {
     appSubdomain: import.meta.env.VITE_APP_SUBDOMAIN || 'immigrate',
     baseDomain: import.meta.env.VITE_BASE_DOMAIN || 'company.com',
     environment: 'production',
-    apiProtocol: 'http',
+    apiProtocol: 'https',
   };
 };
 
