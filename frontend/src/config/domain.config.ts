@@ -1,16 +1,16 @@
 /**
- * Domain Configuration for 4-Level Subdomain Architecture
+ * Domain Configuration for Flattened Subdomain Architecture
  *
- * Structure: tenant.app.company.com
+ * Structure: tenant-app.company.com
  * - tenant: Dynamic tenant identifier (extracted from subdomain)
  * - app: Application namespace (fixed)
  * - company: Company domain (fixed)
  * - com: TLD
  *
  * Examples:
- * - Development: acme.app.localhost
- * - Staging: acme.app-staging.company.com
- * - Production: acme.app.company.com
+ * - Development: demo-app.localhost
+ * - Staging: demo-app-staging.company.com
+ * - Production: demo-app.company.com
  */
 
 export interface DomainConfig {
@@ -63,8 +63,8 @@ export const getDomainConfig = (): DomainConfig => {
  * @returns Tenant identifier or null if not a tenant request
  *
  * Examples:
- * - acme.app.localhost → 'acme'
- * - demo.app.company.com → 'demo'
+ * - demo-app.localhost → 'demo'
+ * - demo-app.company.com → 'demo'
  * - app.localhost → null (no tenant)
  * - localhost → null (no tenant)
  */
@@ -72,22 +72,34 @@ export const getTenantFromHostname = (): string | null => {
   const hostname = window.location.hostname;
   const parts = hostname.split('.');
 
-  // Need at least 3 parts for 4-level subdomain
-  if (parts.length < 3) {
+  // Need at least 2 parts for flattened subdomain (tenant-app.company.com)
+  if (parts.length < 2) {
     return null;
   }
 
   const config = getDomainConfig();
 
-  // First part is tenant subdomain
-  const tenantSubdomain = parts[0];
+  // First part contains tenant-app pattern
+  const firstPart = parts[0];
+  
+  // Check if it matches the flattened pattern: tenant-app
+  const tenantAppPattern = `${config.appSubdomain}`;
+  
+  // Extract tenant from pattern like "demo-app" or "acme-immigrate"
+  // Pattern: {tenant}-{app}
+  if (firstPart.endsWith(`-${tenantAppPattern}`)) {
+    const tenant = firstPart.slice(0, -(tenantAppPattern.length + 1)); // Remove "-app" suffix
+    if (tenant && tenant.length > 0) {
+      return tenant;
+    }
+  }
 
-  // Validate it's not the app subdomain itself
-  if (tenantSubdomain === config.appSubdomain) {
+  // If first part is just the app subdomain, no tenant
+  if (firstPart === config.appSubdomain) {
     return null; // This is app.company.com (no tenant)
   }
 
-  return tenantSubdomain;
+  return null;
 };
 
 /**
@@ -96,8 +108,8 @@ export const getTenantFromHostname = (): string | null => {
  * @returns Full API base URL with tenant subdomain
  *
  * Examples:
- * - Development: http://acme.app.localhost:8000/api/v1
- * - Production: https://acme.app.company.com/api/v1
+ * - Development: http://demo-app.localhost:8000/api/v1
+ * - Production: https://demo-app.company.com/api/v1
  */
 export const getApiBaseUrl = (): string => {
   const config = getDomainConfig();
@@ -109,8 +121,8 @@ export const getApiBaseUrl = (): string => {
 
   const { appSubdomain, baseDomain, apiProtocol, apiPort } = config;
 
-  // Build hostname: tenant.app.company.com
-  const apiHostname = `${tenant}.${appSubdomain}.${baseDomain}`;
+  // Build hostname: tenant-app.company.com (flattened pattern)
+  const apiHostname = `${tenant}-${appSubdomain}.${baseDomain}`;
 
   // Build full URL
   const port = apiPort ? `:${apiPort}` : '';
@@ -127,14 +139,15 @@ export const getApiBaseUrl = (): string => {
  * @returns Full URL for the tenant
  *
  * Examples:
- * - getTenantUrl('acme') → http://acme.app.localhost:8000/
- * - getTenantUrl('acme', '/dashboard') → http://acme.app.localhost:8000/dashboard
+ * - getTenantUrl('demo') → http://demo-app.localhost:8000/
+ * - getTenantUrl('demo', '/dashboard') → http://demo-app.localhost:8000/dashboard
  */
 export const getTenantUrl = (tenant: string, path: string = '/'): string => {
   const config = getDomainConfig();
   const { appSubdomain, baseDomain, apiProtocol, apiPort } = config;
 
-  const hostname = `${tenant}.${appSubdomain}.${baseDomain}`;
+  // Build hostname: tenant-app.company.com (flattened pattern)
+  const hostname = `${tenant}-${appSubdomain}.${baseDomain}`;
   const port = apiPort ? `:${apiPort}` : '';
 
   return `${apiProtocol}://${hostname}${port}${path}`;
@@ -184,6 +197,6 @@ export const getEnvironmentConfig = () => {
     isProduction: config.environment === 'production',
     apiBaseUrl: getApiBaseUrl(),
     currentTenant: getTenantFromHostname(),
-    domainPattern: `{tenant}.${config.appSubdomain}.${config.baseDomain}`,
+    domainPattern: `{tenant}-${config.appSubdomain}.${config.baseDomain}`,
   };
 };
