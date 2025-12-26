@@ -31,11 +31,10 @@ services:
     ports:
       - "8000:8000"  # Exposed for direct access
     env_file:
-      - ./backend/.env.development
+      - backend/.env
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DJANGO_ENV: development
       DEBUG: "True"
     volumes:
       # Bind mount for hot-reload

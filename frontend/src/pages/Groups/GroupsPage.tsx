@@ -23,7 +23,7 @@ import { GroupForm } from '@/components/groups/GroupForm';
 import { DeleteConfirmDialog } from '@/components/groups/DeleteConfirmDialog';
 import { PermissionAssignmentDialog } from '@/components/groups/PermissionAssignmentDialog';
 import { groupApi } from '@/services/api/groupApi';
-import type { Group, GroupCreateRequest, GroupUpdateRequest, PermissionAssignmentRequest } from '@/types/user';
+import type { Group, GroupCreateRequest, GroupUpdateRequest } from '@/types/user';
 import type { ApiError } from '@/services/api/httpClient';
 
 type DialogMode = 'add' | 'edit' | null;

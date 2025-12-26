@@ -35,7 +35,6 @@ services:
     restart: always
     environment:
       # Django settings
-      DJANGO_ENV: ${DJANGO_ENV:-production}
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG:-False}
 

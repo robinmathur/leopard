@@ -42,4 +42,15 @@ Content-Type: application/json
   "password": "demo123"
 }
 
+### Get Acme Admin Access token
+POST https://acme-immigrate.logiclucent.in/api/token/
+accept: application/json
+#X-CSRFTOKEN: 9Z20Gl2SYVLX616MK5e4RyUDqRBUpdSK4BvBvqUNmGOmKLcT9C0xymyaUklx1jJH
+Content-Type: application/json
+
+{
+  "username": "admin@acme.com",
+  "password": "acme@123"
+}
+
 ###

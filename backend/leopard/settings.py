@@ -19,7 +19,7 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize django-environ
-# Note: Required variables don't have defaults - they must be set in .env files
+# Note: Required variables don't have defaults - they must be set in .env file
 env = environ.Env(
     # Set casting for variables
     DEBUG=(bool, False),
@@ -32,31 +32,15 @@ env = environ.Env(
     USE_HTTPS=(bool, False),  # Enable HTTPS redirects (default: False for HTTP-only)
 )
 
-# Determine which .env file to load based on DJANGO_ENV
-# Default to 'development' if not set
-DJANGO_ENV = os.environ.get("DJANGO_ENV", "development")
-env_file = BASE_DIR / f".env.{DJANGO_ENV}"
-
-# Load .env file if it exists
-# In Docker, environment variables are passed directly, so .env file is optional
+# Load .env file from project root
+# django-environ will automatically look for .env file in BASE_DIR
+env_file = BASE_DIR / ".env"
 if env_file.exists():
-    print(f"Loading environment from: {env_file}")
     environ.Env.read_env(env_file)
+    print(f"✓ Loaded environment from: {env_file}")
 else:
-    # Check if critical environment variables are already set (e.g., in Docker)
-    if not os.environ.get("SECRET_KEY"):
-        raise FileNotFoundError(
-            f"Environment file not found: {env_file}\n"
-            f"And required environment variables (like SECRET_KEY) are not set.\n"
-            f"Please either:\n"
-            f"  1. Create .env.{DJANGO_ENV} file, or\n"
-            f"  2. Set environment variables directly (e.g., in Docker)\n"
-            f"Available environments: development, production, staging, test"
-        )
-    else:
-        print(
-            f"Environment file not found at {env_file}, using environment variables from system/Docker"
-        )
+    # In Docker, environment variables are passed directly, so .env file is optional
+    print("ℹ  .env file not found, using environment variables from system/Docker")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -420,7 +404,7 @@ def _validate_required_env_vars():
     if missing_vars:
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing_vars)}. "
-            f"Please ensure all required variables are set in your .env.{DJANGO_ENV} file."
+            f"Please ensure all required variables are set in your .env file or as environment variables."
         )
 
     # Validate TASKS_DUE_SOON_DEFAULT_DAYS is a positive integer

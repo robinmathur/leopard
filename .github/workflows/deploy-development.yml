@@ -21,7 +21,6 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "DJANGO_ENV=development" >> $GITHUB_ENV
           echo "COMPOSE_PROJECT_NAME=leopard-dev" >> $GITHUB_ENV
           echo "DEPLOYMENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
 

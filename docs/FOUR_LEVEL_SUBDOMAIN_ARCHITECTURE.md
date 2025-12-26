@@ -351,7 +351,7 @@ Add:
 ```bash
 cd frontend
 
-# Create .env.development (already created)
+# Create .env (already created)
 # VITE_APP_SUBDOMAIN=app
 # VITE_BASE_DOMAIN=localhost
 
