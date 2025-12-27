@@ -80,3 +80,33 @@ class Domain(DomainMixin):
 
     def __str__(self):
         return self.domain
+
+
+class EventProcessingControl(models.Model):
+    """
+    Singleton model to control event processing state (pause/resume).
+    
+    Multi-tenant: Stored in PUBLIC schema - global pause/resume for all tenants.
+    This model is shared across all tenants and controls the global event processing state.
+    """
+    is_paused = models.BooleanField(default=False)
+    paused_at = models.DateTimeField(null=True, blank=True)
+    pause_reason = models.CharField(max_length=255, null=True, blank=True)
+    resumed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'public.event_processing_control'
+    
+    def save(self, *args, **kwargs):
+        self.pk = 1  # Ensure singleton
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_instance(cls):
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return instance
+    
+    @classmethod
+    def is_processing_paused(cls) -> bool:
+        return cls.get_instance().is_paused

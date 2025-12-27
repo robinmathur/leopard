@@ -25,7 +25,7 @@ import { ClientForm } from '@/components/clients/ClientForm';
 import { DeleteConfirmDialog } from '@/components/clients/DeleteConfirmDialog';
 import { MoveStageDialog } from '@/components/clients/MoveStageDialog';
 import { useClientStore } from '@/store/clientStore';
-import { Client, ClientCreateRequest, ClientUpdateRequest, STAGE_LABELS } from '@/types/client';
+import { Client, ClientCreateRequest, ClientUpdateRequest, ClientStage, STAGE_LABELS } from '@/types/client';
 import { ApiError } from '@/services/api/httpClient';
 
 type DialogMode = 'add' | 'edit' | null;
@@ -57,7 +57,7 @@ export const ClientsPage = () => {
     addClient,
     updateClient,
     deleteClient,
-    moveToNextStage,
+    moveToStage,
     setPage,
     setPageSize,
     clearError,
@@ -164,11 +164,11 @@ export const ClientsPage = () => {
     setMoveDialogOpen(true);
   };
 
-  const handleConfirmMove = async () => {
+  const handleConfirmMove = async (targetStage: ClientStage) => {
     if (!selectedClient) return;
 
     setFormLoading(true);
-    const result = await moveToNextStage(selectedClient.id);
+    const result = await moveToStage(selectedClient.id, targetStage);
     setFormLoading(false);
 
     if (result) {
@@ -179,6 +179,8 @@ export const ClientsPage = () => {
         severity: 'success',
       });
       setSelectedClient(null);
+      // Refresh the client list
+      fetchClients();
     } else {
       setSnackbar({
         open: true,

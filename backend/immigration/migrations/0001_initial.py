@@ -864,51 +864,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name="EventProcessingControl",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                ("is_paused", models.BooleanField(default=False)),
-                ("paused_at", models.DateTimeField(blank=True, null=True)),
-                (
-                    "pause_reason",
-                    models.CharField(blank=True, max_length=255, null=True),
-                ),
-                ("resumed_at", models.DateTimeField(blank=True, null=True)),
-                ("updated_at", models.DateTimeField(auto_now=True)),
-                (
-                    "paused_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="paused_events",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "resumed_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="resumed_events",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-            ],
-            options={
-                "db_table": "public.immigration_event_processing_control",
-            },
-        ),
-        migrations.CreateModel(
             name="Course",
             fields=[
                 (

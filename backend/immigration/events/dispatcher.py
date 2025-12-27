@@ -11,7 +11,8 @@ from django.db import transaction, connection
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save, pre_delete, post_delete
 
-from immigration.events.models import Event, EventAction, EventProcessingControl
+from immigration.events.models import Event, EventAction
+from tenants.models import EventProcessingControl
 from immigration.events.state_tracker import capture_pre_update_state, serialize_model_instance, get_changed_fields
 from immigration.events.processor import process_event_async
 from immigration.middleware import get_current_user

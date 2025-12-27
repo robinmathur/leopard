@@ -32,7 +32,7 @@ class ImmigrationConfig(AppConfig):
 
             # Process pending events on startup - ALL TENANTS
             from immigration.events.processor import process_pending_events_multi_tenant
-            from immigration.events.models import EventProcessingControl
+            from tenants.models import EventProcessingControl
             from django_tenants.utils import schema_context
 
             # Check if tables exist before processing events (skip during migrations)

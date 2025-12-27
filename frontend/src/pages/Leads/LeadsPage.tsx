@@ -96,7 +96,7 @@ export const LeadsPage = () => {
     addClient,
     updateClient,
     deleteClient,
-    moveToNextStage,
+    moveToStage,
     setPage,
     setPageSize,
     clearError,
@@ -217,11 +217,11 @@ export const LeadsPage = () => {
     setMoveDialogOpen(true);
   };
 
-  const handleConfirmMove = async () => {
+  const handleConfirmMove = async (targetStage: ClientStage) => {
     if (!selectedClient) return;
 
     setFormLoading(true);
-    const result = await moveToNextStage(selectedClient.id);
+    const result = await moveToStage(selectedClient.id, targetStage);
     setFormLoading(false);
 
     if (result) {

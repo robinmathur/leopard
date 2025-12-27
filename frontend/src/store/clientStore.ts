@@ -11,6 +11,7 @@ import {
   ClientListParams,
   StageCounts,
   NEXT_STAGE,
+  ClientStage,
 } from '@/types/client';
 import { ApiError } from '@/services/api/httpClient';
 
@@ -46,6 +47,7 @@ interface ClientStore {
   updateClient: (id: number, data: ClientUpdateRequest) => Promise<Client | null>;
   deleteClient: (id: number) => Promise<boolean>;
   moveToNextStage: (id: number) => Promise<Client | null>;
+  moveToStage: (id: number, targetStage: ClientStage) => Promise<Client | null>;
   setSelectedClient: (client: Client | null) => void;
   clearError: () => void;
   setPage: (page: number) => void;
@@ -275,6 +277,24 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     }
 
     return get().updateClient(id, { stage: nextStage });
+  },
+
+  /**
+   * Move client to a specific stage
+   */
+  moveToStage: async (id: number, targetStage: ClientStage) => {
+    const client = get().clients.find((c) => c.id === id);
+    if (!client) {
+      set({ error: { message: 'Client not found' } });
+      return null;
+    }
+
+    if (client.stage === targetStage) {
+      set({ error: { message: 'Client is already in this stage' } });
+      return null;
+    }
+
+    return get().updateClient(id, { stage: targetStage });
   },
 
   /**

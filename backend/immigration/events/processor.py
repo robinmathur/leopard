@@ -11,7 +11,8 @@ from typing import List, Dict, Any
 from django.utils import timezone
 from django_tenants.utils import schema_context
 
-from immigration.events.models import Event, EventStatus, EventProcessingControl
+from immigration.events.models import Event, EventStatus
+from tenants.models import EventProcessingControl
 from immigration.events.config import EVENT_HANDLERS, ADMIN_ALERT_CONFIG, PROCESSING_CONFIG
 from immigration.events.conditions import evaluate_condition
 from immigration.events.handlers.base import HandlerResult, HandlerStatus

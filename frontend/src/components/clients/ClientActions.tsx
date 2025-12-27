@@ -27,8 +27,10 @@ export const ClientActions = ({
   disabled = false,
 }: ClientActionsProps) => {
   const nextStage = NEXT_STAGE[client.stage];
-  const canMove = nextStage !== null;
-  const nextStageLabel = nextStage ? STAGE_LABELS[nextStage] : null;
+  const isInCloseStage = client.stage === 'CLOSE';
+  // Allow moving if there's a next stage OR if client is in CLOSE stage (can move back)
+  const canMove = nextStage !== null || isInCloseStage;
+  const nextStageLabel = nextStage ? STAGE_LABELS[nextStage] : isInCloseStage ? 'Change Stage' : null;
 
   return (
     <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -56,8 +58,8 @@ export const ClientActions = ({
         </IconButton>
       </Tooltip>
 
-      {/* Move to Next Stage */}
-      <Tooltip title={canMove ? `Move to ${nextStageLabel}` : 'Already in final stage'}>
+      {/* Move to Next Stage or Change Stage */}
+      <Tooltip title={canMove ? (isInCloseStage ? 'Change Stage' : `Move to ${nextStageLabel}`) : 'Already in final stage'}>
         <span>
           <IconButton
             size="small"

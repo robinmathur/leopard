@@ -9,6 +9,7 @@ This framework provides:
 """
 
 # Import models to ensure they're discoverable by Django
-from immigration.events.models import Event, EventProcessingControl
+from immigration.events.models import Event
+from tenants.models import EventProcessingControl
 
 __all__ = ['Event', 'EventProcessingControl']

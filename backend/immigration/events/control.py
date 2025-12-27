@@ -6,7 +6,7 @@ import logging
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 
-from immigration.events.models import EventProcessingControl
+from tenants.models import EventProcessingControl
 
 logger = logging.getLogger(__name__)
 User = get_user_model()

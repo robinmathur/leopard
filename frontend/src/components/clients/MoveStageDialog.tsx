@@ -1,6 +1,7 @@
 /**
  * MoveStageDialog Component
  * Dialog for moving client to next stage in workflow
+ * When client is in CLOSE stage, allows selecting any stage
  */
 import {
   Dialog,
@@ -11,14 +12,19 @@ import {
   Box,
   Typography,
   CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Client, STAGE_LABELS, NEXT_STAGE, ClientStage } from '@/types/client';
+import { useState, useEffect } from 'react';
 
 interface MoveStageDialogProps {
   open: boolean;
   client: Client | null;
-  onConfirm: () => void;
+  onConfirm: (targetStage: ClientStage) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -66,9 +72,40 @@ export const MoveStageDialog = ({
 
   const currentStage = client.stage;
   const nextStage = NEXT_STAGE[currentStage];
+  const isInCloseStage = currentStage === 'CLOSE';
+  
+  // When in CLOSE stage, allow selecting any stage
+  const availableStages: ClientStage[] = isInCloseStage 
+    ? ['LEAD', 'FOLLOW_UP', 'CLIENT', 'CLOSE']
+    : nextStage 
+      ? [nextStage]
+      : [];
 
-  // Should not happen, but handle gracefully
-  if (!nextStage) {
+  const [selectedStage, setSelectedStage] = useState<ClientStage | null>(
+    isInCloseStage ? 'LEAD' : nextStage || null
+  );
+
+  // Reset selected stage when dialog opens or client changes
+  useEffect(() => {
+    if (open && client) {
+      if (isInCloseStage) {
+        setSelectedStage('LEAD');
+      } else {
+        setSelectedStage(nextStage || null);
+      }
+    }
+  }, [open, client, isInCloseStage, nextStage]);
+
+  const clientName = [client.first_name, client.last_name].filter(Boolean).join(' ');
+
+  const handleConfirm = () => {
+    if (selectedStage) {
+      onConfirm(selectedStage);
+    }
+  };
+
+  // If no next stage and not in CLOSE stage, show error
+  if (!nextStage && !isInCloseStage) {
     return (
       <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
         <DialogTitle>Cannot Move Stage</DialogTitle>
@@ -84,8 +121,6 @@ export const MoveStageDialog = ({
     );
   }
 
-  const clientName = [client.first_name, client.last_name].filter(Boolean).join(' ');
-
   return (
     <Dialog
       open={open}
@@ -96,22 +131,46 @@ export const MoveStageDialog = ({
       <DialogTitle>Move Client Stage</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Move <strong>{clientName}</strong> to the next stage in the workflow?
+          {isInCloseStage ? (
+            <>Select a new stage for <strong>{clientName}</strong>:</>
+          ) : (
+            <>Move <strong>{clientName}</strong> to the next stage in the workflow?</>
+          )}
         </Typography>
 
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 2,
-            py: 2,
-          }}
-        >
-          <StageBadge stage={currentStage} />
-          <ArrowForwardIcon sx={{ fontSize: 32, color: 'text.secondary' }} />
-          <StageBadge stage={nextStage} />
-        </Box>
+        {isInCloseStage ? (
+          <Box sx={{ mb: 3 }}>
+            <FormControl fullWidth>
+              <InputLabel>Select Stage</InputLabel>
+              <Select
+                value={selectedStage}
+                onChange={(e) => setSelectedStage(e.target.value as ClientStage)}
+                label="Select Stage"
+                disabled={loading}
+              >
+                {availableStages.map((stage) => (
+                  <MenuItem key={stage} value={stage}>
+                    {STAGE_LABELS[stage]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              py: 2,
+            }}
+          >
+            <StageBadge stage={currentStage} />
+            <ArrowForwardIcon sx={{ fontSize: 32, color: 'text.secondary' }} />
+            <StageBadge stage={nextStage!} />
+          </Box>
+        )}
 
         <Typography
           variant="caption"
@@ -120,7 +179,7 @@ export const MoveStageDialog = ({
         >
           This action will update the client's stage from{' '}
           <strong>{STAGE_LABELS[currentStage]}</strong> to{' '}
-          <strong>{STAGE_LABELS[nextStage]}</strong>.
+          <strong>{selectedStage ? STAGE_LABELS[selectedStage] : ''}</strong>.
         </Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -128,13 +187,13 @@ export const MoveStageDialog = ({
           Cancel
         </Button>
         <Button
-          onClick={onConfirm}
+          onClick={handleConfirm}
           variant="contained"
           color="primary"
-          disabled={loading}
+          disabled={loading || !selectedStage}
           startIcon={loading ? <CircularProgress size={16} /> : <ArrowForwardIcon />}
         >
-          {loading ? 'Moving...' : `Move to ${STAGE_LABELS[nextStage]}`}
+          {loading ? 'Moving...' : `Move to ${selectedStage ? STAGE_LABELS[selectedStage] : ''}`}
         </Button>
       </DialogActions>
     </Dialog>
