@@ -19,7 +19,7 @@ from immigration.constants import ALL_GROUPS, GROUP_DISPLAY_NAMES
 from immigration.models import (
     User, Client, Branch, Region,
     VisaApplication, Task, Notification,
-    Note, ClientActivity, ProfilePicture
+    Note, ClientActivity, ProfilePicture, Agent
 )
 from immigration.institute import Institute
 
@@ -176,6 +176,8 @@ class Command(BaseCommand):
                 ClientActivity: ['view'],  # Can view timeline
                 ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
                 Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
+                Agent: ['view', 'add', 'change', 'delete'],  # Full agent management
+                Group: ['view', 'add', 'change', 'delete'],  # Full group management
             },
         }
         
