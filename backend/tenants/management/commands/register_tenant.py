@@ -1,7 +1,10 @@
 """
-Management command to create a new tenant with its own schema.
+Management command to register a new tenant with its own schema.
 
 FLATTENED Subdomain Architecture: tenant-app.company.com
+
+Usage:
+    python manage.py register_tenant --name "Company Name" --subdomain subdomain --admin-email admin@example.com --admin-password password123
 
 Creates:
 1. Tenant record in public schema
@@ -23,7 +26,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Creates a new tenant with admin user and schema (FLATTENED subdomain: tenant-app.company.com)"
+    help = "Register a new tenant with admin user and schema (FLATTENED subdomain: tenant-app.company.com)"
 
     def add_arguments(self, parser):
         parser.add_argument("--name", required=True, help="Company/Organization name")

@@ -275,7 +275,7 @@ class Command(BaseCommand):
                 self.style.ERROR(
                     f'\n❌ Error: Tenant with subdomain "{tenant_subdomain}" does not exist.\n'
                     f'   Please create the tenant first using:\n'
-                    f'   python manage.py create_tenant --name "Tenant Name" --subdomain {tenant_subdomain} --admin-email admin@example.com --admin-password password123'
+                    f'   python manage.py register_tenant --name "Tenant Name" --subdomain {tenant_subdomain} --admin-email admin@example.com --admin-password password123'
                 )
             )
             raise

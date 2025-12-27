@@ -241,7 +241,8 @@ VERIFICATION COMPLETE
 - ✅ `tenants/models.py` - Tenant and Domain models
 - ✅ `tenants/admin.py` - Admin interface
 - ✅ `tenants/management/commands/create_super_super_admin.py`
-- ✅ `tenants/management/commands/create_tenant.py`
+- ✅ `tenants/management/commands/register_tenant.py`
+- ✅ `tenants/management/commands/deregister_tenant.py`
 - ✅ `test_tenant_setup.py` - Verification script
 - ✅ `MULTI_TENANT_MIGRATION_SUMMARY.md` (this file)
 
