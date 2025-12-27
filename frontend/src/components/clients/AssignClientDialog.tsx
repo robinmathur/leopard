@@ -54,6 +54,14 @@ export const AssignClientDialog = ({
     .filter(Boolean)
     .join(' ');
 
+  // Check if client currently has an assigned user
+  const hasAssignedUser = !!(client.assigned_to && client.assigned_to_name);
+  
+  // Determine button state and text
+  const isUnassigning = !selectedUser && hasAssignedUser;
+  const isAssigning = selectedUser !== null;
+  const canConfirm = isAssigning || isUnassigning; // Can only confirm if assigning or unassigning
+
   return (
     <Dialog
       open={open}
@@ -78,9 +86,15 @@ export const AssignClientDialog = ({
           />
         </Box>
 
-        {client.assigned_to_name && (
+        {hasAssignedUser && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
             Currently assigned to: <strong>{client.assigned_to_name}</strong>
+          </Typography>
+        )}
+
+        {!hasAssignedUser && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+            No user currently assigned.
           </Typography>
         )}
 
@@ -91,7 +105,9 @@ export const AssignClientDialog = ({
         >
           {selectedUser
             ? `Client will be assigned to ${selectedUser.full_name || `${selectedUser.first_name} ${selectedUser.last_name}`.trim()}.`
-            : 'Leave empty to unassign the client.'}
+            : hasAssignedUser
+            ? 'Leave empty to unassign the client.'
+            : 'Please select a user to assign.'}
         </Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -102,10 +118,16 @@ export const AssignClientDialog = ({
           onClick={handleConfirm}
           variant="contained"
           color="primary"
-          disabled={loading}
+          disabled={loading || !canConfirm}
           startIcon={loading ? <CircularProgress size={16} /> : <PersonAddIcon />}
         >
-          {loading ? 'Assigning...' : selectedUser ? 'Assign' : 'Unassign'}
+          {loading 
+            ? (isUnassigning ? 'Unassigning...' : 'Assigning...') 
+            : isUnassigning 
+            ? 'Unassign' 
+            : isAssigning 
+            ? 'Assign' 
+            : 'Select User'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -369,14 +369,19 @@ class ClientViewSet(ViewSet):
             serializer = ClientUpdateSerializer(data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             
+            # Track which fields were explicitly provided (including None values)
+            # This is needed to distinguish between "field not provided" vs "field set to None"
+            provided_fields = set(request.data.keys())
+            
             # Convert to Pydantic model for service
             input_data = ClientUpdateInput(**serializer.validated_data)
             
-            # Update client using service
+            # Update client using service, passing which fields were explicitly provided
             updated_client = client_update(
                 client=client,
                 data=input_data,
-                user=request.user
+                user=request.user,
+                provided_fields=provided_fields
             )
             
             # Return updated client

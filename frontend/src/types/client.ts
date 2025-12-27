@@ -76,7 +76,7 @@ export interface ClientUpdateRequest {
   postcode?: string;
   stage?: ClientStage;
   visa_category_id?: number;
-  assigned_to_id?: number;
+  assigned_to_id?: number | null;
   agent_id?: number;
   description?: string;
   referred_by?: string;

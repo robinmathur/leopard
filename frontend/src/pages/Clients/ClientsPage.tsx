@@ -165,7 +165,12 @@ export const ClientsPage = () => {
     if (!selectedClient) return;
 
     setFormLoading(true);
-    const result = await updateClient(selectedClient.id, { assigned_to_id: userId || undefined });
+    // Explicitly send null to unassign, or the userId to assign
+    // Use type assertion to ensure null is included in the payload
+    const updateData: ClientUpdateRequest = {
+      assigned_to_id: userId === null ? null : userId,
+    };
+    const result = await updateClient(selectedClient.id, updateData);
     setFormLoading(false);
 
     if (result) {
