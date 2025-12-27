@@ -123,7 +123,13 @@ export type Permission =
   | 'view_permission'
   | 'add_permission'
   | 'change_permission'
-  | 'delete_permission';
+  | 'delete_permission'
+
+  // Reminder permissions
+  | 'view_reminder'
+  | 'add_reminder'
+  | 'change_reminder'
+  | 'delete_reminder';
 
 /**
  * JWT Token pair for authentication

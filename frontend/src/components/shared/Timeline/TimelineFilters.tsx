@@ -33,10 +33,11 @@ export const TimelineFilters = ({ activeFilter, onFilterChange }: TimelineFilter
           </MenuItem>
           {activityTypes.map((type) => {
             const config = ACTIVITY_TYPE_CONFIG[type];
+            const IconComponent = config.icon;
             return (
               <MenuItem key={type} value={type}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <span>{config.icon}</span>
+                  <IconComponent sx={{ fontSize: '1.125rem', color: config.color }} />
                   <span>{config.label}</span>
                 </Box>
               </MenuItem>
