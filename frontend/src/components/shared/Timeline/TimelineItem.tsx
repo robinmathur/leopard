@@ -3,7 +3,7 @@
  * Displays a single timeline activity with linked entities and reminder dates
  * Inspired by Material-UI Timeline design with timestamp on left
  */
-import { Box, Typography, Paper, Chip, Button } from '@mui/material';
+import { Box, Typography, Chip, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { TimelineItemProps, ACTIVITY_TYPE_CONFIG } from './types';
 import NoteIcon from '@mui/icons-material/Note';
@@ -54,7 +54,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
   return (
     <Box
       sx={{
-        p: 2,
+        p: 1.5,
         borderLeft: 3,
         borderColor: config.color,
         position: 'relative',
@@ -63,12 +63,12 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           borderLeftWidth: 4,
-          pl: 1.75, // Slight shift on hover
+          pl: 1.25, // Slight shift on hover
         },
       }}
     >
       {/* Activity Type Badge and Performer Info - Inline */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75, flexWrap: 'wrap' }}>
         <Chip
           label={config.label}
           size="small"
@@ -76,14 +76,17 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
             bgcolor: config.color,
             color: 'white',
             fontWeight: 500,
-            fontSize: '0.75rem',
-            height: '24px',
+            fontSize: '0.7rem',
+            height: '22px',
+            '& .MuiChip-icon': {
+              color: 'white !important',
+            },
           }}
           icon={
             <IconComponent 
               sx={{ 
-                fontSize: '0.875rem', 
-                color: 'white',
+                fontSize: '0.8rem', 
+                color: 'white !important',
               }} 
             />
           }
@@ -92,7 +95,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
           variant="caption" 
           color="text.secondary" 
           sx={{ 
-            fontSize: '0.75rem',
+            fontSize: '0.7rem',
             display: 'flex',
             alignItems: 'center',
             '&::before': {
@@ -110,10 +113,10 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
       <Typography
         variant="body2"
         sx={{
-          mb: 0.75,
+          mb: 0.5,
           color: 'text.primary',
-          fontSize: '0.875rem',
-          lineHeight: 1.5,
+          fontSize: '0.8rem',
+          lineHeight: 1.4,
         }}
       >
         {activity.description}
@@ -121,11 +124,11 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
 
       {/* Reminder Date (for notes with reminders) */}
       {hasReminder && (
-        <Box sx={{ mb: 0.75 }}>
+        <Box sx={{ mb: 0.5 }}>
           <Typography 
             variant="caption" 
             color="text.secondary"
-            sx={{ fontSize: '0.75rem' }}
+            sx={{ fontSize: '0.7rem' }}
           >
             <strong>Reminder:</strong> {formatReminderDate(reminderDate, reminderTime)}
           </Typography>
@@ -136,12 +139,12 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
       {(taskId || visaApplicationId || applicationId) && (
         <Box
           sx={{
-            mt: 0.75,
-            pt: 0.75,
+            mt: 0.5,
+            pt: 0.5,
             borderTop: 1,
             borderColor: 'divider',
             display: 'flex',
-            gap: 1,
+            gap: 0.75,
             flexWrap: 'wrap',
             alignItems: 'center',
           }}
@@ -153,9 +156,9 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
               onClick={() => navigate(`/visa-manager/applications?applicationId=${visaApplicationId}`)}
               sx={{ 
                 textTransform: 'none',
-                fontSize: '0.75rem',
-                py: 0.25,
-                px: 1,
+                fontSize: '0.7rem',
+                py: 0.2,
+                px: 0.75,
                 minWidth: 'auto',
               }}
             >
@@ -169,9 +172,9 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
               onClick={() => navigate(`/visa-manager/applications?applicationId=${applicationId}`)}
               sx={{ 
                 textTransform: 'none',
-                fontSize: '0.75rem',
-                py: 0.25,
-                px: 1,
+                fontSize: '0.7rem',
+                py: 0.2,
+                px: 0.75,
                 minWidth: 'auto',
               }}
             >
@@ -182,7 +185,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
             <Typography 
               variant="caption" 
               color="text.secondary"
-              sx={{ fontSize: '0.75rem' }}
+              sx={{ fontSize: '0.7rem' }}
             >
               Task ID: {taskId}
             </Typography>
