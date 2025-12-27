@@ -10,7 +10,6 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Paper,
   Chip,
   Typography,
   Box,
@@ -121,9 +120,9 @@ export const ClientTable = ({
   };
 
   return (
-    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-      <TableContainer sx={{ maxHeight: 600 }}>
-        <Table size="small" stickyHeader>
+    <Box>
+      <TableContainer>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 600, minWidth: 60 }}>ID</TableCell>
@@ -236,16 +235,18 @@ export const ClientTable = ({
           </TableBody>
         </Table>
       </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        component="div"
-        count={pagination.count}
-        rowsPerPage={pagination.pageSize}
-        page={pagination.page - 1} // MUI uses 0-based, API uses 1-based
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
+      {!loading && clients.length > 0 && (
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={pagination.count}
+          rowsPerPage={pagination.pageSize}
+          page={pagination.page - 1} // MUI uses 0-based, API uses 1-based
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      )}
+    </Box>
   );
 };
 

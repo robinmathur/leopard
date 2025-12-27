@@ -45,6 +45,17 @@ from immigration.models import (
     Agent,
     Task,
 )
+from immigration.institute import (
+    Institute,
+    InstituteLocation,
+    InstituteContactPerson,
+    InstituteRequirement,
+    InstituteIntake,
+    Course,
+    BroadField,
+    NarrowField,
+    CourseLevel,
+)
 from immigration.constants import (
     ClientStage,
     AgentType,
@@ -122,7 +133,22 @@ class Command(BaseCommand):
                         all_visa_categories_count += len(visa_categories)
                         all_visa_types_count += len(visa_types)
                 
-                # Seed agents, clients, applications per tenant
+                # Seed course levels, broad fields, narrow fields (shared across all tenants)
+                all_course_levels_count = 0
+                all_broad_fields_count = 0
+                all_narrow_fields_count = 0
+                for tenant in tenants:
+                    with schema_context(tenant.schema_name):
+                        course_levels = self.seed_course_levels(tenant)
+                        broad_fields = self.seed_broad_fields(tenant)
+                        narrow_fields = self.seed_narrow_fields(broad_fields, tenant)
+                        all_course_levels_count += len(course_levels)
+                        all_broad_fields_count += len(broad_fields)
+                        all_narrow_fields_count += len(narrow_fields)
+                
+                # Seed institutes, courses, agents, clients, applications per tenant
+                all_institutes_count = 0
+                all_courses_count = 0
                 all_agents_count = 0
                 all_clients_count = 0
                 all_applications_count = 0
@@ -134,6 +160,13 @@ class Command(BaseCommand):
                         tenant_visa_categories = list(VisaCategory.objects.all())
                         tenant_visa_types = list(VisaType.objects.all())
                         created_by = tenant_users[0] if tenant_users else None
+                        
+                        institutes = self.seed_institutes(created_by, tenant)
+                        all_institutes_count += len(institutes)
+                        
+                        # Seed courses (depends on institutes, course levels, broad/narrow fields)
+                        courses = self.seed_courses(institutes, tenant)
+                        all_courses_count += len(courses)
                         
                         agents = self.seed_agents(created_by, tenant)
                         all_agents_count += len(agents)
@@ -179,6 +212,11 @@ class Command(BaseCommand):
             self.stdout.write(f'  • Users: {total_users_count}')
             self.stdout.write(f'  • Visa Categories: {all_visa_categories_count}')
             self.stdout.write(f'  • Visa Types: {all_visa_types_count}')
+            self.stdout.write(f'  • Course Levels: {all_course_levels_count}')
+            self.stdout.write(f'  • Broad Fields: {all_broad_fields_count}')
+            self.stdout.write(f'  • Narrow Fields: {all_narrow_fields_count}')
+            self.stdout.write(f'  • Institutes: {all_institutes_count}')
+            self.stdout.write(f'  • Courses: {all_courses_count}')
             self.stdout.write(f'  • Agents: {all_agents_count}')
             self.stdout.write(f'  • Clients: {all_clients_count}')
             self.stdout.write(f'  • Visa Applications: {all_applications_count}')
@@ -201,10 +239,19 @@ class Command(BaseCommand):
                     Task.objects.all().delete()
                 except Exception:
                     pass  # Task model from User Story 3 may not exist yet
-                
+
                 VisaApplication.objects.all().delete()
                 Client.objects.all().delete()
                 Agent.objects.all().delete()
+                Course.objects.all().delete()
+                NarrowField.objects.all().delete()
+                BroadField.objects.all().delete()
+                CourseLevel.objects.all().delete()
+                InstituteIntake.objects.all().delete()
+                InstituteRequirement.objects.all().delete()
+                InstituteContactPerson.objects.all().delete()
+                InstituteLocation.objects.all().delete()
+                Institute.objects.all().delete()
                 VisaType.objects.all().delete()
                 VisaCategory.objects.all().delete()
                 User.objects.filter(is_superuser=False).delete()
@@ -240,6 +287,15 @@ class Command(BaseCommand):
             VisaApplication.objects.all().delete()
             Client.objects.all().delete()
             Agent.objects.all().delete()
+            Course.objects.all().delete()
+            NarrowField.objects.all().delete()
+            BroadField.objects.all().delete()
+            CourseLevel.objects.all().delete()
+            InstituteIntake.objects.all().delete()
+            InstituteRequirement.objects.all().delete()
+            InstituteContactPerson.objects.all().delete()
+            InstituteLocation.objects.all().delete()
+            Institute.objects.all().delete()
             VisaType.objects.all().delete()
             VisaCategory.objects.all().delete()
             User.objects.filter(is_superuser=False).delete()
@@ -275,7 +331,7 @@ class Command(BaseCommand):
                 self.style.ERROR(
                     f'\n❌ Error: Tenant with subdomain "{tenant_subdomain}" does not exist.\n'
                     f'   Please create the tenant first using:\n'
-                    f'   python manage.py create_tenant --name "Tenant Name" --subdomain {tenant_subdomain} --admin-email admin@example.com --admin-password password123'
+                    f'   python manage.py register_tenant --name "Tenant Name" --subdomain {tenant_subdomain} --admin-email admin@example.com --admin-password password123'
                 )
             )
             raise
@@ -628,6 +684,309 @@ class Command(BaseCommand):
             self.stdout.write(f'  ✓ Created {len(visa_types)} visa types for {tenant.name}')
         
         return visa_types
+
+    def seed_institutes(self, created_by, tenant):
+        """Create educational institutes in tenant schema."""
+        institutes_data = [
+            ('University of Technology Sydney', 'UTS', '+61-2-9514-2000', 'https://www.uts.edu.au'),
+            ('Monash University', 'Monash', '+61-3-9902-6000', 'https://www.monash.edu'),
+            ('University of Melbourne', 'UniMelb', '+61-3-9035-5511', 'https://www.unimelb.edu.au'),
+            ('University of Sydney', 'USyd', '+61-2-9351-2222', 'https://www.sydney.edu.au'),
+            ('RMIT University', 'RMIT', '+61-3-9925-2000', 'https://www.rmit.edu.au'),
+            ('Deakin University', 'Deakin', '+61-3-9244-6333', 'https://www.deakin.edu.au'),
+            ('Griffith University', 'Griffith', '+61-7-3735-7111', 'https://www.griffith.edu.au'),
+            ('Queensland University of Technology', 'QUT', '+61-7-3138-2000', 'https://www.qut.edu.au'),
+        ]
+        
+        institutes = []
+        for name, short_name, phone, website in institutes_data:
+            institute = Institute.objects.create(
+                name=name,
+                short_name=short_name,
+                phone=phone,
+                website=website,
+                created_by=created_by,
+            )
+            institutes.append(institute)
+            
+            # Create 1-2 locations per institute
+            locations_data = [
+                ('123 University Ave', 'Sydney', 'NSW', '2000', 'AU', phone, f'contact@{short_name.lower()}.edu.au'),
+                ('456 Campus Dr', 'Melbourne', 'VIC', '3000', 'AU', phone, f'info@{short_name.lower()}.edu.au'),
+            ]
+            
+            num_locations = random.randint(1, 2)
+            for i in range(num_locations):
+                loc_data = locations_data[i % len(locations_data)]
+                InstituteLocation.objects.create(
+                    institute=institute,
+                    street_name=loc_data[0],
+                    suburb=loc_data[1],
+                    state=loc_data[2],
+                    postcode=loc_data[3],
+                    country=loc_data[4],
+                    phone_number=loc_data[5],
+                    email=loc_data[6],
+                )
+            
+            # Create 1-2 contact persons per institute
+            contact_persons_data = [
+                ('John Smith', 'MALE', 'Admissions Manager', phone, f'admissions@{short_name.lower()}.edu.au'),
+                ('Sarah Johnson', 'FEMALE', 'International Student Coordinator', phone, f'international@{short_name.lower()}.edu.au'),
+            ]
+            
+            num_contacts = random.randint(1, 2)
+            for i in range(num_contacts):
+                contact_data = contact_persons_data[i % len(contact_persons_data)]
+                InstituteContactPerson.objects.create(
+                    institute=institute,
+                    name=contact_data[0],
+                    gender=contact_data[1],
+                    position=contact_data[2],
+                    phone=contact_data[3],
+                    email=contact_data[4],
+                )
+            
+            # Create 2-4 requirements per institute
+            requirements_data = [
+                ('Academic Transcripts', 'Official transcripts from previous institutions', 'ACADEMIC'),
+                ('English Language Proficiency', 'IELTS 6.5 or equivalent', 'LANGUAGE'),
+                ('Financial Evidence', 'Proof of sufficient funds for tuition and living expenses', 'FINANCIAL'),
+                ('Passport Copy', 'Valid passport with at least 6 months validity', 'DOCUMENT'),
+                ('Statement of Purpose', 'Personal statement explaining study goals', 'DOCUMENT'),
+            ]
+            
+            num_requirements = random.randint(2, 4)
+            selected_requirements = random.sample(requirements_data, num_requirements)
+            for req_title, req_desc, req_type in selected_requirements:
+                InstituteRequirement.objects.create(
+                    institute=institute,
+                    title=req_title,
+                    description=req_desc,
+                    requirement_type=req_type,
+                )
+            
+            # Create 2-3 intake dates per institute (upcoming dates)
+            intake_dates = []
+            base_date = datetime.now().date()
+            for i in range(random.randint(2, 3)):
+                # Create intakes for next 6-18 months
+                months_ahead = random.randint(2, 18)
+                intake_date = base_date + timedelta(days=months_ahead * 30)
+                intake_dates.append(intake_date)
+            
+            for intake_date in sorted(intake_dates):
+                InstituteIntake.objects.create(
+                    institute=institute,
+                    intake_date=intake_date,
+                    description=f'Intake for {intake_date.strftime("%B %Y")}',
+                )
+        
+        if institutes:
+            self.stdout.write(f'  ✓ Created {len(institutes)} institutes with locations, contacts, requirements, and intakes for {tenant.name}')
+        
+        return institutes
+
+    def seed_course_levels(self, tenant):
+        """Create course levels in tenant schema."""
+        course_levels_data = [
+            'Certificate',
+            'Diploma',
+            'Advanced Diploma',
+            'Bachelor',
+            'Bachelor (Honours)',
+            'Graduate Certificate',
+            'Graduate Diploma',
+            'Master',
+            'Master (Research)',
+            'Doctorate (PhD)',
+        ]
+        
+        course_levels = []
+        for level_name in course_levels_data:
+            level, created = CourseLevel.objects.get_or_create(name=level_name)
+            if created:
+                course_levels.append(level)
+        
+        if course_levels:
+            self.stdout.write(f'  ✓ Created {len(course_levels)} course levels for {tenant.name}')
+        
+        return course_levels
+
+    def seed_broad_fields(self, tenant):
+        """Create broad fields of study in tenant schema."""
+        broad_fields_data = [
+            'Engineering',
+            'Business and Management',
+            'Information Technology',
+            'Health Sciences',
+            'Education',
+            'Arts and Humanities',
+            'Science',
+            'Law',
+            'Architecture',
+            'Hospitality and Tourism',
+        ]
+        
+        broad_fields = []
+        for field_name in broad_fields_data:
+            field, created = BroadField.objects.get_or_create(name=field_name)
+            if created:
+                broad_fields.append(field)
+        
+        if broad_fields:
+            self.stdout.write(f'  ✓ Created {len(broad_fields)} broad fields for {tenant.name}')
+        
+        return broad_fields
+
+    def seed_narrow_fields(self, broad_fields, tenant):
+        """Create narrow fields of study in tenant schema."""
+        narrow_fields_data = {
+            'Engineering': [
+                'Civil Engineering',
+                'Mechanical Engineering',
+                'Electrical Engineering',
+                'Software Engineering',
+                'Chemical Engineering',
+            ],
+            'Business and Management': [
+                'Business Administration',
+                'Finance',
+                'Marketing',
+                'Human Resources',
+                'International Business',
+            ],
+            'Information Technology': [
+                'Computer Science',
+                'Data Science',
+                'Cybersecurity',
+                'Information Systems',
+                'Web Development',
+            ],
+            'Health Sciences': [
+                'Nursing',
+                'Public Health',
+                'Biomedical Science',
+                'Pharmacy',
+                'Physiotherapy',
+            ],
+            'Education': [
+                'Early Childhood Education',
+                'Primary Education',
+                'Secondary Education',
+                'Special Education',
+                'Educational Leadership',
+            ],
+            'Arts and Humanities': [
+                'English Literature',
+                'History',
+                'Philosophy',
+                'Linguistics',
+                'Cultural Studies',
+            ],
+            'Science': [
+                'Biology',
+                'Chemistry',
+                'Physics',
+                'Mathematics',
+                'Environmental Science',
+            ],
+            'Law': [
+                'Commercial Law',
+                'International Law',
+                'Criminal Law',
+                'Constitutional Law',
+                'Human Rights Law',
+            ],
+            'Architecture': [
+                'Architectural Design',
+                'Urban Planning',
+                'Landscape Architecture',
+                'Interior Design',
+                'Sustainable Architecture',
+            ],
+            'Hospitality and Tourism': [
+                'Hotel Management',
+                'Tourism Management',
+                'Event Management',
+                'Culinary Arts',
+                'Hospitality Operations',
+            ],
+        }
+        
+        narrow_fields = []
+        for broad_field in broad_fields:
+            narrow_names = narrow_fields_data.get(broad_field.name, [])
+            for narrow_name in narrow_names:
+                narrow_field, created = NarrowField.objects.get_or_create(
+                    name=narrow_name,
+                    broad_field=broad_field
+                )
+                if created:
+                    narrow_fields.append(narrow_field)
+        
+        if narrow_fields:
+            self.stdout.write(f'  ✓ Created {len(narrow_fields)} narrow fields for {tenant.name}')
+        
+        return narrow_fields
+
+    def seed_courses(self, institutes, tenant):
+        """Create courses for institutes in tenant schema."""
+        from decimal import Decimal
+        
+        # Get course levels, broad fields, and narrow fields
+        course_levels = list(CourseLevel.objects.all())
+        broad_fields = list(BroadField.objects.all())
+        narrow_fields = list(NarrowField.objects.all())
+        
+        if not course_levels or not broad_fields or not narrow_fields:
+            self.stdout.write(self.style.WARNING(f'  ⚠  Missing course levels, broad fields, or narrow fields. Skipping courses for {tenant.name}'))
+            return []
+        
+        courses = []
+        course_templates = [
+            ('Bachelor of Computer Science', 'Bachelor', 'Information Technology', 'Computer Science', Decimal('35000.00'), Decimal('500.00')),
+            ('Master of Business Administration', 'Master', 'Business and Management', 'Business Administration', Decimal('45000.00'), Decimal('600.00')),
+            ('Bachelor of Engineering (Civil)', 'Bachelor', 'Engineering', 'Civil Engineering', Decimal('38000.00'), Decimal('550.00')),
+            ('Master of Data Science', 'Master', 'Information Technology', 'Data Science', Decimal('42000.00'), Decimal('580.00')),
+            ('Bachelor of Nursing', 'Bachelor', 'Health Sciences', 'Nursing', Decimal('32000.00'), Decimal('480.00')),
+            ('Master of Education', 'Master', 'Education', 'Educational Leadership', Decimal('28000.00'), Decimal('450.00')),
+            ('Bachelor of Commerce', 'Bachelor', 'Business and Management', 'Finance', Decimal('36000.00'), Decimal('520.00')),
+            ('Master of Public Health', 'Master', 'Health Sciences', 'Public Health', Decimal('33000.00'), Decimal('500.00')),
+            ('Bachelor of Architecture', 'Bachelor', 'Architecture', 'Architectural Design', Decimal('40000.00'), Decimal('600.00')),
+            ('Master of Information Systems', 'Master', 'Information Technology', 'Information Systems', Decimal('39000.00'), Decimal('560.00')),
+        ]
+        
+        for institute in institutes:
+            # Create 2-4 courses per institute
+            num_courses = random.randint(2, 4)
+            selected_courses = random.sample(course_templates, min(num_courses, len(course_templates)))
+            
+            for course_name, level_name, broad_name, narrow_name, tuition_fee, coe_fee in selected_courses:
+                # Find matching level, broad field, and narrow field
+                level = next((l for l in course_levels if l.name == level_name), None)
+                broad_field = next((b for b in broad_fields if b.name == broad_name), None)
+                narrow_field = next((n for n in narrow_fields if n.name == narrow_name and n.broad_field == broad_field), None)
+                
+                if not level or not broad_field or not narrow_field:
+                    continue  # Skip if dependencies not found
+                
+                course = Course.objects.create(
+                    name=f'{course_name} - {institute.short_name}',
+                    level=level,
+                    total_tuition_fee=tuition_fee,
+                    coe_fee=coe_fee,
+                    broad_field=broad_field,
+                    narrow_field=narrow_field,
+                    institute=institute,
+                    description=f'{course_name} program offered by {institute.name}. This program provides comprehensive education in {narrow_name} within the {broad_name} field.',
+                )
+                courses.append(course)
+        
+        if courses:
+            self.stdout.write(f'  ✓ Created {len(courses)} courses for {tenant.name}')
+        
+        return courses
 
     def seed_agents(self, created_by, tenant):
         """Create external agents in tenant schema."""

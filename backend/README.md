@@ -153,63 +153,32 @@ uv run python manage.py migrate_schemas --shared
 
 ### Step 3: Create Your First Tenant
 
+Use the `register_tenant` command to create a tenant with its domain and admin user:
+
 ```bash
-uv run python manage.py shell
+uv run python manage.py register_tenant \
+  --name "Main Agency" \
+  --subdomain "main" \
+  --admin-email "admin@main.com" \
+  --admin-password "admin123"
 ```
 
-In the Django shell:
+This command:
+- Creates the tenant record in the public schema
+- Creates the PostgreSQL schema (`tenant_main`)
+- Creates the domain mapping (`main-immigrate.localhost` for development)
+- Creates an admin user in the tenant's schema
 
-```python
-from tenants.models import Tenant, Domain
-from django_tenants.utils import schema_context
-from django.contrib.auth import get_user_model
-
-# Create tenant record
-tenant = Tenant(
-    schema_name='tenant_main',        # PostgreSQL schema name
-    name='Main Agency',                # Display name
-    is_active=True,
-    subscription_status='TRIAL',
-    max_users=50
-)
-tenant.save()
-print(f'✓ Tenant created: {tenant.name} (Schema: {tenant.schema_name})')
-
-# Create domain mapping (for subdomain routing)
-domain = Domain(
-    domain='main.localhost',           # For development
-    # domain='main.leopard.com',      # For production
-    tenant=tenant,
-    is_primary=True
-)
-domain.save()
-print(f'✓ Domain created: {domain.domain}')
-
-# Create tenant admin user IN THE TENANT SCHEMA
-with schema_context(tenant.schema_name):
-    User = get_user_model()
-    admin = User.objects.create_superuser(
-        username='admin@main.com',
-        email='admin@main.com',
-        password='admin123',
-        first_name='Admin',
-        last_name='User'
-    )
-    print(f'✓ Tenant admin created: {admin.email}')
-
-print('\n✅ Tenant setup complete!')
-print(f'Access URL: http://main.localhost:8000')
-exit()
-```
+**Access URL**: `http://main-immigrate.localhost:8000`
 
 ### Step 4: Update /etc/hosts (Local Development)
 
 ```bash
 # macOS/Linux
-echo "127.0.0.1 main.localhost" | sudo tee -a /etc/hosts
+echo "127.0.0.1 main-immigrate.localhost" | sudo tee -a /etc/hosts
 
 # Windows: Edit C:\Windows\System32\drivers\etc\hosts
-# Add: 127.0.0.1 main.localhost
+# Add: 127.0.0.1 main-immigrate.localhost
 ```
 
 ### Step 5: Start Development Server
@@ -222,15 +191,15 @@ uv run python manage.py runserver 0.0.0.0:8000
 
 ```bash
 # Test tenant API access
-curl http://main.localhost:8000/api/v1/
+curl http://main-immigrate.localhost:8000/api/v1/
 
 # Test login
-curl -X POST http://main.localhost:8000/api/token/ \
+curl -X POST http://main-immigrate.localhost:8000/api/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"admin@main.com","password":"admin123"}'
 
 # Use the returned access token
-curl http://main.localhost:8000/api/v1/clients/ \
+curl http://main-immigrate.localhost:8000/api/v1/clients/ \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -258,40 +227,28 @@ uv run python manage.py showmigrations
 
 ### Tenant Management
 
-**Create Additional Tenant** (Django shell):
+**Register Additional Tenant**:
 
-```python
-from tenants.models import Tenant, Domain
-from django_tenants.utils import schema_context
-from django.contrib.auth import get_user_model
+```bash
+uv run python manage.py register_tenant \
+  --name "Demo Company" \
+  --subdomain "demo" \
+  --admin-email "admin@demo.com" \
+  --admin-password "demo123"
+```
 
-# Create tenant
-tenant = Tenant(
-    schema_name='tenant_demo',
-    name='Demo Company',
-    is_active=True,
-    subscription_status='ACTIVE'
-)
-tenant.save()
+**Deregister a Tenant** (IRREVERSIBLE - deletes all tenant data):
 
-# Create domain
-domain = Domain(
-    domain='demo.localhost',
-    tenant=tenant,
-    is_primary=True
-)
-domain.save()
+```bash
+uv run python manage.py deregister_tenant --tenant demo
 
-# Create admin in tenant schema
-with schema_context('tenant_demo'):
-    User = get_user_model()
-    admin = User.objects.create_superuser(
-        username='admin@demo.com',
-        email='admin@demo.com',
-        password='demo123'
-    )
+# Or skip confirmation prompt (use with caution)
+uv run python manage.py deregister_tenant --tenant demo --force
+```
 
-# Don't forget: echo "127.0.0.1 demo.localhost" | sudo tee -a /etc/hosts
+**Don't forget to update /etc/hosts**:
+```bash
+echo "127.0.0.1 demo-immigrate.localhost" | sudo tee -a /etc/hosts
 ```
 
 ### Database Inspection
@@ -485,7 +442,7 @@ EVENT_HANDLERS = {
 
 ### Endpoints
 
-- **Tenant API**: `http://<subdomain>.localhost:8000/api/v1/`
+- **Tenant API**: `http://<tenant>-immigrate.localhost:8000/api/v1/`
   - Clients: `/api/v1/clients/`
   - Tasks: `/api/v1/tasks/`
   - Notifications: `/api/v1/notifications/`
@@ -505,7 +462,7 @@ EVENT_HANDLERS = {
 
 ```bash
 # Login to tenant
-curl -X POST http://main.localhost:8000/api/token/ \
+curl -X POST http://main-immigrate.localhost:8000/api/token/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin@main.com",
@@ -519,7 +476,7 @@ curl -X POST http://main.localhost:8000/api/token/ \
 }
 
 # Use access token
-curl http://main.localhost:8000/api/v1/clients/ \
+curl http://main-immigrate.localhost:8000/api/v1/clients/ \
   -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLC..."
 
 # Refresh token
@@ -547,7 +504,9 @@ backend/
 │   ├── admin.py               # Tenant admin interface
 │   └── management/
 │       └── commands/
-│           └── create_super_super_admin.py
+│           ├── create_super_super_admin.py
+│           ├── register_tenant.py      # Register new tenant
+│           └── deregister_tenant.py    # Deregister tenant
 │
 ├── immigration/                # Main CRM app (TENANT_APPS)
 │   ├── models/                # Business models (User, Client, Task, etc.)
@@ -670,8 +629,8 @@ docker exec leopard-postgres psql -U leopard -d postgres -c "CREATE DATABASE leo
 
 **Cannot access subdomain**:
 ```bash
-# Add to /etc/hosts
-echo "127.0.0.1 subdomain.localhost" | sudo tee -a /etc/hosts
+# Add to /etc/hosts (flattened pattern: tenant-immigrate.localhost)
+echo "127.0.0.1 tenant-immigrate.localhost" | sudo tee -a /etc/hosts
 ```
 
 **Events not processing**:

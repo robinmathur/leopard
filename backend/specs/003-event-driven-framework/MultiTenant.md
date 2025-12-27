@@ -349,7 +349,7 @@ uv run python manage.py create_super_super_admin --email admin@example.com --pas
 ```
 
 #### Command: Create Tenant
-File: `tenants/management/commands/create_tenant.py`
+File: `tenants/management/commands/register_tenant.py`
 
 ```python
 from django.core.management.base import BaseCommand
@@ -407,7 +407,7 @@ class Command(BaseCommand):
 
 Run it:
 ```bash
-uv run python manage.py create_tenant \
+uv run python manage.py register_tenant \
     --name "Acme Corp" \
     --subdomain "acme" \
     --admin-email "admin@acme.com" \
@@ -551,7 +551,7 @@ uv run python manage.py migrate_schemas --shared
 uv run python manage.py create_super_super_admin --email admin@example.com --password admin123
 
 # Create test tenant
-uv run python manage.py create_tenant --name "Demo Corp" --subdomain "demo" --admin-email "demo@example.com" --admin-password "demo123"
+uv run python manage.py register_tenant --name "Demo Corp" --subdomain "demo" --admin-email "demo@example.com" --admin-password "demo123"
 
 # Run server
 uv run python manage.py runserver 0.0.0.0:8000
@@ -667,7 +667,7 @@ urlpatterns = [
 5. Run `uv run python manage.py makemigrations`
 6. Run `uv run python manage.py migrate_schemas --shared`
 7. Create super admin: `uv run python manage.py create_super_super_admin --email admin@example.com --password admin123`
-8. Create test tenant: `uv run python manage.py create_tenant --name "Demo" --subdomain "demo" --admin-email "demo@example.com" --admin-password "demo123"`
+8. Create test tenant: `uv run python manage.py register_tenant --name "Demo" --subdomain "demo" --admin-email "demo@example.com" --admin-password "demo123"`
 9. Run `uv run python manage.py migrate_schemas --tenant`
 10. Update `/etc/hosts` for local testing
 11. Start server: `uv run python manage.py runserver 0.0.0.0:8000`

@@ -152,7 +152,7 @@ BASE_DOMAIN=localhost
 
 ```bash
 # Create tenant with 4-level subdomain
-uv run python manage.py create_tenant \
+uv run python manage.py register_tenant \
   --name "Acme Corporation" \
   --subdomain "acme" \
   --admin-email "admin@acme.com" \
@@ -315,7 +315,7 @@ EOF
 uv run python update_tenant_domains.py
 
 # Create new tenant
-uv run python manage.py create_tenant \
+uv run python manage.py register_tenant \
   --name "Demo Company" \
   --subdomain "demo" \
   --admin-email "admin@demo.com" \
@@ -629,7 +629,8 @@ localStorage.clear();
 **Backend Files**:
 - `backend/tenants/middleware.py` - Custom middleware
 - `backend/leopard/settings.py` - Configuration
-- `backend/tenants/management/commands/create_tenant.py` - Tenant creation
+- `backend/tenants/management/commands/register_tenant.py` - Tenant registration
+- `backend/tenants/management/commands/deregister_tenant.py` - Tenant deregistration
 - `backend/update_tenant_domains.py` - Migration script
 
 **Frontend Files**:

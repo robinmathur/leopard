@@ -672,7 +672,7 @@ export const VisaApplicationsManagementPage = () => {
       </Paper>
 
       {/* Results Table */}
-      <Paper>
+      <Paper sx={{ p: 2 }}>
         <TableContainer>
           <Table size="small">
             <TableHead>

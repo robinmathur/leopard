@@ -129,54 +129,27 @@ docker exec leopard-postgres psql -U leopard -d postgres -c "CREATE DATABASE leo
 uv run python manage.py migrate_schemas --shared
 
 # Create your first tenant
-uv run python manage.py shell
+uv run python manage.py register_tenant \
+  --name "Main Agency" \
+  --subdomain "main" \
+  --admin-email "admin@main.com" \
+  --admin-password "admin123"
 ```
 
-In the Django shell:
+This command creates:
+- Tenant record in public schema
+- PostgreSQL schema (`tenant_main`)
+- Domain mapping (`main-immigrate.localhost`)
+- Admin user in tenant schema
 
-```python
-from tenants.models import Tenant, Domain
-from django_tenants.utils import schema_context
-from django.contrib.auth import get_user_model
-
-# Create tenant
-tenant = Tenant(
-    schema_name='tenant_main',
-    name='Main Agency',
-    is_active=True,
-    subscription_status='TRIAL'
-)
-tenant.save()
-print(f'✓ Tenant created: {tenant.name}')
-
-# Create domain mapping
-domain = Domain(
-    domain='main.immigrate.localhost',
-    tenant=tenant,
-    is_primary=True
-)
-domain.save()
-print(f'✓ Domain: {domain.domain}')
-
-# Create tenant admin in tenant schema
-with schema_context(tenant.schema_name):
-    User = get_user_model()
-    admin = User.objects.create_superuser(
-        username='admin@main.com',
-        email='admin@main.com',
-        password='admin123'
-    )
-    print(f'✓ Admin created: {admin.email}')
-```
-
-Exit shell (`exit()`) and continue:
+Continue:
 
 ```bash
 # Update /etc/hosts for subdomain routing (macOS/Linux)
-echo "127.0.0.1 main.immigrate.localhost" | sudo tee -a /etc/hosts
+echo "127.0.0.1 main-immigrate.localhost" | sudo tee -a /etc/hosts
 
 # Windows: Edit C:\Windows\System32\drivers\etc\hosts
-# Add: 127.0.0.1 main.immigrate.localhost
+# Add: 127.0.0.1 main-immigrate.localhost
 
 # Start development server
 uv run python manage.py runserver 0.0.0.0:8000
@@ -186,10 +159,10 @@ uv run python manage.py runserver 0.0.0.0:8000
 
 ```bash
 # Test tenant access
-curl http://main.immigrate.localhost:8000/api/v1/
+curl http://main-immigrate.localhost:8000/api/v1/
 
 # Test login
-curl -X POST http://main.immigrate.localhost:8000/api/token/ \
+curl -X POST http://main-immigrate.localhost:8000/api/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"admin@main.com","password":"admin123"}'
 ```
@@ -212,39 +185,26 @@ Access frontend at: `http://localhost:5173`
 
 ### Create Additional Tenants
 
-```python
-# Django shell: uv run python manage.py shell
-from tenants.models import Tenant, Domain
-from django_tenants.utils import schema_context
-from django.contrib.auth import get_user_model
-
-# Create second tenant
-tenant = Tenant(
-    schema_name='tenant_demo',
-    name='Demo Company',
-    is_active=True,
-    subscription_status='ACTIVE'
-)
-tenant.save()
-
-domain = Domain(
-    domain='demo.immigrate.localhost',
-    tenant=tenant,
-    is_primary=True
-)
-domain.save()
-
-# Create admin for demo tenant
-with schema_context('tenant_demo'):
-    User = get_user_model()
-    admin = User.objects.create_superuser(
-        username='admin@demo.com',
-        email='admin@demo.com',
-        password='demo123'
-    )
+```bash
+# Register a new tenant
+uv run python manage.py register_tenant \
+  --name "Demo Company" \
+  --subdomain "demo" \
+  --admin-email "admin@demo.com" \
+  --admin-password "demo123"
 
 # Don't forget to add to /etc/hosts:
-# 127.0.0.1 demo.immigrate.localhost
+# 127.0.0.1 demo-immigrate.localhost
+```
+
+### Deregister a Tenant
+
+```bash
+# Deregister a tenant (IRREVERSIBLE - deletes all tenant data)
+uv run python manage.py deregister_tenant --tenant demo
+
+# Or skip confirmation prompt
+uv run python manage.py deregister_tenant --tenant demo --force
 ```
 
 ### Migrate Specific Tenant Schema
@@ -276,9 +236,9 @@ docker exec leopard-postgres psql -U leopard -d leopard -c \
 
 ### Multi-Tenant API Access
 
-- Tenant API: `http://<subdomain>.immigrate.localhost:8000/api/v1/`
-  - Example: `http://main.immigrate.localhost:8000/api/v1/clients/`
-  - Example: `http://demo.immigrate.localhost:8000/api/v1/tasks/`
+- Tenant API: `http://<tenant>-immigrate.localhost:8000/api/v1/`
+  - Example: `http://main-immigrate.localhost:8000/api/v1/clients/`
+  - Example: `http://demo-immigrate.localhost:8000/api/v1/tasks/`
 - Public Admin (Tenant Management): `http://immigrate.localhost:8000/admin/`
 - OpenAPI Schema: `http://immigrate.localhost:8000/api/schema/`
 - Swagger UI: `http://immigrate.localhost:8000/api/docs/`
@@ -287,7 +247,7 @@ docker exec leopard-postgres psql -U leopard -d leopard -c \
 
 ```bash
 # Login to specific tenant
-POST http://main.immigrate.localhost:8000/api/token/
+POST http://main-immigrate.localhost:8000/api/token/
 {
   "username": "admin@main.com",
   "password": "admin123"
@@ -407,10 +367,10 @@ See `backend/deployment/` for deployment scripts and configurations.
   docker exec leopard-postgres psql -U leopard -d postgres -c "CREATE DATABASE leopard;"
   ```
 
-**Issue**: Cannot access `subdomain.localhost`
+**Issue**: Cannot access `tenant-immigrate.localhost`
 - **Solution**: Add to /etc/hosts:
   ```bash
-  echo "127.0.0.1 subdomain.localhost" | sudo tee -a /etc/hosts
+  echo "127.0.0.1 tenant-immigrate.localhost" | sudo tee -a /etc/hosts
   ```
 
 **Issue**: Events not processing

@@ -19,9 +19,19 @@ from immigration.constants import ALL_GROUPS, GROUP_DISPLAY_NAMES
 from immigration.models import (
     User, Client, Branch, Region,
     VisaApplication, Task, Notification,
-    Note, ClientActivity, ProfilePicture
+    Note, ClientActivity, ProfilePicture, Agent
 )
-from immigration.institute import Institute
+from immigration.institute import (
+    Institute,
+    InstituteContactPerson,
+    InstituteLocation,
+    InstituteIntake,
+    InstituteRequirement,
+    Course,
+    BroadField,
+    NarrowField,
+    CourseLevel,
+)
 
 
 class Command(BaseCommand):
@@ -107,6 +117,14 @@ class Command(BaseCommand):
             ClientActivity: ['view'],  # Read-only - created via signals
             ProfilePicture: ['view', 'add', 'change', 'delete'],
             Institute: ['view', 'add', 'change', 'delete'],
+            InstituteContactPerson: ['view', 'add', 'change', 'delete'],
+            InstituteLocation: ['view', 'add', 'change', 'delete'],
+            InstituteIntake: ['view', 'add', 'change', 'delete'],
+            InstituteRequirement: ['view', 'add', 'change', 'delete'],
+            Course: ['view', 'add', 'change', 'delete'],
+            BroadField: ['view', 'add', 'change', 'delete'],
+            NarrowField: ['view', 'add', 'change', 'delete'],
+            CourseLevel: ['view', 'add', 'change', 'delete'],
         }
         
         # Define role-specific permissions
@@ -176,6 +194,16 @@ class Command(BaseCommand):
                 ClientActivity: ['view'],  # Can view timeline
                 ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
                 Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
+                InstituteContactPerson: ['view', 'add', 'change', 'delete'],  # Full institute contact person access
+                InstituteLocation: ['view', 'add', 'change', 'delete'],  # Full institute location access
+                InstituteIntake: ['view', 'add', 'change', 'delete'],  # Full institute intake access
+                InstituteRequirement: ['view', 'add', 'change', 'delete'],  # Full institute requirement access
+                Course: ['view', 'add', 'change', 'delete'],  # Full course access
+                BroadField: ['view', 'add', 'change', 'delete'],  # Full broad field access
+                NarrowField: ['view', 'add', 'change', 'delete'],  # Full narrow field access
+                CourseLevel: ['view', 'add', 'change', 'delete'],  # Full course level access
+                Agent: ['view', 'add', 'change', 'delete'],  # Full agent management
+                Group: ['view', 'add', 'change', 'delete'],  # Full group management
             },
         }
         

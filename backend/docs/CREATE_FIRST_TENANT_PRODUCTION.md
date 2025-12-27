@@ -1,6 +1,6 @@
 # Creating Your First Tenant in Production
 
-This guide walks you through creating your first tenant in a production environment using the 4-level subdomain architecture: `tenant.app.company.com`
+This guide walks you through creating your first tenant in a production environment using the flattened subdomain architecture: `tenant-app.company.com`
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ DEBUG=False
 ```
 
 **Example:**
-- If your production domain is `example.com` and you want tenants like `acme.immigrate.example.com`
+- If your production domain is `example.com` and you want tenants like `acme-immigrate.example.com`
 - Set: `BASE_DOMAIN=example.com` and `APP_SUBDOMAIN=immigrate`
 
 ### 2. DNS Configuration
@@ -29,7 +29,7 @@ Before creating tenants, ensure your DNS is configured for wildcard subdomains:
 *.immigrate.yourcompany.com  →  Your server IP (or CNAME to your load balancer)
 ```
 
-This allows any tenant subdomain (e.g., `acme.immigrate.yourcompany.com`) to resolve to your server.
+This allows any tenant subdomain (e.g., `acme-immigrate.yourcompany.com`) to resolve to your server.
 
 ### 3. Database Migrations
 
@@ -70,7 +70,7 @@ cd /app
 
 ```bash
 # In Docker container
-/app/.venv/bin/python manage.py create_tenant \
+/app/.venv/bin/python manage.py register_tenant \
   --name "Your Company Name" \
   --subdomain "yourtenant" \
   --admin-email "admin@yourcompany.com" \
@@ -82,7 +82,7 @@ cd /app
 ```bash
 # In Docker container
 source /app/.venv/bin/activate
-python manage.py create_tenant \
+python manage.py register_tenant \
   --name "Your Company Name" \
   --subdomain "yourtenant" \
   --admin-email "admin@yourcompany.com" \
@@ -93,7 +93,7 @@ python manage.py create_tenant \
 
 ```bash
 # From your host machine (not inside container)
-docker exec -it leopard-backend /app/.venv/bin/python manage.py create_tenant \
+docker exec -it leopard-backend /app/.venv/bin/python manage.py register_tenant \
   --name "Your Company Name" \
   --subdomain "yourtenant" \
   --admin-email "admin@yourcompany.com" \
@@ -103,7 +103,7 @@ docker exec -it leopard-backend /app/.venv/bin/python manage.py create_tenant \
 **Parameters:**
 - `--name`: Company/Organization name (display name)
 - `--subdomain`: Tenant identifier (e.g., "acme", "demo", "company1")
-  - This will create: `yourtenant.immigrate.yourcompany.com`
+  - This will create: `yourtenant-immigrate.yourcompany.com`
   - Must be lowercase, alphanumeric, no spaces
 - `--admin-email`: Email for the tenant's super admin user
 - `--admin-password`: Password for the tenant admin (use a strong password!)
@@ -111,14 +111,14 @@ docker exec -it leopard-backend /app/.venv/bin/python manage.py create_tenant \
 **Example (Docker):**
 ```bash
 # Inside container
-/app/.venv/bin/python manage.py create_tenant \
+/app/.venv/bin/python manage.py register_tenant \
   --name "Acme Corporation" \
   --subdomain "acme" \
   --admin-email "admin@acme.com" \
   --admin-password "AcmeSecure2024!"
 
 # Or from host
-docker exec -it leopard-backend /app/.venv/bin/python manage.py create_tenant \
+docker exec -it leopard-backend /app/.venv/bin/python manage.py register_tenant \
   --name "Acme Corporation" \
   --subdomain "acme" \
   --admin-email "admin@acme.com" \
@@ -184,7 +184,7 @@ for tenant in tenants:
 
 ## What Gets Created
 
-When you run `create_tenant`, the following is created:
+When you run `register_tenant`, the following is created:
 
 1. **Tenant Record** (in `public` schema)
    - Schema name: `tenant_yourtenant`
@@ -196,7 +196,7 @@ When you run `create_tenant`, the following is created:
    - Isolated database schema for this tenant's data
 
 3. **Domain Mapping** (in `public` schema)
-   - Domain: `yourtenant.immigrate.yourcompany.com`
+   - Domain: `yourtenant-immigrate.yourcompany.com`
    - Links the subdomain to the tenant
 
 4. **Admin User** (in tenant schema)
@@ -208,7 +208,7 @@ When you run `create_tenant`, the following is created:
 After creation, your tenant will be accessible at:
 
 ```
-https://yourtenant.immigrate.yourcompany.com
+https://yourtenant-immigrate.yourcompany.com
 ```
 
 **Login Credentials:**
@@ -217,20 +217,7 @@ https://yourtenant.immigrate.yourcompany.com
 
 ## Using Wildcard Domains (Optional)
 
-If you want to use a wildcard domain pattern (useful for dynamic tenant creation):
-
-```bash
-python manage.py create_tenant \
-  --name "Wildcard Tenant" \
-  --subdomain "wildcard" \
-  --admin-email "admin@example.com" \
-  --admin-password "password123" \
-  --use-wildcard
-```
-
-This creates: `*.immigrate.yourcompany.com` which matches any subdomain.
-
-**Note:** Only use wildcards if you understand the implications. Specific subdomains are recommended for production.
+**Note:** The `register_tenant` command creates a specific subdomain for the tenant. Wildcard domains are not supported in the current implementation.
 
 ## Troubleshooting
 
@@ -239,14 +226,14 @@ This creates: `*.immigrate.yourcompany.com` which matches any subdomain.
 **Cause:** In Docker containers, you're not using the virtual environment where Django is installed.
 
 **Solution:**
-- Use the full path to the venv Python: `/app/.venv/bin/python manage.py create_tenant ...`
+- Use the full path to the venv Python: `/app/.venv/bin/python manage.py register_tenant ...`
 - Or activate the venv first: `source /app/.venv/bin/activate`
-- Or run from host: `docker exec -it leopard-backend /app/.venv/bin/python manage.py create_tenant ...`
+- Or run from host: `docker exec -it leopard-backend /app/.venv/bin/python manage.py register_tenant ...`
 
 **Quick Fix:**
 ```bash
-# Instead of: python manage.py create_tenant ...
-# Use: /app/.venv/bin/python manage.py create_tenant ...
+# Instead of: python manage.py register_tenant ...
+# Use: /app/.venv/bin/python manage.py register_tenant ...
 ```
 
 ### Error: "No tenant found for domain"
@@ -254,7 +241,7 @@ This creates: `*.immigrate.yourcompany.com` which matches any subdomain.
 **Cause:** DNS not configured or domain doesn't match the pattern.
 
 **Solution:**
-1. Verify DNS: `dig yourtenant.immigrate.yourcompany.com`
+1. Verify DNS: `dig yourtenant-immigrate.yourcompany.com`
 2. Check `BASE_DOMAIN` and `APP_SUBDOMAIN` environment variables
 3. Verify domain in database:
    ```python
@@ -281,8 +268,8 @@ This creates: `*.immigrate.yourcompany.com` which matches any subdomain.
 
 ### Tenant Created But Can't Access
 
-1. **Check DNS:** Ensure `*.immigrate.yourcompany.com` resolves to your server
-2. **Check Nginx/Reverse Proxy:** Ensure it's configured to handle subdomains
+1. **Check DNS:** Ensure `*.immigrate.yourcompany.com` resolves to your server (wildcard DNS)
+2. **Check Nginx/Reverse Proxy:** Ensure it's configured to handle flattened subdomain pattern (`tenant-immigrate.yourcompany.com`)
 3. **Check Migrations:** Run `migrate_schemas --schema=tenant_yourtenant`
 4. **Check Logs:** Review application logs for errors
 

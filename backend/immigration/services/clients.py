@@ -279,12 +279,14 @@ def client_update(*, client: Client, data: ClientUpdateInput, user) -> Client:
                     raise PermissionError(
                         "Region Manager cannot assign clients to users outside their regions"
                     )
-            elif user.is_in_group(GROUP_SUPER_ADMIN):
-                # Check tenant boundary
-                if assigned_user.tenant_id != user.tenant_id:
-                    raise PermissionError(
-                        "Cannot assign clients to users outside your tenant"
-                    )
+            # REMOVED: SUPER_ADMIN tenant check (schema provides isolation)
+            # elif user.is_in_group(GROUP_SUPER_ADMIN):
+            #     if assigned_user.tenant_id != user.tenant_id:
+            #         raise PermissionError(
+            #             "Cannot assign clients to users outside your tenant"
+            #         )
+            
+            # SUPER_ADMIN can assign to any user in current tenant schema (automatic isolation)
         
         client.assigned_to_id = data.assigned_to_id
         update_fields.append('assigned_to_id')

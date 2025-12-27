@@ -40,11 +40,13 @@ def _scope_by_user(qs: QuerySet, user) -> QuerySet:
             return qs.filter(client__assigned_to__regions__in=user_regions)
         return qs.none()
 
-    if user.is_in_group(GROUP_SUPER_ADMIN):
-        # Filter to clients in the same tenant
-        if user.tenant:
-            return qs.filter(client__assigned_to__tenant=user.tenant)
-        return qs.none()
+    # REMOVED: SUPER_ADMIN tenant filtering (schema provides isolation)
+    # if user.is_in_group(GROUP_SUPER_ADMIN):
+    #     if user.tenant:
+    #         return qs.filter(client__assigned_to__tenant=user.tenant)
+    #     return qs.none()
+    
+    # SUPER_ADMIN sees all in current tenant schema (automatic)
 
     # SUPER_SUPER_ADMIN sees everything (no additional filter)
     return qs
@@ -68,7 +70,7 @@ def proficiency_list(*, user, filters: Optional[Dict[str, Any]] = None) -> Query
     List proficiencies scoped to the requesting user's visibility.
     """
     filters = filters or {}
-    qs = Proficiency.objects.select_related("client__branch__tenant", "test_name")
+    qs = Proficiency.objects.select_related("client__branch", "test_name")
     qs = _scope_by_user(qs, user)
 
     if client_id := filters.get("client_id"):
@@ -102,7 +104,7 @@ def qualification_list(*, user, filters: Optional[Dict[str, Any]] = None) -> Que
     List qualifications scoped to the requesting user's visibility.
     """
     filters = filters or {}
-    qs = Qualification.objects.select_related("client__branch__tenant")
+    qs = Qualification.objects.select_related("client__branch")
     qs = _scope_by_user(qs, user)
 
     if client_id := filters.get("client_id"):
@@ -129,7 +131,7 @@ def passport_list(*, user, filters: Optional[Dict[str, Any]] = None) -> QuerySet
     List passports scoped by client visibility.
     """
     filters = filters or {}
-    qs = Passport.objects.select_related("client__branch__tenant")
+    qs = Passport.objects.select_related("client__branch")
     qs = _scope_by_user(qs, user)
 
     if client_id := filters.get("client_id"):
@@ -156,7 +158,7 @@ def employment_list(*, user, filters: Optional[Dict[str, Any]] = None) -> QueryS
     List employment records scoped by client visibility.
     """
     filters = filters or {}
-    qs = Employment.objects.select_related("client__branch__tenant")
+    qs = Employment.objects.select_related("client__branch")
     qs = _scope_by_user(qs, user)
 
     if client_id := filters.get("client_id"):
