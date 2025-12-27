@@ -153,7 +153,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
             <Button
               size="small"
               variant="outlined"
-              onClick={() => navigate(`/visa-manager/applications?applicationId=${visaApplicationId}`)}
+              onClick={() => navigate(`/clients/${activity.client}?tab=applications&visaApplicationId=${visaApplicationId}`)}
               sx={{ 
                 textTransform: 'none',
                 fontSize: '0.7rem',
@@ -169,7 +169,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
             <Button
               size="small"
               variant="outlined"
-              onClick={() => navigate(`/visa-manager/applications?applicationId=${applicationId}`)}
+              onClick={() => navigate(`/clients/${activity.client}?tab=applications&visaApplicationId=${applicationId}`)}
               sx={{ 
                 textTransform: 'none',
                 fontSize: '0.7rem',

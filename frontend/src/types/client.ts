@@ -99,6 +99,7 @@ export interface ClientListParams {
   first_name?: string;
   last_name?: string;
   search?: string;
+  visa_category?: number;
 }
 
 export interface StageCounts {

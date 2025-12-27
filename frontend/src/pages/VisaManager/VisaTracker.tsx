@@ -436,11 +436,10 @@ export const VisaTracker = () => {
     setPage(1); // Reset to first page when changing page size
   };
 
-  const handleView = (_application: VisaApplication) => {
-    setSnackbar({
-      open: true,
-      message: 'View functionality coming soon',
-      severity: 'info',
+  const handleView = (application: VisaApplication) => {
+    // Navigate to client detail page with applications tab and visa application ID
+    navigate(`/clients/${application.client}?tab=applications&visaApplicationId=${application.id}`, {
+      state: { from: '/visa-manager/tracker' }
     });
   };
 

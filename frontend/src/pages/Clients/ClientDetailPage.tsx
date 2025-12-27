@@ -6,7 +6,7 @@
  * - Other tabs: Notes, Documents, Applications, Tasks, Reminders
  */
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -107,6 +107,7 @@ export const ClientDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fromPath = (location.state as { from?: string })?.from || '/clients';
   
   // Determine back button label based on where user came from
@@ -132,7 +133,19 @@ export const ClientDetailPage = () => {
     loadMore,
     cancelFetchTimeline,
   } = useTimelineStore();
-  const [activeTab, setActiveTab] = useState<TabValue>('overview');
+  
+  // Get URL params
+  const visaApplicationIdParam = searchParams.get('visaApplicationId');
+  
+  // Initialize tab state - read from URL on mount if present, otherwise default to 'overview'
+  // Use lazy initializer to only read from URL once on mount
+  const [activeTab, setActiveTab] = useState<TabValue>(() => {
+    const urlTab = searchParams.get('tab') as TabValue | null;
+    if (urlTab && ['overview', 'profile', 'notes', 'documents', 'applications', 'tasks', 'reminders'].includes(urlTab)) {
+      return urlTab;
+    }
+    return 'overview';
+  });
 
   // Fetch client and timeline on mount
   useEffect(() => {
@@ -140,6 +153,14 @@ export const ClientDetailPage = () => {
       fetchClientById(parseInt(id, 10));
       fetchTimeline(parseInt(id, 10));
       markSectionLoaded('overview');
+      
+      // Mark the initial tab section as loaded if it's not overview
+      // Read from URL directly to avoid dependency on activeTab state
+      const urlTab = searchParams.get('tab') as TabValue | null;
+      if (urlTab && urlTab !== 'overview' && ['overview', 'profile', 'notes', 'documents', 'applications', 'tasks', 'reminders'].includes(urlTab)) {
+        markSectionLoaded(urlTab as keyof typeof loadedSections);
+        setCurrentTab(urlTab);
+      }
     }
     return () => {
       cancelFetchClientById();
@@ -147,7 +168,8 @@ export const ClientDetailPage = () => {
       clearError();
       resetStore();
     };
-  }, [id, fetchClientById, cancelFetchClientById, clearError, markSectionLoaded, resetStore, fetchTimeline, cancelFetchTimeline]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]); // Only run when id changes
 
   // Handle refresh timeline after note is added
   const handleNoteAdded = () => {
@@ -192,6 +214,15 @@ export const ClientDetailPage = () => {
     if (newValue !== 'overview') {
       markSectionLoaded(newValue as keyof typeof loadedSections);
     }
+
+    // Update URL params to preserve tab selection
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('tab', newValue);
+    // Preserve visaApplicationId if switching to applications tab, otherwise remove it
+    if (newValue !== 'applications') {
+      newSearchParams.delete('visaApplicationId');
+    }
+    setSearchParams(newSearchParams, { replace: true });
   };
 
   // Loading state
@@ -430,7 +461,23 @@ export const ClientDetailPage = () => {
       <TabPanel value="applications" currentValue={activeTab}>
         {loadedSections.applications ? (
           <Box>
-            <ClientVisaApplications clientId={client.id} />
+            <ClientVisaApplications 
+              clientId={client.id}
+              selectedApplicationId={visaApplicationIdParam ? parseInt(visaApplicationIdParam, 10) : undefined}
+              onCardClick={(applicationId) => {
+                // Update URL when a card is clicked
+                const newSearchParams = new URLSearchParams(searchParams);
+                newSearchParams.set('tab', 'applications');
+                newSearchParams.set('visaApplicationId', applicationId.toString());
+                setSearchParams(newSearchParams, { replace: true });
+              }}
+              onDetailClose={() => {
+                // Remove visaApplicationId from URL when detail is closed
+                const newSearchParams = new URLSearchParams(searchParams);
+                newSearchParams.delete('visaApplicationId');
+                setSearchParams(newSearchParams, { replace: true });
+              }}
+            />
             <Box sx={{ mt: 3 }}>
               <ClientCollegeApplications clientId={client.id} />
             </Box>

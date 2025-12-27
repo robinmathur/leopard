@@ -17,10 +17,19 @@ import AddIcon from '@mui/icons-material/Add';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import { getVisaApplications, VisaApplication, VisaApplicationStatus } from '@/services/api/visaApplicationApi';
 import {Protect} from "@/components/protected/Protect.tsx";
+import { VisaApplicationDetail } from './VisaApplicationDetail';
 
 export interface ClientVisaApplicationsProps {
   /** Client ID */
   clientId: number;
+  /** Optional: Pre-selected visa application ID (from URL params) */
+  selectedApplicationId?: number;
+  /** Callback when application is updated */
+  onApplicationUpdate?: () => void;
+  /** Callback when detail view is closed (to update URL) */
+  onDetailClose?: () => void;
+  /** Callback when a card is clicked (to update URL) */
+  onCardClick?: (applicationId: number) => void;
 }
 
 /**
@@ -87,22 +96,31 @@ const VisaApplicationsSkeleton = () => (
 /**
  * Visa application card
  */
-const VisaApplicationCard = ({ application }: { application: VisaApplication }) => {
+const VisaApplicationCard = ({ 
+  application, 
+  isSelected, 
+  onClick 
+}: { 
+  application: VisaApplication;
+  isSelected?: boolean;
+  onClick: () => void;
+}) => {
   return (
     <Paper
       variant="outlined"
       sx={{
         p: 2,
         mb: 2,
+        border: isSelected ? 2 : 1,
+        borderColor: isSelected ? 'primary.main' : 'divider',
+        bgcolor: isSelected ? 'action.selected' : 'background.paper',
         '&:hover': {
           boxShadow: 2,
           cursor: 'pointer',
         },
+        transition: 'all 0.2s ease-in-out',
       }}
-      onClick={() => {
-        // TODO: Navigate to visa application detail
-        alert(`Navigate to Visa Application ${application.id} - Coming in future enhancement`);
-      }}
+      onClick={onClick}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
@@ -162,10 +180,17 @@ const VisaApplicationCard = ({ application }: { application: VisaApplication }) 
 /**
  * ClientVisaApplications Component
  */
-export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps) => {
+export const ClientVisaApplications = ({ 
+  clientId, 
+  selectedApplicationId: initialSelectedId,
+  onApplicationUpdate,
+  onDetailClose,
+  onCardClick
+}: ClientVisaApplicationsProps) => {
   const [applications, setApplications] = useState<VisaApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<number | undefined>(initialSelectedId);
 
   // Fetch visa application data
   useEffect(() => {
@@ -206,6 +231,47 @@ export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps
       abortController.abort();
     };
   }, [clientId]);
+
+  // Update selected application when prop changes (from URL params)
+  useEffect(() => {
+    if (initialSelectedId !== undefined) {
+      setSelectedApplicationId(initialSelectedId);
+    }
+  }, [initialSelectedId]);
+
+  const handleCardClick = (applicationId: number) => {
+    setSelectedApplicationId(applicationId);
+    if (onCardClick) {
+      onCardClick(applicationId);
+    }
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedApplicationId(undefined);
+    if (onDetailClose) {
+      onDetailClose();
+    }
+  };
+
+  const handleApplicationUpdate = () => {
+    // Refresh the applications list
+    const fetchData = async () => {
+      try {
+        const data = await getVisaApplications(clientId);
+        const sorted = data.sort((a, b) => {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        setApplications(sorted);
+      } catch (err) {
+        console.error('Failed to refresh applications:', err);
+      }
+    };
+    fetchData();
+    
+    if (onApplicationUpdate) {
+      onApplicationUpdate();
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -273,9 +339,23 @@ export const ClientVisaApplications = ({ clientId }: ClientVisaApplicationsProps
             {applications.length !== 1 ? 's' : ''} (most recent first)
           </Typography>
           {applications.map((application) => (
-            <VisaApplicationCard key={application.id} application={application} />
+            <VisaApplicationCard 
+              key={application.id} 
+              application={application}
+              isSelected={selectedApplicationId === application.id}
+              onClick={() => handleCardClick(application.id)}
+            />
           ))}
         </>
+      )}
+
+      {/* Visa Application Detail Panel */}
+      {selectedApplicationId && (
+        <VisaApplicationDetail
+          visaApplicationId={selectedApplicationId}
+          onClose={handleCloseDetail}
+          onUpdate={handleApplicationUpdate}
+        />
       )}
     </Paper>
   );

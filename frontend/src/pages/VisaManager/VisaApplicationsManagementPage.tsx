@@ -359,12 +359,9 @@ export const VisaApplicationsManagementPage = () => {
   };
 
   const handleView = (application: VisaApplication) => {
-    // TODO: Navigate to detail page or open view modal
-    console.log('View application:', application);
-    setSnackbar({
-      open: true,
-      message: 'View functionality coming soon',
-      severity: 'info',
+    // Navigate to client detail page with applications tab and visa application ID
+    navigate(`/clients/${application.client}?tab=applications&visaApplicationId=${application.id}`, {
+      state: { from: '/visa-manager/applications' }
     });
   };
 
