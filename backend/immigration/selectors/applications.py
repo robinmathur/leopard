@@ -66,10 +66,12 @@ def visa_application_list(
         if user_regions.exists():
             qs = qs.filter(client__assigned_to__regions__in=user_regions)
     
-    elif user.is_in_group(GROUP_SUPER_ADMIN):
-        # Filter to applications for clients in the same tenant
-        if user.tenant:
-            qs = qs.filter(client__assigned_to__tenant=user.tenant)
+    # REMOVED: SUPER_ADMIN tenant filtering (schema provides isolation)
+    # elif user.is_in_group(GROUP_SUPER_ADMIN):
+    #     if user.tenant:
+    #         qs = qs.filter(client__assigned_to__tenant=user.tenant)
+    
+    # SUPER_ADMIN sees all in current tenant schema (automatic)
     
     # SUPER_SUPER_ADMIN sees everything (no additional filter)
     
