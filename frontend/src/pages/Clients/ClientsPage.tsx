@@ -24,6 +24,7 @@ import { ClientTable } from '@/components/clients/ClientTable';
 import { ClientForm } from '@/components/clients/ClientForm';
 import { DeleteConfirmDialog } from '@/components/clients/DeleteConfirmDialog';
 import { MoveStageDialog } from '@/components/clients/MoveStageDialog';
+import { AssignClientDialog } from '@/components/clients/AssignClientDialog';
 import { useClientStore } from '@/store/clientStore';
 import { Client, ClientCreateRequest, ClientUpdateRequest, ClientStage, STAGE_LABELS } from '@/types/client';
 import { ApiError } from '@/services/api/httpClient';
@@ -44,6 +45,7 @@ export const ClientsPage = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
@@ -153,9 +155,43 @@ export const ClientsPage = () => {
     setSelectedClient(null);
   };
 
-  // --- View Client ---
-  const handleView = (client: Client) => {
-    navigate(`/clients/${client.id}`);
+  // --- Assign Client ---
+  const handleAssign = (client: Client) => {
+    setSelectedClient(client);
+    setAssignDialogOpen(true);
+  };
+
+  const handleConfirmAssign = async (userId: number | null) => {
+    if (!selectedClient) return;
+
+    setFormLoading(true);
+    const result = await updateClient(selectedClient.id, { assigned_to_id: userId || undefined });
+    setFormLoading(false);
+
+    if (result) {
+      setAssignDialogOpen(false);
+      setSnackbar({
+        open: true,
+        message: userId
+          ? `Client "${selectedClient.first_name}" assigned successfully`
+          : `Client "${selectedClient.first_name}" unassigned successfully`,
+        severity: 'success',
+      });
+      setSelectedClient(null);
+      // Refresh the client list
+      fetchClients();
+    } else {
+      setSnackbar({
+        open: true,
+        message: 'Failed to assign client',
+        severity: 'error',
+      });
+    }
+  };
+
+  const handleCancelAssign = () => {
+    setAssignDialogOpen(false);
+    setSelectedClient(null);
   };
 
   // --- Move Client Stage ---
@@ -289,8 +325,8 @@ export const ClientsPage = () => {
           onPageSizeChange={handlePageSizeChange}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          onView={handleView}
           onMove={handleMove}
+          onAssign={handleAssign}
         />
       </Paper>
 
@@ -338,6 +374,15 @@ export const ClientsPage = () => {
         client={selectedClient}
         onConfirm={handleConfirmMove}
         onCancel={handleCancelMove}
+        loading={formLoading}
+      />
+
+      {/* Assign Client Dialog */}
+      <AssignClientDialog
+        open={assignDialogOpen}
+        client={selectedClient}
+        onConfirm={handleConfirmAssign}
+        onCancel={handleCancelAssign}
         loading={formLoading}
       />
 

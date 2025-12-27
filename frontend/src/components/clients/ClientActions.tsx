@@ -5,7 +5,7 @@
 import { IconButton, Tooltip, Box } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Client, NEXT_STAGE, STAGE_LABELS } from '@/types/client';
 
@@ -13,8 +13,8 @@ interface ClientActionsProps {
   client: Client;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
-  onView: (client: Client) => void;
   onMove: (client: Client) => void;
+  onAssign: (client: Client) => void;
   disabled?: boolean;
 }
 
@@ -22,8 +22,8 @@ export const ClientActions = ({
   client,
   onEdit,
   onDelete,
-  onView,
   onMove,
+  onAssign,
   disabled = false,
 }: ClientActionsProps) => {
   const nextStage = NEXT_STAGE[client.stage];
@@ -34,15 +34,15 @@ export const ClientActions = ({
 
   return (
     <Box sx={{ display: 'flex', gap: 0.5 }}>
-      {/* View Details */}
-      <Tooltip title="View Details">
+      {/* Assign Client */}
+      <Tooltip title="Assign">
         <IconButton
           size="small"
-          onClick={() => onView(client)}
+          onClick={() => onAssign(client)}
           disabled={disabled}
           color="primary"
         >
-          <VisibilityIcon fontSize="small" />
+          <PersonAddIcon fontSize="small" />
         </IconButton>
       </Tooltip>
 

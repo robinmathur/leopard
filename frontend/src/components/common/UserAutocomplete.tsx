@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Autocomplete, TextField, CircularProgress, Box, Typography } from '@mui/material';
-import { User } from '@/services/api/userApi';
+import { User } from '@/types/user';
 import httpClient from '@/services/api/httpClient';
 
 interface UserAutocompleteProps {
