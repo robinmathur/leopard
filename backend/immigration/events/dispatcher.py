@@ -258,7 +258,8 @@ def _create_event(
             is_paused = EventProcessingControl.is_processing_paused()
 
         if not is_paused:
-            process_event_async(event.id)
+            # Pass tenant_schema so async processor can fetch event from correct schema
+            process_event_async(event.id, current_schema)
         else:
             logger.info(f"Event processing is paused. Event {event.id} queued for later processing.")
 
