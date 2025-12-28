@@ -62,7 +62,6 @@ export const InstitutePage = () => {
     institutes,
     loading,
     error,
-    pagination,
     fetchInstitutes,
     addInstitute,
     updateInstitute,
@@ -235,7 +234,12 @@ export const InstitutePage = () => {
       const apiError = err as ApiError;
       // Handle field-specific errors from backend
       if (apiError.fieldErrors) {
-        setFormErrors(apiError.fieldErrors);
+        // Convert Record<string, string[]> to Record<string, string>
+        const convertedErrors: Record<string, string> = {};
+        Object.entries(apiError.fieldErrors).forEach(([key, value]) => {
+          convertedErrors[key] = Array.isArray(value) ? value.join(', ') : value;
+        });
+        setFormErrors(convertedErrors);
       } else {
         setSnackbar({
           open: true,

@@ -29,7 +29,7 @@ import { Protect } from '@/components/protected/Protect';
 import { RegionTable } from '@/components/regions/RegionTable';
 import { RegionForm } from '@/components/regions/RegionForm';
 import { useRegionStore } from '@/store/regionStore';
-import { Region, RegionCreateRequest } from '@/types/region';
+import { Region, RegionCreateRequest, RegionUpdateRequest } from '@/types/region';
 import { ApiError } from '@/services/api/httpClient';
 
 type DialogMode = 'add' | null;
@@ -152,13 +152,14 @@ export const RegionsPage = () => {
     }
   };
 
-  const handleSaveRegion = async (data: RegionCreateRequest) => {
+  const handleSaveRegion = async (data: RegionCreateRequest | RegionUpdateRequest) => {
     setFormLoading(true);
     setFieldErrors({});
 
     try {
       if (dialogMode === 'add') {
-        const result = await addRegion(data);
+        // In add mode, data should be RegionCreateRequest
+        const result = await addRegion(data as RegionCreateRequest);
         if (result) {
           handleCloseDialog();
           setSnackbar({

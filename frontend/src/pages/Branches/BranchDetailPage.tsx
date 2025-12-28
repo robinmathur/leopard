@@ -67,7 +67,7 @@ export const BranchDetailPage = () => {
     
     try {
       const response = await regionApi.list();
-      setRegions(response.results.map((r) => ({ id: r.id, name: r.name })));
+      setRegions(response.results.map((r: { id: number; name: string }) => ({ id: r.id, name: r.name })));
       regionsFetched.current = true;
     } catch (error) {
       console.error('Failed to fetch regions:', error);

@@ -76,8 +76,7 @@ const getGroupKey = (date: Date, level: GroupingLevel): string => {
 const getGroupLabel = (date: Date, level: GroupingLevel): string => {
   const year = date.getFullYear();
   const month = date.toLocaleDateString('en-US', { month: 'long' });
-  const day = date.getDate();
-  
+
   // Get week number and range
   const getWeekRange = (d: Date): string => {
     const date = new Date(d);
