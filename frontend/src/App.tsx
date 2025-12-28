@@ -19,6 +19,10 @@ import { VisaApplicationsManagementPage } from './pages/VisaManager/VisaApplicat
 import { UsersPage } from './pages/Users/UsersPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { GroupsPage } from './pages/Groups/GroupsPage';
+import { BranchesPage } from './pages/Branches/BranchesPage';
+import { BranchDetailPage } from './pages/Branches/BranchDetailPage';
+import { RegionsPage } from './pages/Regions/RegionsPage';
+import { RegionDetailPage } from './pages/Regions/RegionDetailPage';
 
 /**
  * Protected Route Component
@@ -73,6 +77,13 @@ function App() {
             <Route path="institute/:id" element={<InstituteDetailPage />} />
             <Route path="agent" element={<AgentPage />} />
             <Route path="agent/:id" element={<AgentDetailPage />} />
+            {/* Org Management Routes */}
+            <Route path="org-management/regions" element={<RegionsPage />} />
+            <Route path="org-management/regions/add" element={<RegionsPage />} />
+            <Route path="org-management/regions/:id" element={<RegionDetailPage />} />
+            <Route path="org-management/branches" element={<BranchesPage />} />
+            <Route path="org-management/branches/add" element={<BranchesPage />} />
+            <Route path="org-management/branches/:id" element={<BranchDetailPage />} />
             
             {/* User Management Routes */}
             <Route path="user-management/users" element={<UsersPage />} />

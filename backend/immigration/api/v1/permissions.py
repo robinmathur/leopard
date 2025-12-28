@@ -64,3 +64,19 @@ class CanManageAgents(RoleBasedPermission):
     Requires 'view_agent' permission.
     """
     required_permission = 'immigration.view_agent'
+
+
+class CanManageBranches(RoleBasedPermission):
+    """
+    Permission for branch management operations.
+    Requires 'view_branch' permission.
+    """
+    required_permission = 'immigration.view_branch'
+
+
+class CanManageRegions(RoleBasedPermission):
+    """
+    Permission for region management operations.
+    Requires 'view_region' permission.
+    """
+    required_permission = 'immigration.view_region'

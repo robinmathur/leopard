@@ -22,6 +22,7 @@ from drf_spectacular.types import OpenApiTypes
 from channels.layers import get_channel_layer
 
 from immigration.api.v1.authentication import JWTQueryParamAuthentication
+from immigration.models import Notification
 from immigration.pagination import StandardResultsSetPagination
 from immigration.services.notifications import (
     notification_list,

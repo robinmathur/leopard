@@ -9,6 +9,9 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import CategoryIcon from '@mui/icons-material/Category';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import GroupIcon from '@mui/icons-material/Group';
+import BusinessIcon from '@mui/icons-material/Business';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import DomainIcon from '@mui/icons-material/Domain';
 import { Permission } from '@/auth/types';
 
 /**
@@ -99,6 +102,29 @@ export const navigationConfig: NavItem[] = [
     path: '/agent',
     icon: BadgeIcon,
     permission: 'view_agent',
+  },
+  {
+    id: 'region-branch-management',
+    label: 'Org Management',
+    path: '/org-management',
+    icon: DomainIcon,
+    permission: 'view_region',
+    children: [
+      {
+        id: 'regions',
+        label: 'Regions',
+        path: '/org-management/regions',
+        icon: LocationOnIcon,
+        permission: 'view_region',
+      },
+      {
+        id: 'branches',
+        label: 'Branches',
+        path: '/org-management/branches',
+        icon: BusinessIcon,
+        permission: 'view_branch',
+      },
+    ],
   },
   {
     id: 'user-management',

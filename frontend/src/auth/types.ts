@@ -44,9 +44,16 @@ export type Permission =
   | 'approve_payments'
   
   // Branch permissions
-  | 'view_branch_data'
-  | 'manage_branch'
-  | 'view_all_branches'
+  | 'view_branch'
+  | 'add_branch'
+  | 'change_branch'
+  | 'delete_branch'
+  
+  // Region permissions
+  | 'view_region'
+  | 'add_region'
+  | 'change_region'
+  | 'delete_region'
   
   // Dashboard permissions
   | 'view_dashboard'
