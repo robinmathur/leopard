@@ -23,6 +23,7 @@ import { BranchesPage } from './pages/Branches/BranchesPage';
 import { BranchDetailPage } from './pages/Branches/BranchDetailPage';
 import { RegionsPage } from './pages/Regions/RegionsPage';
 import { RegionDetailPage } from './pages/Regions/RegionDetailPage';
+import { TasksPage } from './pages/Tasks/TasksPage';
 
 /**
  * Protected Route Component
@@ -62,6 +63,7 @@ function App() {
             <Route path="clients" element={<ClientsPage />} />
             <Route path="clients/add" element={<ClientsPage />} />
             <Route path="clients/:id" element={<ClientDetailPage />} />
+            <Route path="tasks" element={<TasksPage />} />
             <Route path="leads" element={<LeadsPage />} />
             
             {/* Visa Manager Routes */}

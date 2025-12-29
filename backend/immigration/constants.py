@@ -47,6 +47,7 @@ Role Constants Usage Examples:
 """
 
 import enum
+from typing import Dict, Any, Callable, List
 
 from immigration.utils.twowaymapper import TwoWayMapping
 
@@ -136,21 +137,15 @@ class Gender(BaseEnum):
 
 
 class NotificationType(BaseEnum):
+    CLIENT_ASSIGNED = "CLIENT_ASSIGNED"
+    APPLICATION_ASSIGNED = "APPLICATION_ASSIGNED"
+    VISA_APPLICATION_ASSIGNED = "VISA_APPLICATION_ASSIGNED"
+    REMINDER_DUE = "REMINDER_DUE"
     TASK_ASSIGNED = "TASK_ASSIGNED"
     TASK_DUE_SOON = "TASK_DUE_SOON"
     TASK_OVERDUE = "TASK_OVERDUE"
-    VISA_APPROVED = "VISA_APPROVED"
-    VISA_REJECTED = "VISA_REJECTED"
-    VISA_STATUS_UPDATE = "VISA_STATUS_UPDATE"
-    CLIENT_ASSIGNED = "CLIENT_ASSIGNED"
-    CLIENT_STAGE_CHANGED = "CLIENT_STAGE_CHANGED"
-    REMINDER_DUE = "REMINDER_DUE"
+    TASK_MENTIONED = "TASK_MENTIONED"
     SYSTEM_ALERT = "SYSTEM_ALERT"
-    # Legacy/custom event types still used by signals/manager
-    LEAD_ASSIGNED = "LEAD_ASSIGNED"
-    APPLICATION_ASSIGNED = "APPLICATION_ASSIGNED"
-    VISA_APPLICATION_ASSIGNED = "VISA_APPLICATION_ASSIGNED"
-    REMINDER = "REMINDER"
 
 
 class NotificationChannel(BaseEnum):
@@ -180,64 +175,6 @@ GROUP_DISPLAY_NAMES = {
     GROUP_REGION_MANAGER: 'Region Manager',
     GROUP_BRANCH_ADMIN: 'Branch Admin',
     GROUP_CONSULTANT: 'Consultant',
-}
-
-
-MODEL_NOTIFICATION_MAPPING = {
-    NotificationType.LEAD_ASSIGNED.value: {
-        'meta_info': lambda instance: {
-            "linked": [
-                {
-                    'id': instance.id,
-                    'type': RESOURCE_MAPPING.get_forward(type(instance).__name__),
-                    'name': str(instance)
-                }
-            ]
-        },
-        'due_date': lambda instance: None
-    },
-    NotificationType.VISA_APPLICATION_ASSIGNED.value: {
-        'meta_info': lambda instance: {
-            "linked": [
-                {
-                    'id': instance.id,
-                    'type': RESOURCE_MAPPING.get_forward(type(instance).__name__),
-                    'name': str(instance),
-                },
-                {
-                    'id': instance.client.id,
-                    'type': RESOURCE_MAPPING.get_forward(type(instance.client).__name__),
-                    'name': str(instance.client),
-                }
-            ]
-        },
-        'due_date': lambda instance: None
-    },
-    NotificationType.APPLICATION_ASSIGNED.value: {
-        'meta_info': lambda instance: {
-            "linked": [
-                {
-                    'id': instance.id,
-                    'type': RESOURCE_MAPPING.get_forward(type(instance).__name__),
-                    'name': str(instance),
-                },
-                {
-                    'id': instance.client.id,
-                    'type': RESOURCE_MAPPING.get_forward(type(instance.client).__name__),
-                    'name': str(instance.client),
-                }
-            ]
-        },
-        'due_date': lambda instance: None
-    },
-    NotificationType.TASK_ASSIGNED.value: {
-        'meta_info': lambda instance: {
-            'detail': f"Detail about AnotherModelType: {instance.some_field}",
-            'more_details': instance.more_details,
-        },
-        'due_date': lambda instance: None
-    }
-    # Add more mappings as needed
 }
 
 CURRENCY_CHOICES = [

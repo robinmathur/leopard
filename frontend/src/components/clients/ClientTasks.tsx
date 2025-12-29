@@ -30,10 +30,10 @@ import {
   updateTask,
   deleteTask,
   completeTask,
+  cancelTask,
 } from '@/services/api/taskApi';
 import { userApi } from '@/services/api/userApi';
 import type { User } from '@/types/user';
-import { CLIENT_CONTENT_TYPE_ID } from '@/services/api/reminderApi';
 
 export interface ClientTasksProps {
   /** Client ID */
@@ -67,7 +67,9 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
       setError(null);
 
       try {
-        const data = await getTasks(clientId, abortController.signal);
+        // Use client parameter for filtering
+        const response = await getTasks({ client: clientId }, abortController.signal);
+        const data = response.results;
         if (isMounted) {
           // Sort by due_date (earliest first, then by created_at)
           const sorted = data.sort((a, b) => {
@@ -102,45 +104,13 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
     };
   }, [clientId]);
 
-  // Fetch users when component mounts
-  useEffect(() => {
-    let isMounted = true;
-    const abortController = new AbortController();
-
-    const loadUsers = async () => {
-      setUsersLoading(true);
-      try {
-        const data = await userApi.getAllActiveUsers(abortController.signal);
-        if (isMounted) {
-          setUsers(data);
-        }
-      } catch (err) {
-        if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
-          return;
-        }
-        console.error('Failed to load users:', err);
-        // Don't set error state, just log it
-      } finally {
-        if (isMounted) {
-          setUsersLoading(false);
-        }
-      }
-    };
-
-    loadUsers();
-
-    return () => {
-      isMounted = false;
-      abortController.abort();
-    };
-  }, []);
-
   const fetchTasks = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await getTasks(clientId);
+      const response = await getTasks({ client: clientId });
+      const data = response.results;
       // Sort by due_date (earliest first, then by created_at)
       const sorted = data.sort((a, b) => {
         const dateA = new Date(a.due_date).getTime();
@@ -158,16 +128,43 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
     }
   };
 
+  // Lazy load users only when needed (create/edit dialog opens)
   const fetchUsers = async () => {
+    if (users.length > 0) return; // Already loaded
+    
     setUsersLoading(true);
     try {
       const data = await userApi.getAllActiveUsers();
       setUsers(data);
     } catch (err) {
       console.error('Failed to load users:', err);
-      // Don't set error state, just log it
+      setError('Failed to load users. Please try again.');
     } finally {
       setUsersLoading(false);
+    }
+  };
+
+  // Load users when create dialog opens
+  const handleCreateDialogOpen = () => {
+    setCreateDialogOpen(true);
+    fetchUsers();
+  };
+
+  // Load users when edit dialog opens
+  const handleEdit = (task: Task) => {
+    setSelectedTask(task);
+    setEditDialogOpen(true);
+    fetchUsers();
+  };
+
+  // Handle quick assign/reassign
+  const handleQuickAssign = async (taskId: number, userId: number | null) => {
+    try {
+      await updateTask(taskId, { assigned_to: userId ?? undefined });
+      // Refresh to get latest data
+      await fetchTasks();
+    } catch (err) {
+      setError((err as Error).message || 'Failed to assign task');
     }
   };
 
@@ -179,8 +176,8 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
     try {
       await createTask({
         ...(data as TaskCreateRequest),
-        content_type: CLIENT_CONTENT_TYPE_ID,
-        object_id: clientId,
+        linked_entity_type: 'client',
+        linked_entity_id: clientId,
       });
       // Refresh tasks list to get the latest data
       await fetchTasks();
@@ -232,31 +229,56 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
     }
   };
 
-  // Handle task click
-  const handleTaskClick = (task: Task) => {
-    // Open edit dialog on click
-    setSelectedTask(task);
-    setEditDialogOpen(true);
-  };
-
-  // Handle status change
+  // Handle status change with optimistic updates
   const handleStatusChange = async (taskId: number, status: TaskStatus) => {
+    // Find the task to update optimistically
+    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) return;
+
+    const originalTask = tasks[taskIndex];
+    
+    // Optimistic update - update UI immediately
+    const updatedTasks = [...tasks];
     if (status === 'COMPLETED') {
-      try {
+      updatedTasks[taskIndex] = {
+        ...originalTask,
+        status: 'COMPLETED',
+        status_display: 'Completed',
+      };
+      setTasks(updatedTasks);
+    } else if (status === 'IN_PROGRESS') {
+      updatedTasks[taskIndex] = {
+        ...originalTask,
+        status: 'IN_PROGRESS',
+        status_display: 'In Progress',
+      };
+      setTasks(updatedTasks);
+    } else if (status === 'CANCELLED') {
+      updatedTasks[taskIndex] = {
+        ...originalTask,
+        status: 'CANCELLED',
+        status_display: 'Cancelled',
+      };
+      setTasks(updatedTasks);
+    }
+
+    try {
+      if (status === 'COMPLETED') {
         await completeTask(taskId);
-        // Refresh tasks list to get the latest data
-        await fetchTasks();
-      } catch (err) {
-        setError((err as Error).message || 'Failed to complete task');
+      } else if (status === 'IN_PROGRESS') {
+        await updateTask(taskId, { status: 'IN_PROGRESS' });
+      } else if (status === 'CANCELLED') {
+        await cancelTask(taskId);
       }
+      // Refresh tasks list to get the latest data from server
+      await fetchTasks();
+    } catch (err) {
+      // Revert optimistic update on error
+      setTasks(tasks);
+      setError((err as Error).message || `Failed to ${status === 'COMPLETED' ? 'complete' : status === 'CANCELLED' ? 'cancel' : 'update'} task`);
     }
   };
 
-  // Handle edit
-  const handleEdit = (task: Task) => {
-    setSelectedTask(task);
-    setEditDialogOpen(true);
-  };
 
   // Handle delete
   const handleDeleteClick = (taskId: number) => {
@@ -273,7 +295,7 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
           variant="contained"
           size="small"
           startIcon={<AddIcon />}
-          onClick={() => setCreateDialogOpen(true)}
+          onClick={handleCreateDialogOpen}
         >
           Add Task
         </Button>
@@ -291,11 +313,18 @@ export const ClientTasks = ({ clientId }: ClientTasksProps) => {
         tasks={tasks}
         isLoading={isLoading}
         error={error}
-        onTaskClick={handleTaskClick}
         onStatusChange={handleStatusChange}
         onTaskEdit={handleEdit}
         onTaskDelete={handleDeleteClick}
+        onQuickAssign={handleQuickAssign}
         showFilters
+        useExpandableItems={true}
+        onTaskUpdate={(updatedTask) => {
+          // Update task in list
+          setTasks((prevTasks) =>
+            prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+          );
+        }}
       />
 
       {/* Create Task Dialog */}
