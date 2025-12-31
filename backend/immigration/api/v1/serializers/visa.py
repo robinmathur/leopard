@@ -18,7 +18,7 @@ class VisaApplicationOutputSerializer(serializers.ModelSerializer):
     """
     
     client_name = serializers.SerializerMethodField()
-    visa_type_name = serializers.CharField(source='visa_type.visa_type', read_only=True)
+    visa_type_name = serializers.CharField(source='visa_type.name', read_only=True)
     visa_category_name = serializers.CharField(
         source='visa_type.visa_category.name',
         read_only=True
@@ -114,7 +114,11 @@ class VisaApplicationCreateSerializer(serializers.Serializer):
     dependent = serializers.BooleanField(default=False)
     notes = serializers.CharField(required=False, allow_blank=True)
     assigned_to_id = serializers.IntegerField(required=False, allow_null=True)
-    required_documents = serializers.ListField(required=False, default=list)
+    required_documents = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        default=list
+    )
     
     # Status and dates
     status = serializers.ChoiceField(
@@ -169,7 +173,7 @@ class VisaApplicationUpdateSerializer(serializers.Serializer):
     dependent = serializers.BooleanField(required=False)
     notes = serializers.CharField(required=False, allow_blank=True)
     assigned_to_id = serializers.IntegerField(required=False, allow_null=True)
-    required_documents = serializers.ListField(required=False)
+    required_documents = serializers.JSONField(required=False)
     
     # Status and dates
     status = serializers.ChoiceField(

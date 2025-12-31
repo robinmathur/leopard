@@ -12,12 +12,18 @@ import {
   Button,
   Chip,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import { getVisaApplications, VisaApplication, VisaApplicationStatus } from '@/services/api/visaApplicationApi';
+import { getVisaApplications, createVisaApplication, VisaApplication, VisaApplicationStatus } from '@/services/api/visaApplicationApi';
 import {Protect} from "@/components/protected/Protect.tsx";
 import { VisaApplicationDetail } from './VisaApplicationDetail';
+import { VisaApplicationForm } from '@/components/visa/VisaApplicationForm';
 
 export interface ClientVisaApplicationsProps {
   /** Client ID */
@@ -180,8 +186,8 @@ const VisaApplicationCard = ({
 /**
  * ClientVisaApplications Component
  */
-export const ClientVisaApplications = ({ 
-  clientId, 
+export const ClientVisaApplications = ({
+  clientId,
   selectedApplicationId: initialSelectedId,
   onApplicationUpdate,
   onDetailClose,
@@ -191,6 +197,8 @@ export const ClientVisaApplications = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | undefined>(initialSelectedId);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
 
   // Fetch visa application data
   useEffect(() => {
@@ -267,9 +275,37 @@ export const ClientVisaApplications = ({
       }
     };
     fetchData();
-    
+
     if (onApplicationUpdate) {
       onApplicationUpdate();
+    }
+  };
+
+  const handleOpenCreateDialog = () => {
+    setCreateDialogOpen(true);
+  };
+
+  const handleCloseCreateDialog = () => {
+    setCreateDialogOpen(false);
+  };
+
+  const handleCreateApplication = async (data: any) => {
+    try {
+      setFormLoading(true);
+      // Ensure client_id is set
+      const applicationData = { ...data, client_id: clientId };
+      await createVisaApplication(applicationData);
+
+      // Refresh the applications list
+      handleApplicationUpdate();
+
+      // Close the dialog
+      setCreateDialogOpen(false);
+    } catch (err: any) {
+      console.error('Failed to create visa application:', err);
+      throw err; // Let the form handle the error
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -301,17 +337,16 @@ export const ClientVisaApplications = ({
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Visa Applications</Typography>
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={() => {
-            // TODO: Open visa application add form
-            alert('New Visa Application form - Coming in future enhancement');
-          }}
-        >
-          New Application
-        </Button>
+        <Protect permission="add_client">
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreateDialog}
+          >
+            New Application
+          </Button>
+        </Protect>
       </Box>
 
       {/* Applications List */}
@@ -353,10 +388,43 @@ export const ClientVisaApplications = ({
       {selectedApplicationId && (
         <VisaApplicationDetail
           visaApplicationId={selectedApplicationId}
+          initialApplication={applications.find((app) => app.id === selectedApplicationId)}
           onClose={handleCloseDetail}
           onUpdate={handleApplicationUpdate}
         />
       )}
+
+      {/* Create Visa Application Dialog */}
+      <Dialog
+        open={createDialogOpen}
+        onClose={handleCloseCreateDialog}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            maxHeight: '90vh',
+          },
+        }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">New Visa Application</Typography>
+            <IconButton onClick={handleCloseCreateDialog} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <VisaApplicationForm
+            mode="add"
+            initialData={{ client: clientId } as any}
+            onSave={handleCreateApplication}
+            onCancel={handleCloseCreateDialog}
+            loading={formLoading}
+            clientLocked={true}
+          />
+        </DialogContent>
+      </Dialog>
     </Paper>
   );
 };

@@ -37,6 +37,8 @@ interface VisaApplicationFormProps {
   onSave: (data: any) => void;
   onCancel: () => void;
   loading: boolean;
+  /** If true, client field is pre-selected and cannot be changed */
+  clientLocked?: boolean;
 }
 
 export const VisaApplicationForm = ({
@@ -45,6 +47,7 @@ export const VisaApplicationForm = ({
   onSave,
   onCancel,
   loading,
+  clientLocked = false,
 }: VisaApplicationFormProps) => {
   const [visaTypes, setVisaTypes] = useState<VisaType[]>([]);
   const [dropdownLoading, setDropdownLoading] = useState(false);
@@ -61,23 +64,23 @@ export const VisaApplicationForm = ({
   // Document selection state
   const [availableDocuments, setAvailableDocuments] = useState<string[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>(
-    initialData?.required_documents || []
+    initialData?.required_documents?.map((doc) => (typeof doc === 'string' ? doc : doc.name)) || []
   );
   const [customDocument, setCustomDocument] = useState('');
 
-  // Load initial client and user if in edit mode
+  // Load initial client and user if in edit mode or client is locked
   useEffect(() => {
     const loadInitialData = async () => {
-      if (mode === 'edit' && initialData) {
+      if (initialData) {
         try {
-          // Load client
+          // Load client if we have a client ID (edit mode or locked client)
           if (initialData.client) {
             const client = await clientApi.getById(initialData.client);
             setSelectedClient(client);
           }
-          
-          // Load assigned user
-          if (initialData.assigned_to) {
+
+          // Load assigned user (only in edit mode)
+          if (mode === 'edit' && initialData.assigned_to) {
             const response = await httpClient.get<User>(`/v1/users/${initialData.assigned_to}/`);
             setSelectedUser(response.data);
           }
@@ -86,7 +89,7 @@ export const VisaApplicationForm = ({
         }
       }
     };
-    
+
     loadInitialData();
   }, [initialData, mode]);
 
@@ -287,25 +290,29 @@ export const VisaApplicationForm = ({
               setClientSearchTerm(newInputValue);
             }}
             options={clientOptions}
-            getOptionLabel={(option) => 
+            getOptionLabel={(option) =>
               `${option.first_name} ${option.last_name}${option.email ? ` (${option.email})` : ''}`
             }
             loading={clientLoading}
-            disabled={loading || mode === 'edit'}
+            disabled={loading || mode === 'edit' || clientLocked}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             noOptionsText={
-              clientSearchTerm.length < 2 
-                ? "Type at least 2 characters to search..." 
+              clientSearchTerm.length < 2
+                ? "Type at least 2 characters to search..."
                 : "No clients found"
             }
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="Client *"
-                placeholder="Search by name or email..."
+                placeholder={clientLocked ? "" : "Search by name or email..."}
                 size="small"
                 error={!!errors.client_id}
-                helperText={errors.client_id || 'Type to search for clients'}
+                helperText={
+                  clientLocked
+                    ? 'Client is pre-selected for this application'
+                    : errors.client_id || 'Type to search for clients'
+                }
                 InputProps={{
                   ...params.InputProps,
                   endAdornment: (

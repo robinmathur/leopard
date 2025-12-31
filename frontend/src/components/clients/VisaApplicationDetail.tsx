@@ -19,17 +19,21 @@ import {
   IconButton,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import { getVisaApplication, VisaApplication, VisaApplicationStatus } from '@/services/api/visaApplicationApi';
+import { getVisaApplication, VisaApplication, VisaApplicationStatus, DocumentChecklistItem, deleteVisaApplication } from '@/services/api/visaApplicationApi';
 import { VisaApplicationForm } from '@/components/visa/VisaApplicationForm';
 import { updateVisaApplication } from '@/services/api/visaApplicationApi';
 import { Protect } from '@/components/protected/Protect';
+import { DocumentChecklistManager } from '@/components/visa/DocumentChecklistManager';
 
 export interface VisaApplicationDetailProps {
   /** Visa Application ID */
   visaApplicationId: number;
+  /** Optional: Pre-loaded application data to avoid fetching */
+  initialApplication?: VisaApplication;
   /** Callback when detail view should be closed */
   onClose?: () => void;
   /** Callback when application is updated */
@@ -119,15 +123,28 @@ const DetailSkeleton = () => (
 /**
  * VisaApplicationDetail Component
  */
-export const VisaApplicationDetail = ({ visaApplicationId, onClose, onUpdate }: VisaApplicationDetailProps) => {
-  const [application, setApplication] = useState<VisaApplication | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const VisaApplicationDetail = ({
+  visaApplicationId,
+  initialApplication,
+  onClose,
+  onUpdate
+}: VisaApplicationDetailProps) => {
+  const [application, setApplication] = useState<VisaApplication | null>(initialApplication || null);
+  const [isLoading, setIsLoading] = useState(!initialApplication);
   const [error, setError] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
-  // Fetch visa application data
+  // Fetch visa application data only if not provided
   useEffect(() => {
+    // Skip fetching if we already have initial data
+    if (initialApplication) {
+      setApplication(initialApplication);
+      setIsLoading(false);
+      return;
+    }
+
     let isMounted = true;
     const abortController = new AbortController();
 
@@ -160,7 +177,7 @@ export const VisaApplicationDetail = ({ visaApplicationId, onClose, onUpdate }: 
       isMounted = false;
       abortController.abort();
     };
-  }, [visaApplicationId]);
+  }, [visaApplicationId, initialApplication]);
 
   const handleEdit = () => {
     setEditDialogOpen(true);
@@ -176,13 +193,13 @@ export const VisaApplicationDetail = ({ visaApplicationId, onClose, onUpdate }: 
     try {
       setFormLoading(true);
       await updateVisaApplication(application.id, data);
-      
+
       // Refresh the application data
       const updated = await getVisaApplication(visaApplicationId);
       setApplication(updated);
-      
+
       setEditDialogOpen(false);
-      
+
       // Notify parent component
       if (onUpdate) {
         onUpdate();
@@ -193,6 +210,64 @@ export const VisaApplicationDetail = ({ visaApplicationId, onClose, onUpdate }: 
     } finally {
       setFormLoading(false);
     }
+  };
+
+  const handleDocumentsChange = async (documents: DocumentChecklistItem[]) => {
+    if (!application) return;
+
+    try {
+      // Update the documents via API
+      await updateVisaApplication(application.id, { required_documents: documents });
+
+      // Update local state
+      setApplication({
+        ...application,
+        required_documents: documents,
+      });
+
+      // Notify parent component
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (err: any) {
+      console.error('Failed to update documents:', err);
+      // Revert on error
+      const updated = await getVisaApplication(visaApplicationId);
+      setApplication(updated);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!application) return;
+
+    try {
+      setFormLoading(true);
+      await deleteVisaApplication(application.id);
+
+      // Close dialogs
+      setDeleteDialogOpen(false);
+
+      // Notify parent and close detail view
+      if (onUpdate) {
+        onUpdate();
+      }
+      if (onClose) {
+        onClose();
+      }
+    } catch (err: any) {
+      console.error('Failed to delete visa application:', err);
+      alert('Failed to delete visa application. Please try again.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
   };
 
   // Loading state
@@ -257,21 +332,35 @@ export const VisaApplicationDetail = ({ visaApplicationId, onClose, onUpdate }: 
         <Divider sx={{ mb: 3 }} />
 
         {/* Action Buttons */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-          <Protect permission="edit_client">
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={handleEdit}
-            >
-              Edit Application
-            </Button>
-          </Protect>
-          {onClose && (
-            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={onClose}>
-              Back to List
-            </Button>
-          )}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 3 }}>
+          <Box>
+            {onClose && (
+              <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={onClose}>
+                Back to List
+              </Button>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Protect permission="change_visaapplication">
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={handleEdit}
+              >
+                Edit Application
+              </Button>
+            </Protect>
+            <Protect permission="delete_visaapplication">
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleDeleteClick}
+              >
+                Delete Application
+              </Button>
+            </Protect>
+          </Box>
         </Box>
 
         <Divider sx={{ mb: 3 }} />
@@ -347,19 +436,19 @@ export const VisaApplicationDetail = ({ visaApplicationId, onClose, onUpdate }: 
             <DetailRow label="Last Updated" value={formatDate(application.updated_at)} />
           </Grid>
 
-          {/* Required Documents */}
-          {application.required_documents && application.required_documents.length > 0 && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Required Documents
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {application.required_documents.map((doc, index) => (
-                  <Chip key={index} label={doc} size="small" variant="outlined" />
-                ))}
-              </Box>
-            </Grid>
-          )}
+          {/* Required Documents Checklist */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              Required Documents
+            </Typography>
+            <DocumentChecklistManager
+              documents={application.required_documents || []}
+              onChange={handleDocumentsChange}
+              disabled={false}
+              allowCustomDocuments={true}
+              title="Document Checklist"
+            />
+          </Grid>
 
           {/* Notes */}
           {application.notes && (
@@ -406,6 +495,35 @@ export const VisaApplicationDetail = ({ visaApplicationId, onClose, onUpdate }: 
             loading={formLoading}
           />
         </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this visa application? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, p: 2 }}>
+          <Button onClick={handleDeleteCancel} disabled={formLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteConfirm}
+            disabled={formLoading}
+          >
+            {formLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </Box>
       </Dialog>
     </>
   );

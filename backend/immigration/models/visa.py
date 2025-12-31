@@ -139,7 +139,7 @@ class VisaApplication(LifeCycleModel):
     required_documents = models.JSONField(
         default=list,
         blank=True,
-        help_text="Required documents checklist from VisaType"
+        help_text="Required documents checklist with received status. Format: [{'name': 'Document Name', 'received': bool}]"
     )
     
     # Important dates

@@ -82,7 +82,7 @@ export const AssignClientDialog = ({
             label="Select User"
             placeholder="Search for a user..."
             disabled={loading}
-            size="medium"
+            size="small"
           />
         </Box>
 

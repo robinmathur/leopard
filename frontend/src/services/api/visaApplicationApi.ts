@@ -12,6 +12,11 @@ export type VisaApplicationStatus =
   | 'REJECTED'
   | 'WITHDRAWN';
 
+export interface DocumentChecklistItem {
+  name: string;
+  received: boolean;
+}
+
 export interface VisaApplication {
   id: number;
   client: number;
@@ -40,7 +45,7 @@ export interface VisaApplication {
   created_by_name?: string;
   created_at: string;
   updated_at: string;
-  required_documents?: string[];
+  required_documents?: DocumentChecklistItem[];
 }
 
 export interface PaginatedResponse<T> {
@@ -108,7 +113,7 @@ export const createVisaApplication = async (data: {
   dependent?: boolean;
   notes?: string;
   assigned_to_id?: number;
-  required_documents?: string[];
+  required_documents?: DocumentChecklistItem[];
   status?: VisaApplicationStatus;
   date_applied?: string;
 }): Promise<VisaApplication> => {
@@ -131,7 +136,7 @@ export const updateVisaApplication = async (
     dependent: boolean;
     notes: string;
     assigned_to_id: number;
-    required_documents: string[];
+    required_documents: DocumentChecklistItem[];
     status: VisaApplicationStatus;
     date_applied: string;
     date_opened: string;

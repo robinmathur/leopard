@@ -7,7 +7,7 @@ providing validation, scope checking, and transactional integrity.
 
 from django.db import transaction
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Union
 from datetime import date
 from decimal import Decimal
 
@@ -18,6 +18,39 @@ from immigration.constants import (
     GROUP_REGION_MANAGER,
     GROUP_SUPER_ADMIN,
 )
+
+
+def _normalize_documents(documents: Optional[list]) -> list:
+    """
+    Normalize documents to the new format [{'name': str, 'received': bool}].
+
+    Accepts:
+    - None or empty list: returns []
+    - List of strings: converts to [{'name': str, 'received': False}]
+    - List of dicts: returns as-is (already in correct format)
+
+    Args:
+        documents: List of strings or dicts
+
+    Returns:
+        List of dicts in format [{'name': str, 'received': bool}]
+    """
+    if not documents:
+        return []
+
+    normalized = []
+    for doc in documents:
+        if isinstance(doc, str):
+            # Convert string to dict format
+            normalized.append({'name': doc, 'received': False})
+        elif isinstance(doc, dict):
+            # Already in dict format, ensure it has required fields
+            normalized.append({
+                'name': doc.get('name', ''),
+                'received': doc.get('received', False)
+            })
+
+    return normalized
 
 
 class VisaApplicationCreateInput(BaseModel):
@@ -179,7 +212,7 @@ def visa_application_create(*, data: VisaApplicationCreateInput, user) -> VisaAp
         dependent=data.dependent,
         notes=data.notes or '',
         assigned_to_id=data.assigned_to_id,
-        required_documents=data.required_documents or [],
+        required_documents=_normalize_documents(data.required_documents),
         status=data.status,
         expiry_date=data.expiry_date,
         date_applied=data.date_applied,
@@ -307,7 +340,7 @@ def visa_application_update(
         update_fields.append('assigned_to_id')
     
     if data.required_documents is not None:
-        application.required_documents = data.required_documents
+        application.required_documents = _normalize_documents(data.required_documents)
         update_fields.append('required_documents')
     
     if data.status is not None:

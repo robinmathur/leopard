@@ -3,7 +3,7 @@
  * Comprehensive page for managing visa applications with CRUD operations
  * Features simple and advanced search functionality
  */
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
