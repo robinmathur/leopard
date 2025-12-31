@@ -9,7 +9,7 @@ from django.db import transaction
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from immigration.institute import Institute
+from immigration.models import Institute
 
 
 class InstituteCreateInput(BaseModel):

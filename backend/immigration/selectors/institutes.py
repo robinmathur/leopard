@@ -8,7 +8,7 @@ providing role-based data scoping and filtering.
 from django.db.models import QuerySet
 from typing import Optional, Dict, Any
 
-from immigration.institute import Institute
+from immigration.models import Institute
 
 
 def institute_list(*, user, filters: Optional[Dict[str, Any]] = None, include_deleted: bool = False) -> QuerySet[Institute]:

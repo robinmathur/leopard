@@ -44,8 +44,6 @@ from immigration.models import (
     VisaApplication,
     Agent,
     Task,
-)
-from immigration.institute import (
     Institute,
     InstituteLocation,
     InstituteContactPerson,

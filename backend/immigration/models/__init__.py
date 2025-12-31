@@ -27,6 +27,17 @@ from immigration.models.note import Note
 from immigration.models.client_activity import ClientActivity
 from immigration.models.profile_picture import ProfilePicture
 from immigration.reminder.reminder import Reminder
+from immigration.models.institute import (
+    Institute,
+    InstituteContactPerson,
+    InstituteRequirement,
+    InstituteLocation,
+    InstituteIntake,
+    CourseLevel,
+    BroadField,
+    NarrowField,
+    Course,
+)
 
 __all__ = [
     'SoftDeletionManager',
@@ -52,4 +63,13 @@ __all__ = [
     'ClientActivity',
     'ProfilePicture',
     'Reminder',
+    'Institute',
+    'InstituteContactPerson',
+    'InstituteRequirement',
+    'InstituteLocation',
+    'InstituteIntake',
+    'CourseLevel',
+    'BroadField',
+    'NarrowField',
+    'Course',
 ]

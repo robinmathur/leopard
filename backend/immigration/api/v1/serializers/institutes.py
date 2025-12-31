@@ -6,7 +6,7 @@ They are thin wrappers - business logic lives in services.
 """
 
 from rest_framework import serializers
-from immigration.institute import Institute
+from immigration.models import Institute
 
 
 class InstituteOutputSerializer(serializers.ModelSerializer):

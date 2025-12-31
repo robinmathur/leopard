@@ -26,7 +26,7 @@ from immigration.api.v1.views.client_profiles import (
 )
 from immigration.reminder.reminder import ReminderViewSet
 from immigration.api.v1.views.institutes import InstituteViewSet
-from immigration.institute import (
+from immigration.api.v1.views.institute_related import (
     InstituteLocationViewSet,
     InstituteIntakeViewSet,
     InstituteContactPersonViewSet,

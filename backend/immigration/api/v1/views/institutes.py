@@ -27,7 +27,7 @@ from immigration.services.institutes import (
     InstituteCreateInput,
     InstituteUpdateInput
 )
-from immigration.institute import Institute
+from immigration.models import Institute
 
 
 @extend_schema_view(

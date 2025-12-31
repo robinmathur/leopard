@@ -19,9 +19,7 @@ from immigration.constants import ALL_GROUPS, GROUP_DISPLAY_NAMES
 from immigration.models import (
     User, Client, Branch, Region,
     VisaApplication, Task, Notification,
-    Note, ClientActivity, ProfilePicture, Agent
-)
-from immigration.institute import (
+    Note, ClientActivity, ProfilePicture, Agent,
     Institute,
     InstituteContactPerson,
     InstituteLocation,
