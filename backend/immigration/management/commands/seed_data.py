@@ -1122,42 +1122,162 @@ class Command(BaseCommand):
 
     def seed_tasks(self, users, clients):
         """Create tasks for users (per tenant schema)."""
+        from django.utils import timezone
+        from django.contrib.contenttypes.models import ContentType
+        
         task_templates = [
-            ('Follow up with client', 'Contact client regarding application status'),
-            ('Review documents', 'Review and verify submitted documents'),
-            ('Prepare application', 'Prepare visa application package'),
-            ('Schedule interview', 'Schedule visa interview appointment'),
-            ('Submit application', 'Submit completed application to authorities'),
-            ('Document collection', 'Collect required supporting documents'),
-            ('Client meeting', 'Meeting to discuss visa options'),
-            ('Application review', 'Internal review of application materials'),
+            ('Follow up with client', 'Contact client regarding application status and answer any questions'),
+            ('Review documents', 'Review and verify all submitted documents for completeness and accuracy'),
+            ('Prepare application', 'Prepare complete visa application package with all required forms'),
+            ('Schedule interview', 'Schedule visa interview appointment with consulate'),
+            ('Submit application', 'Submit completed application to immigration authorities'),
+            ('Document collection', 'Collect required supporting documents from client'),
+            ('Client meeting', 'Meeting to discuss visa options and requirements'),
+            ('Application review', 'Internal review of application materials before submission'),
+            ('Verify passport validity', 'Check passport expiration date and validity period'),
+            ('Obtain police clearance', 'Assist client in obtaining police clearance certificate'),
+            ('Medical examination', 'Schedule and coordinate medical examination appointment'),
+            ('Financial documentation', 'Review and organize financial evidence documents'),
+            ('Translation services', 'Arrange translation of documents if needed'),
+            ('Update client status', 'Update client record with latest information'),
+            ('Follow up on pending case', 'Check status of submitted application with authorities'),
+            ('Prepare appeal documents', 'Prepare documents for visa appeal if rejected'),
+            ('Client onboarding', 'Complete initial client onboarding process'),
+            ('Visa grant notification', 'Notify client of visa grant and next steps'),
+            ('Post-arrival support', 'Provide support for client after visa grant'),
+            ('Renewal preparation', 'Prepare documents for visa renewal application'),
+            ('Compliance check', 'Verify client compliance with visa conditions'),
+            ('Document notarization', 'Arrange for document notarization if required'),
+            ('Biometric appointment', 'Schedule biometric data collection appointment'),
+            ('Payment processing', 'Process visa application fees and service charges'),
+            ('Case file organization', 'Organize and maintain case file documentation'),
         ]
         
         tasks = []
-        consultants = [u for u in users if hasattr(u, 'is_in_group') and u.is_in_group(GROUP_CONSULTANT)]
+        all_users = list(users)  # Include all users for assignment
         
-        # Group clients by tenant (schema)
-        # We need to create tasks within each tenant's schema context
-        # For now, create tasks in the current schema context (should be called within tenant schema)
-        for consultant in consultants:
-            # Get clients assigned to this consultant
-            consultant_clients = [c for c in clients if hasattr(c, 'assigned_to') and c.assigned_to_id == consultant.id]
+        # Early return if no users available
+        if not all_users:
+            self.stdout.write(self.style.WARNING('  ⚠  No users available for task assignment. Skipping task creation.'))
+            return tasks
+        
+        # Get branches and visa applications for linking
+        branches = list(Branch.objects.all())
+        visa_applications = list(VisaApplication.objects.all())
+        
+        # Get ContentType for Client and VisaApplication
+        client_content_type = ContentType.objects.get_for_model(Client) if clients else None
+        visa_app_content_type = ContentType.objects.get_for_model(VisaApplication) if visa_applications else None
+        
+        # Create approximately 100 tasks
+        target_count = 100
+        created_count = 0
+        
+        while created_count < target_count:
+            # Randomly select task template
+            title, base_detail = random.choice(task_templates)
             
-            num_tasks = random.randint(3, 5)
-            for _ in range(num_tasks):
-                title, detail = random.choice(task_templates)
-                
-                due_date = datetime.now().date() + timedelta(days=random.randint(-7, 30))
-                
-                task = Task.objects.create(
-                    title=title,
-                    detail=detail,
-                    priority=random.choice([TaskPriority.LOW.value, TaskPriority.MEDIUM.value, TaskPriority.HIGH.value]),
-                    due_date=due_date,
-                    assigned_to=consultant,
-                    status=random.choice([TaskStatus.PENDING.value, TaskStatus.COMPLETED.value, TaskStatus.CANCELLED.value]),
-                    created_by=consultant,
-                )
-                tasks.append(task)
+            # Vary the detail slightly
+            detail_variations = [
+                base_detail,
+                f'{base_detail}. Please ensure all requirements are met.',
+                f'{base_detail}. This is a high-priority item.',
+                f'{base_detail}. Follow up within 24 hours if needed.',
+            ]
+            detail = random.choice(detail_variations)
+            
+            # Random priority (weighted towards medium and high)
+            priority = random.choices(
+                [TaskPriority.LOW.value, TaskPriority.MEDIUM.value, TaskPriority.HIGH.value, TaskPriority.URGENT.value],
+                weights=[15, 35, 35, 15]
+            )[0]
+            
+            # Random status (weighted towards pending and in_progress)
+            status = random.choices(
+                [TaskStatus.PENDING.value, TaskStatus.IN_PROGRESS.value, TaskStatus.COMPLETED.value, TaskStatus.CANCELLED.value],
+                weights=[30, 25, 35, 10]
+            )[0]
+            
+            # Random due date (mix of past, present, and future)
+            days_offset = random.choices(
+                [random.randint(-30, -1), random.randint(0, 7), random.randint(8, 30), random.randint(31, 90)],
+                weights=[20, 30, 30, 20]
+            )[0]
+            due_date = timezone.now() + timedelta(days=days_offset, hours=random.randint(9, 17))
+            
+            # Random assignment: user (70%), branch (20%), or unassigned (10%)
+            assignment_type = random.choices(['user', 'branch', 'unassigned'], weights=[70, 20, 10])[0]
+            assigned_to = None
+            branch = None
+            
+            if assignment_type == 'user' and all_users:
+                assigned_to = random.choice(all_users)
+            elif assignment_type == 'branch' and branches:
+                branch = random.choice(branches)
+            
+            # Random creator (if assigned to user, creator is usually that user or another user)
+            if all_users:
+                if assigned_to and len(all_users) > 1:
+                    # Prefer assigned_to but sometimes use another user
+                    created_by = random.choice([assigned_to] + [u for u in all_users if u != assigned_to])
+                else:
+                    created_by = random.choice(all_users)
+            else:
+                created_by = None
+            
+            # Random assigner
+            assigned_by = None
+            if assigned_to and all_users:
+                assigned_by = random.choice([u for u in all_users if u != assigned_to] + [assigned_to])
+            
+            # Link to client or visa application (30% chance)
+            content_type = None
+            object_id = None
+            if random.random() < 0.3:
+                if clients and random.random() < 0.6:
+                    # Link to client
+                    linked_client = random.choice(clients)
+                    content_type = client_content_type
+                    object_id = linked_client.id
+                    # Enhance detail with client info
+                    detail = f'{detail} (Client: {linked_client.first_name} {linked_client.last_name})'
+                elif visa_applications:
+                    # Link to visa application
+                    linked_app = random.choice(visa_applications)
+                    content_type = visa_app_content_type
+                    object_id = linked_app.id
+                    # Enhance detail with application info
+                    detail = f'{detail} (Application: {linked_app.visa_type.name if linked_app.visa_type else "N/A"})'
+            
+            # Random tags (20% chance)
+            tags = []
+            if random.random() < 0.2:
+                tag_options = ['urgent', 'follow-up', 'documentation', 'client-meeting', 'application', 'review', 'compliance']
+                num_tags = random.randint(1, 3)
+                tags = random.sample(tag_options, min(num_tags, len(tag_options)))
+            
+            # Set completed_at if status is COMPLETED
+            completed_at = None
+            if status == TaskStatus.COMPLETED.value:
+                completed_at = due_date - timedelta(days=random.randint(0, 5), hours=random.randint(1, 8))
+            
+            # Create task
+            task = Task.objects.create(
+                title=title,
+                detail=detail,
+                priority=priority,
+                status=status,
+                due_date=due_date,
+                assigned_to=assigned_to,
+                branch=branch,
+                assigned_by=assigned_by,
+                created_by=created_by,
+                content_type=content_type,
+                object_id=object_id,
+                tags=tags,
+                completed_at=completed_at,
+            )
+            tasks.append(task)
+            created_count += 1
         
         return tasks

@@ -48,6 +48,9 @@ export interface TaskListProps {
 
   /** Selected task ID for highlighting */
   selectedTaskId?: number | null;
+
+  /** Custom empty state message */
+  emptyMessage?: string;
 }
 
 export interface TaskItemProps {

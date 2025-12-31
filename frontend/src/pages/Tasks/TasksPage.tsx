@@ -9,43 +9,61 @@ import {
   Typography,
   Button,
   Paper,
-  ToggleButton,
-  ToggleButtonGroup,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Stack,
   Alert,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CloseIcon from '@mui/icons-material/Close';
 import { Task, getTasks, TaskListParams, TaskStatus, TaskPriority } from '@/services/api/taskApi';
 import { TaskList } from '@/components/shared/TaskList/TaskList';
 import { TaskDetailPanel } from '@/components/shared/TaskList/TaskDetailPanel';
-import { TaskForm, TaskFormProps } from '@/components/shared/TaskList/TaskForm';
-import { Dialog, DialogTitle, DialogContent } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import IconButton from '@mui/material/IconButton';
+import { TaskForm } from '@/components/shared/TaskList/TaskForm';
 import { createTask, updateTask, deleteTask, TaskCreateRequest, TaskUpdateRequest } from '@/services/api/taskApi';
+
+type FilterView = 'my_tasks' | 'all_tasks' | 'overdue' | 'completed';
 
 export const TasksPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialize taskView from URL params to avoid extra API calls
+  // Initialize filter view from URL params to avoid extra API calls
   const viewParam = searchParams.get('view');
-  const initialTaskView = (viewParam === 'my_tasks' || viewParam === 'all_tasks') ? viewParam : 'my_tasks';
+  const validViews: FilterView[] = ['my_tasks', 'all_tasks', 'overdue', 'completed'];
+  const initialFilterView: FilterView = validViews.includes(viewParam as FilterView)
+    ? (viewParam as FilterView)
+    : 'my_tasks';
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
-  const [taskView, setTaskView] = useState<'my_tasks' | 'all_tasks'>(initialTaskView);
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [filterView, setFilterView] = useState<FilterView>(initialFilterView);
+  const [detailPanelKey, setDetailPanelKey] = useState(0);
 
   // Handle URL parameters on mount
   useEffect(() => {
@@ -72,35 +90,74 @@ export const TasksPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // Fetch tasks
+  // Fetch tasks - reset pagination when filters change
   useEffect(() => {
-    fetchTasks();
-  }, [statusFilter, priorityFilter, taskView]);
+    setPage(1);
+    setTasks([]);
+    setHasMore(true);
+    fetchTasks(1, true);
+  }, [priorityFilter, statusFilter, filterView]);
 
-  const fetchTasks = async () => {
-    setLoading(true);
+  const fetchTasks = async (pageNum: number = page, reset: boolean = false) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
 
     try {
       const params: TaskListParams = {
-        assigned_to_me: taskView === 'my_tasks',
-        all_tasks: taskView === 'all_tasks',
+        page: pageNum,
+        page_size: 20,
       };
 
+      // Apply filter view
+      if (filterView === 'my_tasks') {
+        params.assigned_to_me = true;
+      } else if (filterView === 'all_tasks') {
+        params.all_tasks = true;
+      } else if (filterView === 'overdue') {
+        params.status = 'OVERDUE';
+      } else if (filterView === 'completed') {
+        params.status = 'COMPLETED';
+      }
+
+      // Apply status filter (override filterView status if set)
       if (statusFilter !== 'all') {
         params.status = statusFilter;
       }
 
+      // Apply priority filter
       if (priorityFilter !== 'all') {
         params.priority = priorityFilter;
       }
 
       const response = await getTasks(params);
-      setTasks(response.results);
+
+      if (reset) {
+        setTasks(response.results);
+      } else {
+        setTasks((prev) => [...prev, ...response.results]);
+      }
+
+      setHasMore(!!response.next);
+      setPage(pageNum);
     } catch (err: any) {
       setError(err.message || 'Failed to load tasks');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // Infinite scroll handler
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+
+    // Load more when user scrolls to 80% of the content
+    if (scrollHeight - scrollTop <= clientHeight * 1.2 && hasMore && !loadingMore && !loading) {
+      fetchTasks(page + 1, false);
     }
   };
 
@@ -148,15 +205,22 @@ export const TasksPage = () => {
 
   const handleUpdateTask = async (data: TaskUpdateRequest) => {
     if (!selectedTask) return;
-    
+
     try {
       const updatedTask = await updateTask(selectedTask.id, data);
-      await fetchTasks();
+
+      // Update task in list
+      setTasks((prevTasks) =>
+        prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+      );
+
       setEditDialogOpen(false);
       setSelectedTask(null);
-      // Update detail panel if it's open for this task
+
+      // Force detail panel to refresh by updating its key
       if (selectedTaskId === selectedTask.id) {
-        setSelectedTaskId(updatedTask.id);
+        setDetailPanelKey((prev) => prev + 1);
+        handleTaskUpdate(updatedTask);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to update task');
@@ -180,8 +244,8 @@ export const TasksPage = () => {
     }
   };
 
-  const handleTaskViewChange = (newView: 'my_tasks' | 'all_tasks') => {
-    setTaskView(newView);
+  const handleFilterViewChange = (newView: FilterView) => {
+    setFilterView(newView);
     // Update URL with view parameter
     searchParams.set('view', newView);
     setSearchParams(searchParams, { replace: true });
@@ -191,10 +255,54 @@ export const TasksPage = () => {
     try {
       await createTask(data);
       setCreateDialogOpen(false);
-      await fetchTasks();
+      // Reset and fetch first page
+      setPage(1);
+      setTasks([]);
+      setHasMore(true);
+      await fetchTasks(1, true);
     } catch (err: any) {
       setError(err.message || 'Failed to create task');
     }
+  };
+
+  const filterOptions = [
+    { value: 'my_tasks', label: 'My Tasks', icon: <AssignmentIndIcon /> },
+    { value: 'all_tasks', label: 'All Tasks', icon: <AssignmentIcon /> },
+    { value: 'overdue', label: 'Overdue Tasks', icon: <EventBusyIcon /> },
+    { value: 'completed', label: 'Completed Tasks', icon: <CheckCircleIcon /> },
+  ];
+
+  // Get empty state message based on current filter
+  const getEmptyMessage = (): string => {
+    if (statusFilter !== 'all') {
+      const statusLabels: Record<TaskStatus, string> = {
+        PENDING: 'Pending',
+        IN_PROGRESS: 'In Progress',
+        COMPLETED: 'Completed',
+        CANCELLED: 'Cancelled',
+        OVERDUE: 'Overdue',
+      };
+      return `No ${statusLabels[statusFilter]} Tasks`;
+    }
+
+    if (priorityFilter !== 'all') {
+      const priorityLabels: Record<TaskPriority, string> = {
+        LOW: 'Low Priority',
+        MEDIUM: 'Medium Priority',
+        HIGH: 'High Priority',
+        URGENT: 'Urgent',
+      };
+      return `No ${priorityLabels[priorityFilter]} Tasks`;
+    }
+
+    const filterMessages: Record<FilterView, string> = {
+      my_tasks: 'No Tasks Assigned to You',
+      all_tasks: 'No Tasks',
+      overdue: 'No Overdue Tasks',
+      completed: 'No Completed Tasks',
+    };
+
+    return filterMessages[filterView];
   };
 
   return (
@@ -211,55 +319,6 @@ export const TasksPage = () => {
         </Button>
       </Box>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2 }}>
-          {/* Task View Toggle */}
-          <ToggleButtonGroup
-            value={taskView}
-            exclusive
-            onChange={(_, newValue) => newValue && handleTaskViewChange(newValue)}
-            size="small"
-          >
-            <ToggleButton value="my_tasks">My Tasks</ToggleButton>
-            <ToggleButton value="all_tasks">All Tasks</ToggleButton>
-          </ToggleButtonGroup>
-
-          {/* Status Filter */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              label="Status"
-              onChange={(e) => setStatusFilter(e.target.value as TaskStatus | 'all')}
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="PENDING">Pending</MenuItem>
-              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
-              <MenuItem value="COMPLETED">Completed</MenuItem>
-              <MenuItem value="CANCELLED">Cancelled</MenuItem>
-              <MenuItem value="OVERDUE">Overdue</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Priority Filter */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Priority</InputLabel>
-            <Select
-              value={priorityFilter}
-              label="Priority"
-              onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | 'all')}
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="LOW">Low</MenuItem>
-              <MenuItem value="MEDIUM">Medium</MenuItem>
-              <MenuItem value="HIGH">High</MenuItem>
-              <MenuItem value="URGENT">Urgent</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
-      </Paper>
-
       {/* Error Alert */}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -267,20 +326,138 @@ export const TasksPage = () => {
         </Alert>
       )}
 
-      {/* Task List */}
-      <TaskList
-        tasks={tasks}
-        isLoading={loading}
-        error={error}
-        onTaskClick={handleTaskClick}
-        onStatusChange={handleStatusChange}
-        showFilters={false} // We have our own filters
-        activeStatusFilter={statusFilter}
-        selectedTaskId={selectedTaskId}
-      />
+      {/* Main Layout: Left Sidebar + Task List */}
+      <Box sx={{ display: 'flex', gap: 2, height: 'calc(100vh - 200px)' }}>
+        {/* Left Sidebar - Filters (Fixed) */}
+        <Paper
+          sx={{
+            width: 260,
+            flexShrink: 0,
+            maxHeight: '100%',
+            overflowY: 'auto',
+            position: 'sticky',
+            top: 0,
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Box sx={{ p: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: 'text.secondary' }}>
+              Filters
+            </Typography>
+          </Box>
+          <Divider />
+          <List disablePadding>
+            {filterOptions.map((option) => (
+              <ListItem key={option.value} disablePadding>
+                <ListItemButton
+                  selected={filterView === option.value}
+                  onClick={() => handleFilterViewChange(option.value as FilterView)}
+                >
+                  <ListItemIcon sx={{ minWidth: 40 }}>
+                    {option.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={option.label} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Additional Filters Section */}
+          <Box sx={{ px: 2, pb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary' }}>
+              Additional Filters
+            </Typography>
+
+            {/* Status Filter */}
+            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value as TaskStatus | 'all')}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+                <MenuItem value="COMPLETED">Completed</MenuItem>
+                <MenuItem value="CANCELLED">Cancelled</MenuItem>
+                <MenuItem value="OVERDUE">Overdue</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Priority Filter */}
+            <FormControl size="small" fullWidth>
+              <InputLabel>Priority</InputLabel>
+              <Select
+                value={priorityFilter}
+                label="Priority"
+                onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | 'all')}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="LOW">Low</MenuItem>
+                <MenuItem value="MEDIUM">Medium</MenuItem>
+                <MenuItem value="HIGH">High</MenuItem>
+                <MenuItem value="URGENT">Urgent</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Paper>
+
+        {/* Task List (Scrollable) */}
+        <Box
+          sx={{
+            flex: 1,
+            maxHeight: '100%',
+            overflowY: 'auto',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'rgba(0,0,0,0.05)',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(0,0,0,0.2)',
+              borderRadius: '4px',
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.3)',
+              },
+            },
+          }}
+          onScroll={handleScroll}
+        >
+          <TaskList
+            tasks={tasks}
+            isLoading={loading}
+            error={error}
+            onTaskClick={handleTaskClick}
+            onStatusChange={handleStatusChange}
+            showFilters={false}
+            selectedTaskId={selectedTaskId}
+            emptyMessage={getEmptyMessage()}
+          />
+          {loadingMore && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Loading more tasks...
+              </Typography>
+            </Box>
+          )}
+          {!hasMore && tasks.length > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                No more tasks to load
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
 
       {/* Task Detail Panel */}
       <TaskDetailPanel
+        key={detailPanelKey}
         open={detailPanelOpen}
         taskId={selectedTaskId}
         onClose={handleCloseDetailPanel}
@@ -304,7 +481,9 @@ export const TasksPage = () => {
         </DialogTitle>
         <DialogContent>
           <TaskForm
-            onSubmit={handleCreateTask}
+            onSubmit={(data) => {
+              handleCreateTask(data as TaskCreateRequest);
+            }}
             onCancel={() => setCreateDialogOpen(false)}
             isSubmitting={false}
           />
@@ -337,7 +516,9 @@ export const TasksPage = () => {
           {selectedTask && (
             <TaskForm
               initialData={selectedTask}
-              onSubmit={handleUpdateTask}
+              onSubmit={(data) => {
+                handleUpdateTask(data as TaskUpdateRequest);
+              }}
               onCancel={() => {
                 setEditDialogOpen(false);
                 setSelectedTask(null);

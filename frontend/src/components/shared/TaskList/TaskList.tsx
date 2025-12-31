@@ -46,6 +46,7 @@ export const TaskList = ({
   useExpandableItems = false,
   onTaskUpdate,
   selectedTaskId = null,
+  emptyMessage,
 }: TaskListProps) => {
   const [activeTab, setActiveTab] = useState<TaskStatus | 'all'>(activeStatusFilter);
 
@@ -128,11 +129,12 @@ export const TaskList = ({
           }}
         >
           <Typography variant="body1" gutterBottom>
-            {tasks.length === 0
-              ? 'No tasks yet'
-              : `No tasks ${activeTab !== 'all' ? `with status "${getStatusDisplayName(activeTab)}"` : ''}`}
+            {emptyMessage ||
+              (tasks.length === 0
+                ? 'No tasks yet'
+                : `No tasks ${activeTab !== 'all' ? `with status "${getStatusDisplayName(activeTab)}"` : ''}`)}
           </Typography>
-          {tasks.length === 0 && (
+          {!emptyMessage && tasks.length === 0 && (
             <Typography variant="body2" color="text.secondary">
               Create a task to get started
             </Typography>
