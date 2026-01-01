@@ -51,12 +51,12 @@ export const EntityTag = ({ task }: EntityTagProps) => {
     if (isClient && task.linked_entity_id) {
       navigate(`/clients/${task.linked_entity_id}`);
     } else if (isVisaApp && task.linked_entity_id) {
-      // Navigate to client detail with applications tab and visa application ID
+      // Navigate to client detail with visa applications tab and visa application ID
       if (clientId) {
-        navigate(`/clients/${clientId}?tab=applications&visaApplicationId=${task.linked_entity_id}`);
+        navigate(`/clients/${clientId}?tab=visa-applications&visaApplicationId=${task.linked_entity_id}`);
       } else if (!loading) {
         // If we couldn't fetch client_id, still try to navigate
-        navigate(`/clients/${task.linked_entity_id}?tab=applications&visaApplicationId=${task.linked_entity_id}`);
+        navigate(`/clients/${task.linked_entity_id}?tab=visa-applications&visaApplicationId=${task.linked_entity_id}`);
       }
     }
   };

@@ -47,7 +47,7 @@ import { ClientReminders } from '@/components/clients/ClientReminders';
 /**
  * Tab value type
  */
-type TabValue = 'overview' | 'profile' | 'notes' | 'documents' | 'applications' | 'tasks' | 'reminders';
+type TabValue = 'overview' | 'profile' | 'notes' | 'documents' | 'applications' | 'visa-applications' | 'tasks' | 'reminders';
 
 /**
  * Tab panel component
@@ -118,6 +118,8 @@ export const ClientDetailPage = () => {
     backLabel = 'Back to Visa Applications';
   } else if (fromPath === '/visa-manager/tracker') {
     backLabel = 'Back to Visa Tracker';
+  } else if (fromPath === '/application-manager/tracker') {
+    backLabel = 'Back to Application Tracker';
   }
 
   const { selectedClient, loading, error, fetchClientById, clearError, cancelFetchClientById } = useClientStore();
@@ -136,12 +138,13 @@ export const ClientDetailPage = () => {
   
   // Get URL params
   const visaApplicationIdParam = searchParams.get('visaApplicationId');
+  const collegeApplicationIdParam = searchParams.get('collegeApplicationId');
   
   // Initialize tab state - read from URL on mount if present, otherwise default to 'overview'
   // Use lazy initializer to only read from URL once on mount
   const [activeTab, setActiveTab] = useState<TabValue>(() => {
     const urlTab = searchParams.get('tab') as TabValue | null;
-    if (urlTab && ['overview', 'profile', 'notes', 'documents', 'applications', 'tasks', 'reminders'].includes(urlTab)) {
+    if (urlTab && ['overview', 'profile', 'notes', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
       return urlTab;
     }
     return 'overview';
@@ -157,8 +160,10 @@ export const ClientDetailPage = () => {
       // Mark the initial tab section as loaded if it's not overview
       // Read from URL directly to avoid dependency on activeTab state
       const urlTab = searchParams.get('tab') as TabValue | null;
-      if (urlTab && urlTab !== 'overview' && ['overview', 'profile', 'notes', 'documents', 'applications', 'tasks', 'reminders'].includes(urlTab)) {
-        markSectionLoaded(urlTab as keyof typeof loadedSections);
+      if (urlTab && urlTab !== 'overview' && ['overview', 'profile', 'notes', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
+        // Map visa-applications to applications for the store (they share the same loaded section)
+        const sectionKey = urlTab === 'visa-applications' ? 'applications' : urlTab;
+        markSectionLoaded(sectionKey as keyof typeof loadedSections);
         setCurrentTab(urlTab);
       }
     }
@@ -209,19 +214,31 @@ export const ClientDetailPage = () => {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: TabValue) => {
     setActiveTab(newValue);
     setCurrentTab(newValue);
-    
+
     // Mark section as loaded when tab is clicked (lazy loading)
     if (newValue !== 'overview') {
-      markSectionLoaded(newValue as keyof typeof loadedSections);
+      // Map visa-applications to applications for the store (they share the same loaded section)
+      const sectionKey = newValue === 'visa-applications' ? 'applications' : newValue;
+      markSectionLoaded(sectionKey as keyof typeof loadedSections);
     }
 
     // Update URL params to preserve tab selection
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set('tab', newValue);
-    // Preserve visaApplicationId if switching to applications tab, otherwise remove it
-    if (newValue !== 'applications') {
+
+    // Clear application IDs based on which tab is active
+    if (newValue === 'applications') {
+      // Keep collegeApplicationId, remove visaApplicationId
       newSearchParams.delete('visaApplicationId');
+    } else if (newValue === 'visa-applications') {
+      // Keep visaApplicationId, remove collegeApplicationId
+      newSearchParams.delete('collegeApplicationId');
+    } else {
+      // Remove both if not on application tabs
+      newSearchParams.delete('visaApplicationId');
+      newSearchParams.delete('collegeApplicationId');
     }
+
     setSearchParams(newSearchParams, { replace: true });
   };
 
@@ -317,6 +334,7 @@ export const ClientDetailPage = () => {
           <Tab label="Notes" value="notes" id="client-tab-notes" />
           <Tab label="Documents" value="documents" id="client-tab-documents" />
           <Tab label="Applications" value="applications" id="client-tab-applications" />
+          <Tab label="Visa Applications" value="visa-applications" id="client-tab-visa-applications" />
           <Tab label="Tasks" value="tasks" id="client-tab-tasks" />
           <Tab label="Reminders" value="reminders" id="client-tab-reminders" />
         </Tabs>
@@ -457,33 +475,53 @@ export const ClientDetailPage = () => {
         )}
       </TabPanel>
 
-      {/* Applications Tab */}
+      {/* College Applications Tab */}
       <TabPanel value="applications" currentValue={activeTab}>
         {loadedSections.applications ? (
-          <Box>
-            <ClientVisaApplications 
-              clientId={client.id}
-              selectedApplicationId={visaApplicationIdParam ? parseInt(visaApplicationIdParam, 10) : undefined}
-              onCardClick={(applicationId) => {
-                // Update URL when a card is clicked
-                const newSearchParams = new URLSearchParams(searchParams);
-                newSearchParams.set('tab', 'applications');
-                newSearchParams.set('visaApplicationId', applicationId.toString());
-                setSearchParams(newSearchParams, { replace: true });
-              }}
-              onDetailClose={() => {
-                // Remove visaApplicationId from URL when detail is closed
-                const newSearchParams = new URLSearchParams(searchParams);
-                newSearchParams.delete('visaApplicationId');
-                setSearchParams(newSearchParams, { replace: true });
-              }}
-            />
-            <Box sx={{ mt: 3 }}>
-              <ClientCollegeApplications clientId={client.id} />
-            </Box>
-          </Box>
+          <ClientCollegeApplications
+            clientId={client.id}
+            selectedApplicationId={collegeApplicationIdParam ? parseInt(collegeApplicationIdParam, 10) : undefined}
+            onCardClick={(applicationId) => {
+              // Update URL when a card is clicked
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.set('tab', 'applications');
+              newSearchParams.set('collegeApplicationId', applicationId.toString());
+              setSearchParams(newSearchParams, { replace: true });
+            }}
+            onDetailClose={() => {
+              // Remove collegeApplicationId from URL when detail is closed
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.delete('collegeApplicationId');
+              setSearchParams(newSearchParams, { replace: true });
+            }}
+          />
         ) : (
           <Alert severity="info">Click on Applications tab to load applications</Alert>
+        )}
+      </TabPanel>
+
+      {/* Visa Applications Tab */}
+      <TabPanel value="visa-applications" currentValue={activeTab}>
+        {loadedSections.applications ? (
+          <ClientVisaApplications
+            clientId={client.id}
+            selectedApplicationId={visaApplicationIdParam ? parseInt(visaApplicationIdParam, 10) : undefined}
+            onCardClick={(applicationId) => {
+              // Update URL when a card is clicked
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.set('tab', 'visa-applications');
+              newSearchParams.set('visaApplicationId', applicationId.toString());
+              setSearchParams(newSearchParams, { replace: true });
+            }}
+            onDetailClose={() => {
+              // Remove visaApplicationId from URL when detail is closed
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.delete('visaApplicationId');
+              setSearchParams(newSearchParams, { replace: true });
+            }}
+          />
+        ) : (
+          <Alert severity="info">Click on Visa Applications tab to load applications</Alert>
         )}
       </TabPanel>
 

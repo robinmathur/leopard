@@ -344,7 +344,7 @@ export const ClientVisaApplications = ({
             startIcon={<AddIcon />}
             onClick={handleOpenCreateDialog}
           >
-            New Application
+            New Visa Application
           </Button>
         </Protect>
       </Box>

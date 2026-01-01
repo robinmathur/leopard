@@ -650,8 +650,7 @@ def college_application_create(
     try:
         stage = Stage.objects.filter(
             application_type=application_type,
-            position=1,
-            deleted_at__isnull=True
+            position=1
         ).first()
 
         if not stage:
@@ -715,8 +714,7 @@ def college_application_update(
         try:
             stage = Stage.objects.get(
                 id=data.stage_id,
-                application_type=application.application_type,
-                deleted_at__isnull=True
+                application_type=application.application_type
             )
             application.stage = stage
             update_fields.append('stage')

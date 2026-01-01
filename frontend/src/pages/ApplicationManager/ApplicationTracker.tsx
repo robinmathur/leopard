@@ -1,19 +1,15 @@
 /**
  * ApplicationTracker - Track applications by stage with dynamic tabs
+ * Single page with dropdown to select application type and stage tabs
  */
 
-import React from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
   Typography,
-  Tabs,
-  Tab,
   Badge,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   CircularProgress,
   Table,
   TableBody,
@@ -25,9 +21,15 @@ import {
   Chip,
   IconButton,
   Alert,
+  Snackbar,
+  Link,
+  Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import { Visibility as ViewIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Visibility } from '@mui/icons-material';
 import {
   listApplicationTypes,
   listStages,
@@ -41,82 +43,173 @@ import type {
   StageCountsResponse,
 } from '@/types/collegeApplication';
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel = ({ children, value, index }: TabPanelProps) => {
+  return (
+    <div role="tabpanel" hidden={value !== index}>
+      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
+    </div>
+  );
+};
+
 export const ApplicationTracker: React.FC = () => {
   const navigate = useNavigate();
-  const [applicationTypes, setApplicationTypes] = React.useState<ApplicationType[]>([]);
-  const [selectedType, setSelectedType] = React.useState<number | null>(null);
-  const [stages, setStages] = React.useState<Stage[]>([]);
-  const [selectedStageIndex, setSelectedStageIndex] = React.useState(0);
-  const [applications, setApplications] = React.useState<CollegeApplication[]>([]);
-  const [stageCounts, setStageCounts] = React.useState<StageCountsResponse | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [applicationTypes, setApplicationTypes] = useState<ApplicationType[]>([]);
+  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  const [stages, setStages] = useState<Stage[]>([]);
+  const [tabValue, setTabValue] = useState(0);
+  const [applications, setApplications] = useState<CollegeApplication[]>([]);
+  const [stageCounts, setStageCounts] = useState<StageCountsResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statusCountsLoading, setStatusCountsLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({ open: false, message: '', severity: 'info' });
 
-  // Load application types on mount
-  React.useEffect(() => {
-    const loadApplicationTypes = async () => {
+  // Fetch application types on mount
+  useEffect(() => {
+    const fetchApplicationTypes = async () => {
       try {
         const response = await listApplicationTypes({ is_active: true });
         setApplicationTypes(response.results);
+
+        // Auto-select first type if available
         if (response.results.length > 0) {
-          setSelectedType(response.results[0].id);
+          setSelectedTypeId(response.results[0].id);
         }
-      } catch (error) {
-        console.error('Failed to load application types:', error);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load application types');
       } finally {
-        setLoading(false);
+        setInitialLoading(false);
       }
     };
-    loadApplicationTypes();
+
+    fetchApplicationTypes();
   }, []);
 
-  // Load stages when application type changes
-  React.useEffect(() => {
-    if (selectedType) {
-      const loadStages = async () => {
-        try {
-          const stagesList = await listStages({ application_type_id: selectedType });
-          setStages(stagesList);
-          setSelectedStageIndex(0);
+  // Fetch stages and counts for application type
+  const fetchStagesAndCounts = useCallback(async (typeId: number, signal?: AbortSignal) => {
+    try {
+      setStatusCountsLoading(true);
+      const [stagesList, counts] = await Promise.all([
+        listStages({ application_type_id: typeId }, signal),
+        getStageCounts({ application_type_id: typeId }, signal),
+      ]);
 
-          // Load stage counts
-          const counts = await getStageCounts({ application_type_id: selectedType });
-          setStageCounts(counts);
-        } catch (error) {
-          console.error('Failed to load stages:', error);
-        }
-      };
-      loadStages();
-    }
-  }, [selectedType]);
-
-  // Load applications when stage changes
-  React.useEffect(() => {
-    if (selectedType && stages.length > 0) {
-      const selectedStage = stages[selectedStageIndex];
-      if (selectedStage) {
-        const loadApplications = async () => {
-          try {
-            const response = await listCollegeApplications({
-              application_type_id: selectedType,
-              stage_id: selectedStage.id,
-              page: page + 1,
-              page_size: rowsPerPage,
-            });
-            setApplications(response.results);
-          } catch (error) {
-            console.error('Failed to load applications:', error);
-          }
-        };
-        loadApplications();
+      if (!signal?.aborted) {
+        setStages(stagesList);
+        setStageCounts(counts);
+        setTabValue(0); // Reset to first tab when type changes
+      }
+    } catch (err: any) {
+      if (err.name === 'CanceledError' || signal?.aborted) return;
+      console.error('Failed to fetch stages and counts:', err);
+    } finally {
+      if (!signal?.aborted) {
+        setStatusCountsLoading(false);
       }
     }
-  }, [selectedType, selectedStageIndex, stages, page, rowsPerPage]);
+  }, []);
 
-  const handleViewApplication = (applicationId: number, clientId: number) => {
-    // Navigate to client detail page with application tab selected
-    navigate(`/clients/${clientId}?tab=applications&collegeApplicationId=${applicationId}`);
+  // Fetch applications for current stage
+  const fetchApplications = useCallback(async (typeId: number, stageId: number, signal?: AbortSignal) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await listCollegeApplications({
+        application_type_id: typeId,
+        stage_id: stageId,
+        page,
+        page_size: pageSize,
+      }, signal);
+
+      if (!signal?.aborted) {
+        setApplications(response.results);
+        setTotalCount(response.count);
+      }
+    } catch (err: any) {
+      if (err.name === 'CanceledError' || signal?.aborted) return;
+      setError(err.message || 'Failed to fetch applications');
+    } finally {
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
+    }
+  }, [page, pageSize]);
+
+  // Load stages when application type changes
+  useEffect(() => {
+    if (!selectedTypeId) return;
+
+    const abortController = new AbortController();
+    fetchStagesAndCounts(selectedTypeId, abortController.signal);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [selectedTypeId, fetchStagesAndCounts]);
+
+  // Fetch applications when tab/page changes
+  useEffect(() => {
+    if (!selectedTypeId || stages.length === 0) return;
+
+    const abortController = new AbortController();
+    const currentStage = stages[tabValue];
+
+    if (currentStage) {
+      fetchApplications(selectedTypeId, currentStage.id, abortController.signal);
+    }
+
+    return () => {
+      abortController.abort();
+    };
+  }, [selectedTypeId, tabValue, stages, page, pageSize, fetchApplications]);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+    setPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPage(1);
+  };
+
+  const handleView = (application: CollegeApplication) => {
+    navigate(`/clients/${application.client}?tab=applications&collegeApplicationId=${application.id}`, {
+      state: { from: '/application-manager/tracker' }
+    });
+  };
+
+  const handleClientClick = (clientId: number) => {
+    navigate(`/clients/${clientId}`, {
+      state: { from: '/application-manager/tracker' }
+    });
+  };
+
+  const handleTypeChange = (typeId: number) => {
+    setSelectedTypeId(typeId);
+    setPage(1); // Reset pagination
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const getStageCount = (stageId: number): number => {
@@ -125,7 +218,20 @@ export const ApplicationTracker: React.FC = () => {
     return stageData?.count || 0;
   };
 
-  if (loading) {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatCurrency = (amount: string) => {
+    const value = parseFloat(amount);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(value);
+  };
+
+  // Loading or error states
+  if (initialLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
@@ -144,18 +250,37 @@ export const ApplicationTracker: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        Application Tracker
-      </Typography>
+    <Box
+      sx={{
+        height: { xs: 'auto', md: 'calc(100vh - 100px)' },
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <Box sx={{ mb: 2, flexShrink: 0 }}>
+        <Typography variant="h4" fontWeight={600} gutterBottom>
+          Application Tracker
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Track and manage applications by type and stage
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Application Type Selector */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <FormControl fullWidth>
+      <Paper sx={{ p: 2, mb: 2, flexShrink: 0 }}>
+        <FormControl fullWidth size="small">
           <InputLabel>Application Type</InputLabel>
           <Select
-            value={selectedType || ''}
-            onChange={(e) => setSelectedType(e.target.value as number)}
+            value={selectedTypeId || ''}
+            onChange={(e) => handleTypeChange(e.target.value as number)}
             label="Application Type"
           >
             {applicationTypes.map((type) => (
@@ -167,117 +292,192 @@ export const ApplicationTracker: React.FC = () => {
         </FormControl>
       </Paper>
 
-      {selectedType && stages.length > 0 ? (
-        <>
-          {/* Stage Tabs */}
-          <Paper sx={{ mb: 3 }}>
-            <Tabs
-              value={selectedStageIndex}
-              onChange={(_, newValue) => {
-                setSelectedStageIndex(newValue);
-                setPage(0);
-              }}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              {stages.map((stage, index) => (
-                <Tab
-                  key={stage.id}
-                  label={
-                    <Badge badgeContent={getStageCount(stage.id)} color="primary">
-                      <Box sx={{ px: 1 }}>
-                        {stage.stage_name}
-                        {stage.is_final_stage && (
-                          <Chip label="Final" size="small" color="success" sx={{ ml: 1 }} />
-                        )}
-                      </Box>
-                    </Badge>
-                  }
-                />
-              ))}
-            </Tabs>
-          </Paper>
-
-          {/* Applications Table */}
-          <Paper>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Client</TableCell>
-                    <TableCell>Institute</TableCell>
-                    <TableCell>Course</TableCell>
-                    <TableCell>Intake Date</TableCell>
-                    <TableCell>Location</TableCell>
-                    <TableCell>Tuition Fee</TableCell>
-                    <TableCell>Assigned To</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {applications.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} align="center">
-                        <Typography color="text.secondary">
-                          No applications in this stage
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    applications.map((app) => (
-                      <TableRow key={app.id} hover>
-                        <TableCell>{app.client_name}</TableCell>
-                        <TableCell>{app.institute_name}</TableCell>
-                        <TableCell>{app.course_name}</TableCell>
-                        <TableCell>
-                          {new Date(app.intake_date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>{app.location_display}</TableCell>
-                        <TableCell>
-                          {new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                          }).format(parseFloat(app.total_tuition_fee))}
-                        </TableCell>
-                        <TableCell>
-                          {app.assigned_to_name || (
-                            <Chip label="Unassigned" size="small" color="warning" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleViewApplication(app.id, app.client)}
-                            title="View Application"
-                          >
-                            <ViewIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <TablePagination
-              component="div"
-              count={getStageCount(stages[selectedStageIndex]?.id)}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </Paper>
-        </>
-      ) : selectedType ? (
-        <Alert severity="warning">
+      {selectedTypeId && stages.length === 0 ? (
+        <Alert severity="warning" sx={{ flexShrink: 0 }}>
           No stages defined for this application type. Add stages to start tracking.
         </Alert>
+      ) : selectedTypeId && stages.length > 0 ? (
+        <Paper sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+          {/* Stage Selection - Wrapping into rows */}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: 1,
+              borderColor: 'divider',
+              flexShrink: 0,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1,
+            }}
+          >
+            {stages.map((stage, index) => {
+              const count = getStageCount(stage.id);
+              const isSelected = tabValue === index;
+              return (
+                <Chip
+                  key={index}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
+                      <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
+                        {stage.stage_name}
+                      </Typography>
+                      {stage.is_final_stage && (
+                        <Chip label="Final" size="small" color="success" sx={{ height: 18 }} />
+                      )}
+                      {statusCountsLoading ? (
+                        <CircularProgress size={14} />
+                      ) : (
+                        <Badge
+                          badgeContent={count}
+                          max={999}
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              position: 'relative',
+                              transform: 'none',
+                              fontSize: '0.7rem',
+                              minWidth: '18px',
+                              height: '18px',
+                              bgcolor: isSelected ? '#fff' : 'primary.main',
+                              color: isSelected ? 'primary.main' : '#fff',
+                              fontWeight: 600,
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
+                  }
+                  onClick={() => handleTabChange({} as React.SyntheticEvent, index)}
+                  color={isSelected ? 'primary' : 'default'}
+                  variant={isSelected ? 'filled' : 'outlined'}
+                  sx={{
+                    cursor: 'pointer',
+                    py: 2,
+                    height: 'auto',
+                    '&:hover': {
+                      bgcolor: isSelected ? 'primary.dark' : 'action.hover',
+                    },
+                  }}
+                />
+              );
+            })}
+          </Box>
+
+          {/* Table Content */}
+          <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {stages.map((_stage, index) => (
+              <TabPanel key={index} value={tabValue} index={index}>
+                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <TableContainer sx={{ flex: 1, overflow: 'auto' }}>
+                  <Table size="small" sx={{ minWidth: 1000 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ minWidth: 150 }}>Client</TableCell>
+                        <TableCell sx={{ minWidth: 200 }}>Institute</TableCell>
+                        <TableCell sx={{ minWidth: 200 }}>Course</TableCell>
+                        <TableCell sx={{ minWidth: 120 }}>Intake Date</TableCell>
+                        <TableCell sx={{ minWidth: 150 }}>Location</TableCell>
+                        <TableCell sx={{ minWidth: 120 }}>Tuition Fee</TableCell>
+                        <TableCell sx={{ minWidth: 150 }}>Assigned To</TableCell>
+                        <TableCell align="right" sx={{ minWidth: 100 }}>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                            <CircularProgress size={32} />
+                          </TableCell>
+                        </TableRow>
+                      ) : applications.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              No applications found
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        applications.map((app) => (
+                          <TableRow key={app.id} hover>
+                            <TableCell>
+                              <Link
+                                component="button"
+                                variant="body2"
+                                fontWeight={500}
+                                onClick={() => handleClientClick(app.client)}
+                                sx={{
+                                  cursor: 'pointer',
+                                  textDecoration: 'none',
+                                  color: 'primary.main',
+                                  '&:hover': {
+                                    textDecoration: 'underline',
+                                  },
+                                }}
+                              >
+                                {app.client_name}
+                              </Link>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{app.institute_name}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{app.course_name}</Typography>
+                            </TableCell>
+                            <TableCell>{formatDate(app.intake_date)}</TableCell>
+                            <TableCell>{app.location_display}</TableCell>
+                            <TableCell>{formatCurrency(app.total_tuition_fee)}</TableCell>
+                            <TableCell>
+                              {app.assigned_to_name || (
+                                <Typography variant="caption" color="text.secondary">
+                                  Unassigned
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell align="right">
+                              <Tooltip title="View Details">
+                                <IconButton size="small" onClick={() => handleView(app)} color="primary">
+                                  <Visibility fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                {!loading && applications.length > 0 && (
+                  <Box sx={{ borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
+                    <TablePagination
+                      component="div"
+                      count={totalCount}
+                      page={page - 1}
+                      onPageChange={(_, newPage) => handlePageChange(newPage + 1)}
+                      rowsPerPage={pageSize}
+                      onRowsPerPageChange={(event) => handlePageSizeChange(parseInt(event.target.value, 10))}
+                      rowsPerPageOptions={[10, 25, 50, 100]}
+                    />
+                  </Box>
+                )}
+              </Box>
+            </TabPanel>
+          ))}
+          </Box>
+        </Paper>
       ) : null}
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

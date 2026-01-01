@@ -359,8 +359,8 @@ export const VisaApplicationsManagementPage = () => {
   };
 
   const handleView = (application: VisaApplication) => {
-    // Navigate to client detail page with applications tab and visa application ID
-    navigate(`/clients/${application.client}?tab=applications&visaApplicationId=${application.id}`, {
+    // Navigate to client detail page with visa applications tab and visa application ID
+    navigate(`/clients/${application.client}?tab=visa-applications&visaApplicationId=${application.id}`, {
       state: { from: '/visa-manager/applications' }
     });
   };

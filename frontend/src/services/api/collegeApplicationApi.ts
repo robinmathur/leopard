@@ -140,7 +140,7 @@ export const listCollegeApplications = async (
   params?: CollegeApplicationListParams,
   signal?: AbortSignal
 ): Promise<PaginatedResponse<CollegeApplication>> => {
-  const response = await httpClient.get('/v1/college-applications//', { params, signal });
+  const response = await httpClient.get('/v1/college-applications/', { params, signal });
   return response.data;
 };
 
@@ -148,14 +148,14 @@ export const getCollegeApplication = async (
   id: number,
   signal?: AbortSignal
 ): Promise<CollegeApplication> => {
-  const response = await httpClient.get(`/v1/college-applications//${id}/`, { signal });
+  const response = await httpClient.get(`/v1/college-applications/${id}/`, { signal });
   return response.data;
 };
 
 export const createCollegeApplication = async (
   data: CollegeApplicationCreateRequest
 ): Promise<CollegeApplication> => {
-  const response = await httpClient.post('/v1/college-applications//', data);
+  const response = await httpClient.post('/v1/college-applications/', data);
   return response.data;
 };
 
@@ -163,12 +163,12 @@ export const updateCollegeApplication = async (
   id: number,
   data: CollegeApplicationUpdateRequest
 ): Promise<CollegeApplication> => {
-  const response = await httpClient.patch(`/v1/college-applications//${id}/`, data);
+  const response = await httpClient.patch(`/v1/college-applications/${id}/`, data);
   return response.data;
 };
 
 export const deleteCollegeApplication = async (id: number): Promise<void> => {
-  await httpClient.delete(`//v1/college-applications//${id}/`);
+  await httpClient.delete(`//v1/college-applications/${id}/`);
 };
 
 // ============================================================================
@@ -179,7 +179,7 @@ export const getStageCounts = async (
   params?: StageCountsParams,
   signal?: AbortSignal
 ): Promise<StageCountsResponse> => {
-  const response = await httpClient.get('/v1/college-applications//stage-counts/', {
+  const response = await httpClient.get('/v1/college-applications/stage-counts/', {
     params,
     signal,
   });
@@ -190,7 +190,7 @@ export const getDashboardStatistics = async (
   params?: DashboardStatisticsParams,
   signal?: AbortSignal
 ): Promise<DashboardStatistics> => {
-  const response = await httpClient.get('/v1/college-applications//dashboard-statistics/', {
+  const response = await httpClient.get('/v1/college-applications/dashboard-statistics/', {
     params,
     signal,
   });

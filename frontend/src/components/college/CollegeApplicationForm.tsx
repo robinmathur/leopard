@@ -38,6 +38,8 @@ interface CollegeApplicationFormProps {
   loading: boolean;
   /** If true, client field is pre-selected and cannot be changed */
   clientLocked?: boolean;
+  /** Pre-fill and lock the application type field */
+  prefilledApplicationTypeId?: number;
 }
 
 export const CollegeApplicationForm = ({
@@ -47,6 +49,7 @@ export const CollegeApplicationForm = ({
   onCancel,
   loading,
   clientLocked = false,
+  prefilledApplicationTypeId,
 }: CollegeApplicationFormProps) => {
   // Dropdown data
   const [applicationTypes, setApplicationTypes] = useState<ApplicationType[]>([]);
@@ -72,7 +75,7 @@ export const CollegeApplicationForm = ({
   // Form data
   const [formData, setFormData] = useState({
     client: initialData?.client || '',
-    application_type: initialData?.application_type || '',
+    application_type: initialData?.application_type || prefilledApplicationTypeId || '',
     stage: initialData?.stage || '',
     institute: initialData?.institute || '',
     course: initialData?.course || '',
@@ -299,21 +302,25 @@ export const CollegeApplicationForm = ({
     }
 
     const submitData: any = {
-      client: formData.client,
-      application_type: formData.application_type,
-      stage: formData.stage,
-      institute: formData.institute,
-      course: formData.course,
-      start_date: formData.start_date,
-      location: formData.location,
-      total_tuition_fee: formData.total_tuition_fee,
+      client_id: Number(formData.client),
+      application_type_id: Number(formData.application_type),
+      institute_id: Number(formData.institute),
+      course_id: Number(formData.course),
+      start_date_id: Number(formData.start_date),
+      location_id: Number(formData.location),
+      total_tuition_fee: Number(formData.total_tuition_fee),
       finish_date: formData.finish_date || undefined,
       student_id: formData.student_id || undefined,
-      super_agent: formData.super_agent || undefined,
-      sub_agent: formData.sub_agent || undefined,
-      assigned_to: formData.assigned_to || undefined,
+      super_agent_id: formData.super_agent ? Number(formData.super_agent) : undefined,
+      sub_agent_id: formData.sub_agent ? Number(formData.sub_agent) : undefined,
+      assigned_to_id: formData.assigned_to ? Number(formData.assigned_to) : undefined,
       notes: formData.notes || undefined,
     };
+
+    // For edit mode, also include stage_id
+    if (mode === 'edit' && formData.stage) {
+      submitData.stage_id = Number(formData.stage);
+    }
 
     onSave(submitData);
   };
@@ -497,7 +504,7 @@ export const CollegeApplicationForm = ({
             <MenuItem value="">Select Location</MenuItem>
             {locations.map((location) => (
               <MenuItem key={location.id} value={location.id}>
-                {location.title}
+                {[location.suburb, location.state, location.country].filter(Boolean).join(', ') || 'Location #' + location.id}
               </MenuItem>
             ))}
           </TextField>
@@ -519,7 +526,7 @@ export const CollegeApplicationForm = ({
             <MenuItem value="">Select Intake Date</MenuItem>
             {intakes.map((intake) => (
               <MenuItem key={intake.id} value={intake.id}>
-                {intake.intake_date ? new Date(intake.intake_date).toLocaleDateString() : intake.title}
+                {new Date(intake.intake_date).toLocaleDateString()}{intake.description ? ` - ${intake.description}` : ''}
               </MenuItem>
             ))}
           </TextField>
@@ -582,7 +589,7 @@ export const CollegeApplicationForm = ({
             <MenuItem value="">Select Super Agent</MenuItem>
             {superAgents.map((agent) => (
               <MenuItem key={agent.id} value={agent.id}>
-                {agent.name}
+                {agent.agent_name}
               </MenuItem>
             ))}
           </TextField>
@@ -602,7 +609,7 @@ export const CollegeApplicationForm = ({
             <MenuItem value="">Select Sub Agent</MenuItem>
             {subAgents.map((agent) => (
               <MenuItem key={agent.id} value={agent.id}>
-                {agent.name}
+                {agent.agent_name}
               </MenuItem>
             ))}
           </TextField>
