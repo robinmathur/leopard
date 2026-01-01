@@ -4,6 +4,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SchoolIcon from '@mui/icons-material/School';
 import BadgeIcon from '@mui/icons-material/Badge';
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -93,7 +94,7 @@ export const navigationConfig: NavItem[] = [
     id: 'application-manager',
     label: 'Application Manager',
     path: '/application-manager',
-    icon: SchoolIcon,
+    icon: LocalLibraryIcon,
     permission: 'view_collegeapplication',
     children: [
       {
