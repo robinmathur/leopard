@@ -83,13 +83,6 @@ export interface ClientUpdateRequest {
   active?: boolean;
 }
 
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 export interface ClientListParams {
   page?: number;
   page_size?: number;

@@ -36,6 +36,11 @@ from immigration.api.v1.views.institute_related import (
     NarrowFieldViewSet,
     CourseViewSet,
 )
+from immigration.api.v1.views.college_application import (
+    ApplicationTypeViewSet,
+    StageViewSet,
+    CollegeApplicationViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"clients", ClientViewSet, basename="client")
@@ -66,5 +71,8 @@ router.register(r"course-levels", CourseLevelViewSet, basename="course-level")
 router.register(r"broad-fields", BroadFieldViewSet, basename="broad-field")
 router.register(r"narrow-fields", NarrowFieldViewSet, basename="narrow-field")
 router.register(r"courses", CourseViewSet, basename="course")
+router.register(r"application-types", ApplicationTypeViewSet, basename="application-type")
+router.register(r"stages", StageViewSet, basename="stage")
+router.register(r"college-applications", CollegeApplicationViewSet, basename="college-application")
 
 __all__ = ["router"]

@@ -90,6 +90,36 @@ export const navigationConfig: NavItem[] = [
     ],
   },
   {
+    id: 'application-manager',
+    label: 'Application Manager',
+    path: '/application-manager',
+    icon: SchoolIcon,
+    permission: 'view_collegeapplication',
+    children: [
+      {
+        id: 'application-dashboard',
+        label: 'Application Dashboard',
+        path: '/application-manager/dashboard',
+        icon: AssignmentIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'application-tracker',
+        label: 'Application Tracker',
+        path: '/application-manager/tracker',
+        icon: TimelineIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'application-types',
+        label: 'Application Type',
+        path: '/application-manager/types',
+        icon: CategoryIcon,
+        permission: 'view_applicationtype',
+      },
+    ],
+  },
+  {
     id: 'institute',
     label: 'Institute',
     path: '/institute',

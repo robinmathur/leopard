@@ -16,6 +16,9 @@ import { VisaDashboard } from './pages/VisaManager/VisaDashboard';
 import { VisaTracker } from './pages/VisaManager/VisaTracker';
 import { VisaTypePage } from './pages/VisaManager/VisaTypePage';
 import { VisaApplicationsManagementPage } from './pages/VisaManager/VisaApplicationsManagementPage';
+import { ApplicationDashboard } from './pages/ApplicationManager/ApplicationDashboard';
+import { ApplicationTracker } from './pages/ApplicationManager/ApplicationTracker';
+import { ApplicationTypePage } from './pages/ApplicationManager/ApplicationTypePage';
 import { UsersPage } from './pages/Users/UsersPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { GroupsPage } from './pages/Groups/GroupsPage';
@@ -71,10 +74,15 @@ function App() {
             <Route path="visa-manager/tracker" element={<VisaTracker />} />
             <Route path="visa-manager/applications" element={<VisaApplicationsManagementPage />} />
             <Route path="visa-manager/types" element={<VisaTypePage />} />
-            
+
             {/* Legacy route - redirect to Visa Dashboard */}
             <Route path="visa-applications" element={<Navigate to="/visa-manager/dashboard" replace />} />
-            
+
+            {/* Application Manager Routes */}
+            <Route path="application-manager/dashboard" element={<ApplicationDashboard />} />
+            <Route path="application-manager/tracker" element={<ApplicationTracker />} />
+            <Route path="application-manager/types" element={<ApplicationTypePage />} />
+
             <Route path="institute" element={<InstitutePage />} />
             <Route path="institute/:id" element={<InstituteDetailPage />} />
             <Route path="agent" element={<AgentPage />} />

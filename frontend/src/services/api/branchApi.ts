@@ -3,12 +3,12 @@
  * API functions for branch CRUD operations
  */
 import { httpClient } from './httpClient';
+import type { PaginatedResponse } from '@/types/common';
 import {
   Branch,
   BranchCreateRequest,
   BranchUpdateRequest,
   BranchListParams,
-  PaginatedResponse,
 } from '@/types/branch';
 
 /**

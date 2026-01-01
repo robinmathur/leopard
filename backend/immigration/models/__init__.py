@@ -38,6 +38,11 @@ from immigration.models.institute import (
     NarrowField,
     Course,
 )
+from immigration.models.college_application import (
+    ApplicationType,
+    Stage,
+    CollegeApplication,
+)
 
 __all__ = [
     'SoftDeletionManager',
@@ -72,4 +77,7 @@ __all__ = [
     'BroadField',
     'NarrowField',
     'Course',
+    'ApplicationType',
+    'Stage',
+    'CollegeApplication',
 ]

@@ -85,6 +85,9 @@ function isValidPermission(value: string): value is Permission {
     'view_user', 'add_user', 'change_user', 'delete_user',
     'view_group', 'add_group', 'change_group', 'delete_group',
     'view_permission', 'add_permission', 'change_permission', 'delete_permission',
+    'add_stage', 'change_stage', 'delete_stage', 'view_stage',
+    'view_applicationtype', 'add_applicationtype', 'change_applicationtype', 'delete_applicationtype',
+    'view_collegeapplication', 'add_collegeapplication', 'change_collegeapplication', 'delete_collegeapplication',
   ];
   return validPermissions.includes(value as Permission);
 }

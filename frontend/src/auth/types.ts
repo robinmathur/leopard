@@ -24,7 +24,19 @@ export type Permission =
   | 'change_visaapplication'
   | 'delete_visaapplication'
   | 'submit_visaapplication'
-  
+
+  // College Application permissions
+  | 'view_collegeapplication'
+  | 'add_collegeapplication'
+  | 'change_collegeapplication'
+  | 'delete_collegeapplication'
+
+  // Application Type permissions
+  | 'view_applicationtype'
+  | 'add_applicationtype'
+  | 'change_applicationtype'
+  | 'delete_applicationtype'
+
   // Institute permissions
   | 'view_institute'
   | 'add_institute'
@@ -136,7 +148,14 @@ export type Permission =
   | 'view_reminder'
   | 'add_reminder'
   | 'change_reminder'
-  | 'delete_reminder';
+  | 'delete_reminder'
+
+  // Application Stage permission
+  | 'add_stage'
+  | 'change_stage'
+  | 'delete_stage'
+  | 'view_stage'
+
 
 /**
  * JWT Token pair for authentication
