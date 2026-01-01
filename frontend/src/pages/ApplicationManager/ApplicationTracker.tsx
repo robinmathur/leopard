@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -28,8 +28,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  TextField,
+  Button,
+  Autocomplete,
 } from '@mui/material';
-import { Visibility } from '@mui/icons-material';
+import {
+  Visibility,
+  PersonAdd as PersonAddIcon,
+  SwapHoriz as SwapHorizIcon,
+  Search as SearchIcon,
+} from '@mui/icons-material';
 import {
   listApplicationTypes,
   listStages,
@@ -42,6 +50,11 @@ import type {
   CollegeApplication,
   StageCountsResponse,
 } from '@/types/collegeApplication';
+import type { User } from '@/types/user';
+import { userApi } from '@/services/api/userApi';
+import { AssignCollegeApplicationDialog } from '@/components/college/AssignCollegeApplicationDialog';
+import { ChangeStageDialog } from '@/components/college/ChangeStageDialog';
+import { useAuthStore } from '@/store/authStore';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -59,6 +72,9 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => {
 
 export const ApplicationTracker: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { hasPermission } = useAuthStore();
+
   const [applicationTypes, setApplicationTypes] = useState<ApplicationType[]>([]);
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -72,6 +88,30 @@ export const ApplicationTracker: React.FC = () => {
   const [pageSize, setPageSize] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
   const [statusCountsLoading, setStatusCountsLoading] = useState(false);
+
+  // Search and filters
+  const [searchFilters, setSearchFilters] = useState<{
+    client_name?: string;
+    assigned_to?: number;
+    created_by?: number;
+    created_after?: string;
+    created_before?: string;
+  }>({});
+  const [draftFilters, setDraftFilters] = useState<typeof searchFilters>({});
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+
+  // Dialogs
+  const [assignDialog, setAssignDialog] = useState<{
+    open: boolean;
+    application: CollegeApplication | null;
+  }>({ open: false, application: null });
+
+  const [changeStageDialog, setChangeStageDialog] = useState<{
+    open: boolean;
+    application: CollegeApplication | null;
+  }>({ open: false, application: null });
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -85,8 +125,9 @@ export const ApplicationTracker: React.FC = () => {
         const response = await listApplicationTypes({ is_active: true });
         setApplicationTypes(response.results);
 
-        // Auto-select first type if available
-        if (response.results.length > 0) {
+        // Auto-select first type if available and no URL params
+        const typeIdParam = searchParams.get('typeId');
+        if (response.results.length > 0 && !typeIdParam) {
           setSelectedTypeId(response.results[0].id);
         }
       } catch (err: any) {
@@ -97,7 +138,29 @@ export const ApplicationTracker: React.FC = () => {
     };
 
     fetchApplicationTypes();
-  }, []);
+  }, [searchParams]);
+
+  // Initialize from URL parameters
+  useEffect(() => {
+    if (applicationTypes.length === 0) return;
+
+    const typeIdParam = searchParams.get('typeId');
+    const stageIndexParam = searchParams.get('stageIndex');
+
+    if (typeIdParam) {
+      const typeId = Number(typeIdParam);
+      if (applicationTypes.some(t => t.id === typeId)) {
+        setSelectedTypeId(typeId);
+      }
+    }
+
+    if (stageIndexParam) {
+      const index = Number(stageIndexParam);
+      if (!isNaN(index) && index >= 0) {
+        setTabValue(index);
+      }
+    }
+  }, [applicationTypes, searchParams]);
 
   // Fetch stages and counts for application type
   const fetchStagesAndCounts = useCallback(async (typeId: number, signal?: AbortSignal) => {
@@ -131,6 +194,7 @@ export const ApplicationTracker: React.FC = () => {
       const response = await listCollegeApplications({
         application_type_id: typeId,
         stage_id: stageId,
+        ...searchFilters, // Include search filters
         page,
         page_size: pageSize,
       }, signal);
@@ -147,7 +211,7 @@ export const ApplicationTracker: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, searchFilters]);
 
   // Load stages when application type changes
   useEffect(() => {
@@ -177,9 +241,50 @@ export const ApplicationTracker: React.FC = () => {
     };
   }, [selectedTypeId, tabValue, stages, page, pageSize, fetchApplications]);
 
+  // Fetch users for advanced search
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const activeUsers = await userApi.getAllActiveUsers();
+        setUsers(activeUsers);
+      } catch (err) {
+        console.error('Failed to load users:', err);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  // Debounce simple search
+  useEffect(() => {
+    if (searchFilters.client_name === '' || (searchFilters.client_name && searchFilters.client_name.length >= 2)) {
+      const timer = setTimeout(() => {
+        // Triggers refetch via fetchApplications dependency
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchFilters.client_name]);
+
+  // Handlers
+  const handleApplyFilters = () => {
+    setSearchFilters(draftFilters);
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setDraftFilters({});
+    setSearchFilters({});
+    setPage(1);
+  };
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     setPage(1);
+    const newParams = new URLSearchParams(searchParams);
+    if (selectedTypeId) {
+      newParams.set('typeId', String(selectedTypeId));
+    }
+    newParams.set('stageIndex', String(newValue));
+    setSearchParams(newParams, { replace: true });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -206,6 +311,10 @@ export const ApplicationTracker: React.FC = () => {
   const handleTypeChange = (typeId: number) => {
     setSelectedTypeId(typeId);
     setPage(1); // Reset pagination
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('typeId', String(typeId));
+    newParams.delete('stageIndex'); // Reset stage when type changes
+    setSearchParams(newParams, { replace: true });
   };
 
   const handleCloseSnackbar = () => {
@@ -285,19 +394,97 @@ export const ApplicationTracker: React.FC = () => {
           >
             {applicationTypes.map((type) => (
               <MenuItem key={type.id} value={type.id}>
-                {type.title} ({type.stages_count} stages)
+                {type.title} ({type.stages_count} Stages)
               </MenuItem>
             ))}
           </Select>
         </FormControl>
       </Paper>
 
+      {/* Search Section */}
+      {selectedTypeId && (
+        <Paper sx={{ p: 2, mb: 2, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: showAdvancedSearch ? 2 : 0 }}>
+            <TextField
+              size="small"
+              placeholder="Search by client name (min 2 characters)..."
+              value={searchFilters.client_name || ''}
+              onChange={(e) => setSearchFilters(prev => ({ ...prev, client_name: e.target.value }))}
+              sx={{ flex: 1 }}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+            />
+            <Button
+              variant="outlined"
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            >
+              {showAdvancedSearch ? 'Hide' : 'Show'} Advanced Search
+            </Button>
+          </Box>
+
+          {/* Advanced Filters */}
+          {showAdvancedSearch && (
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Autocomplete
+                size="small"
+                options={users}
+                getOptionLabel={(option) => option.full_name}
+                renderInput={(params) => <TextField {...params} label="Assigned To" />}
+                value={users.find(u => u.id === draftFilters.assigned_to) || null}
+                onChange={(_, value) => setDraftFilters(prev => ({ ...prev, assigned_to: value?.id }))}
+                sx={{ minWidth: 200 }}
+              />
+
+              <Autocomplete
+                size="small"
+                options={users}
+                getOptionLabel={(option) => option.full_name}
+                renderInput={(params) => <TextField {...params} label="Created By" />}
+                value={users.find(u => u.id === draftFilters.created_by) || null}
+                onChange={(_, value) => setDraftFilters(prev => ({ ...prev, created_by: value?.id }))}
+                sx={{ minWidth: 200 }}
+              />
+
+              <TextField
+                size="small"
+                label="Created After"
+                type="date"
+                value={draftFilters.created_after || ''}
+                onChange={(e) => setDraftFilters(prev => ({ ...prev, created_after: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                sx={{ minWidth: 180 }}
+              />
+
+              <TextField
+                size="small"
+                label="Created Before"
+                type="date"
+                value={draftFilters.created_before || ''}
+                onChange={(e) => setDraftFilters(prev => ({ ...prev, created_before: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                sx={{ minWidth: 180 }}
+              />
+
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Button variant="contained" onClick={handleApplyFilters}>
+                  Apply Filters
+                </Button>
+                <Button onClick={handleClearFilters}>
+                  Clear
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Paper>
+      )}
+
       {selectedTypeId && stages.length === 0 ? (
         <Alert severity="warning" sx={{ flexShrink: 0 }}>
           No stages defined for this application type. Add stages to start tracking.
         </Alert>
       ) : selectedTypeId && stages.length > 0 ? (
-        <Paper sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
           {/* Stage Selection - Wrapping into rows */}
           <Box
             sx={{
@@ -434,6 +621,26 @@ export const ApplicationTracker: React.FC = () => {
                               )}
                             </TableCell>
                             <TableCell align="right">
+                              {hasPermission('change_collegeapplication') && (
+                                <>
+                                  <Tooltip title="Assign To">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => setAssignDialog({ open: true, application: app })}
+                                    >
+                                      <PersonAddIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Change Stage">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => setChangeStageDialog({ open: true, application: app })}
+                                    >
+                                      <SwapHorizIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </>
+                              )}
                               <Tooltip title="View Details">
                                 <IconButton size="small" onClick={() => handleView(app)} color="primary">
                                   <Visibility fontSize="small" />
@@ -466,6 +673,44 @@ export const ApplicationTracker: React.FC = () => {
           </Box>
         </Paper>
       ) : null}
+
+      {/* Assign Dialog */}
+      <AssignCollegeApplicationDialog
+        open={assignDialog.open}
+        onClose={() => setAssignDialog({ open: false, application: null })}
+        application={assignDialog.application}
+        onSuccess={() => {
+          const abortController = new AbortController();
+          if (selectedTypeId && stages[tabValue]) {
+            fetchApplications(selectedTypeId, stages[tabValue].id, abortController.signal);
+            fetchStagesAndCounts(selectedTypeId, abortController.signal);
+          }
+          setSnackbar({
+            open: true,
+            message: 'Application assigned successfully',
+            severity: 'success',
+          });
+        }}
+      />
+
+      {/* Change Stage Dialog */}
+      <ChangeStageDialog
+        open={changeStageDialog.open}
+        onClose={() => setChangeStageDialog({ open: false, application: null })}
+        application={changeStageDialog.application}
+        onSuccess={() => {
+          const abortController = new AbortController();
+          if (selectedTypeId && stages[tabValue]) {
+            fetchApplications(selectedTypeId, stages[tabValue].id, abortController.signal);
+            fetchStagesAndCounts(selectedTypeId, abortController.signal);
+          }
+          setSnackbar({
+            open: true,
+            message: 'Stage changed successfully',
+            severity: 'success',
+          });
+        }}
+      />
 
       {/* Snackbar */}
       <Snackbar

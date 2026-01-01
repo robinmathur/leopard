@@ -18,6 +18,7 @@ import { VisaTypePage } from './pages/VisaManager/VisaTypePage';
 import { VisaApplicationsManagementPage } from './pages/VisaManager/VisaApplicationsManagementPage';
 import { ApplicationDashboard } from './pages/ApplicationManager/ApplicationDashboard';
 import { ApplicationTracker } from './pages/ApplicationManager/ApplicationTracker';
+import { ApplicationsList } from './pages/ApplicationManager/ApplicationsList';
 import { ApplicationTypePage } from './pages/ApplicationManager/ApplicationTypePage';
 import { UsersPage } from './pages/Users/UsersPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
@@ -81,6 +82,7 @@ function App() {
             {/* Application Manager Routes */}
             <Route path="application-manager/dashboard" element={<ApplicationDashboard />} />
             <Route path="application-manager/tracker" element={<ApplicationTracker />} />
+            <Route path="application-manager/applications" element={<ApplicationsList />} />
             <Route path="application-manager/types" element={<ApplicationTypePage />} />
 
             <Route path="institute" element={<InstitutePage />} />

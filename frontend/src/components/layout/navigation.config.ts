@@ -111,6 +111,13 @@ export const navigationConfig: NavItem[] = [
         permission: 'view_collegeapplication',
       },
       {
+        id: 'applications',
+        label: 'Applications',
+        path: '/application-manager/applications',
+        icon: DescriptionIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
         id: 'application-types',
         label: 'Application Type',
         path: '/application-manager/types',
