@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Grid, Typography, Paper, Divider, Skeleton, Link, Chip } from '@mui/material';
+import { Box,  Typography, Paper, Divider, Skeleton, Link, Chip , Grid} from '@mui/material';
 import { Region } from '@/types/region';
 import { Branch } from '@/types/branch';
 import { branchApi } from '@/services/api/branchApi';
@@ -26,9 +26,7 @@ const formatDate = (dateString?: string): string => {
       day: 'numeric',
     });
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Detail row component
@@ -55,10 +53,10 @@ const DetailRow = ({ label, value }: DetailRowProps) => (
 export const RegionOverviewSkeleton = () => (
   <Paper sx={{ p: 3 }}>
     <Grid container spacing={3}>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Skeleton variant="text" width="60%" height={32} />
-        <Skeleton variant="text" width="40%" height={24} sx={{ mt: 2 }} />
-        <Skeleton variant="text" width="50%" height={24} sx={{ mt: 1 }} />
+        <Skeleton variant="text" width="40%" height={24} sx={{ mt: 2 }}/>
+        <Skeleton variant="text" width="50%" height={24} sx={{ mt: 1 }}/>
       </Grid>
     </Grid>
   </Paper>
@@ -94,18 +92,11 @@ export const RegionOverview = ({ region, loading = false }: RegionOverviewProps)
         const response = await branchApi.list({ region_id: region.id });
         if (!cancelled) {
           setBranches(response.results);
-          branchesCache.set(region.id, response.results);
-        }
-      } catch (error) {
+          branchesCache.set(region.id, response.results); }}catch (error) {
         if (!cancelled) {
-          console.error('Failed to fetch branches:', error);
-        }
-      } finally {
+          console.error('Failed to fetch branches:', error); }}finally {
         if (!cancelled) {
-          setBranchesLoading(false);
-        }
-      }
-    };
+          setBranchesLoading(false); }}};
 
     if (region.id) {
       fetchBranches();
@@ -124,21 +115,21 @@ export const RegionOverview = ({ region, loading = false }: RegionOverviewProps)
     <Paper sx={{ p: 3 }}>
       <Grid container spacing={3}>
         {/* Region Details Section */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           {/* Basic Information */}
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Basic Information
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <DetailRow label="Region Name" value={region.name} />
             </Grid>
             {region.description && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <DetailRow label="Description" value={region.description} />
               </Grid>
             )}
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <DetailRow
                 label="Branches"
                 value={
@@ -153,7 +144,7 @@ export const RegionOverview = ({ region, loading = false }: RegionOverviewProps)
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2 }}/>
 
           {/* Branches Section */}
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
@@ -179,22 +170,18 @@ export const RegionOverview = ({ region, loading = false }: RegionOverviewProps)
                     borderColor: 'divider',
                     '&:last-child': {
                       borderBottom: 'none',
-                    },
-                  }}
-                >
+                    }, }}>
                   <Link
                     component="button"
                     variant="body2"
-                    onClick={() => navigate(`/org-management/branches/${branch.id}`, { state: { from: '/org-management/branches' } })}
+                    onClick={() => navigate(`/org-management/branches/${branch.id}`, { state: { from: '/org-management/branches' }})}
                     sx={{
                       color: 'primary.main',
                       textDecoration: 'none',
                       '&:hover': {
                         textDecoration: 'underline',
                       },
-                      cursor: 'pointer',
-                    }}
-                  >
+                      cursor: 'pointer', }}>
                     {branch.name}
                   </Link>
                   {branch.phone && (
@@ -207,17 +194,17 @@ export const RegionOverview = ({ region, loading = false }: RegionOverviewProps)
             </Box>
           )}
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2 }}/>
 
           {/* Audit Information */}
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Audit Information
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <DetailRow label="Created At" value={formatDate(region.created_at)} />
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <DetailRow label="Last Updated" value={formatDate(region.updated_at)} />
             </Grid>
           </Grid>

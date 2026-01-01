@@ -6,9 +6,9 @@ import { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
-  Grid,
   Button,
   CircularProgress,
+  Grid,
 } from '@mui/material';
 import {
   Region,
@@ -52,9 +52,7 @@ export const RegionForm = ({
       setFormData({
         name: initialData.name || '',
         description: initialData.description || '',
-      });
-    }
-  }, [mode, initialData]);
+      }); }}, [mode, initialData]);
 
   const handleChange = (field: keyof FormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -67,9 +65,7 @@ export const RegionForm = ({
         const updated = { ...prev };
         delete updated[field];
         return updated;
-      });
-    }
-  };
+      }); }};
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
@@ -117,7 +113,7 @@ export const RegionForm = ({
     <form onSubmit={handleSubmit}>
       <Grid container spacing={2}>
         {/* Name */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             label="Region Name"
             value={formData.name}
@@ -132,7 +128,7 @@ export const RegionForm = ({
         </Grid>
 
         {/* Description */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             label="Description"
             value={formData.description}
@@ -148,7 +144,7 @@ export const RegionForm = ({
         </Grid>
 
         {/* Form Actions */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
             <Button
               variant="outlined"

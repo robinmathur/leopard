@@ -7,13 +7,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardActionArea,
   CircularProgress,
   Alert,
   Chip,
+  Grid,
 } from '@mui/material';
 import { Timeline, CheckCircle } from '@mui/icons-material';
 import { listApplicationTypes } from '@/services/api/collegeApplicationApi';
@@ -33,14 +33,10 @@ export const ApplicationTrackerLanding: React.FC = () => {
 
         // Auto-redirect to first application type if only one exists
         if (response.results.length === 1) {
-          navigate(`/application-manager/tracker/${response.results[0].id}`, { replace: true });
-        }
-      } catch (err: any) {
+          navigate(`/application-manager/tracker/${response.results[0].id}`, { replace: true }); }}catch (err: any) {
         setError(err.message || 'Failed to load application types');
       } finally {
-        setLoading(false);
-      }
-    };
+        setLoading(false); }};
 
     fetchApplicationTypes();
   }, [navigate]);
@@ -88,7 +84,7 @@ export const ApplicationTrackerLanding: React.FC = () => {
 
       <Grid container spacing={3}>
         {applicationTypes.map((type) => (
-          <Grid item xs={12} sm={6} md={4} key={type.id}>
+          <Grid key={type.id}size={{ xs: 12, sm: 6, md: 4 }}>
             <Card
               sx={{
                 height: '100%',
@@ -96,16 +92,13 @@ export const ApplicationTrackerLanding: React.FC = () => {
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: 3,
-                },
-              }}
-            >
+                }, }}>
               <CardActionArea
                 onClick={() => handleTypeClick(type.id)}
-                sx={{ height: '100%', p: 2 }}
-              >
+                sx={{ height: '100%', p: 2 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Timeline sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                    <Timeline sx={{ fontSize: 40, color: 'primary.main', mr: 2 }}/>
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>
                         {type.title}

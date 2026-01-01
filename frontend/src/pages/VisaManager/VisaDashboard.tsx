@@ -5,7 +5,6 @@
 import { useEffect, useState } from 'react';
 import {
   Box,
-  Grid,
   Paper,
   Typography,
   Card,
@@ -13,6 +12,7 @@ import {
   CircularProgress,
   Alert,
   Chip,
+  Grid,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -58,9 +58,7 @@ const StatCard = ({ title, value, icon, color, subtitle }: StatCardProps) => (
             backgroundColor: `${color}15`,
             borderRadius: 2,
             p: 1,
-            color: color,
-          }}
-        >
+            color: color, }}>
           {icon}
         </Box>
       </Box>
@@ -120,17 +118,13 @@ const StatusBreakdown = ({ statusBreakdown }: StatusBreakdownProps) => {
                   height: 8,
                   backgroundColor: '#E0E0E0',
                   borderRadius: 1,
-                  overflow: 'hidden',
-                }}
-              >
+                  overflow: 'hidden', }}>
                 <Box
                   sx={{
                     width: `${percentage}%`,
                     height: '100%',
                     backgroundColor: getStatusColor(status),
-                    transition: 'width 0.3s ease',
-                  }}
-                />
+                    transition: 'width 0.3s ease', }}/>
               </Box>
             </Box>
           );
@@ -177,17 +171,13 @@ const VisaTypeBreakdown = ({ visaTypeBreakdown }: VisaTypeBreakdownProps) => {
                   height: 8,
                   backgroundColor: '#E0E0E0',
                   borderRadius: 1,
-                  overflow: 'hidden',
-                }}
-              >
+                  overflow: 'hidden', }}>
                 <Box
                   sx={{
                     width: `${percentage}%`,
                     height: '100%',
                     backgroundColor: color,
-                    transition: 'width 0.3s ease',
-                  }}
-                />
+                    transition: 'width 0.3s ease', }}/>
               </Box>
             </Box>
           );
@@ -238,9 +228,7 @@ const RecentApplications = ({ recentApplications }: RecentApplicationsProps) => 
               borderRadius: 1,
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+              alignItems: 'center', }}>
             <Box>
               <Typography variant="body2" fontWeight={500}>
                 {app.client__first_name} {app.client__last_name}
@@ -284,22 +272,15 @@ export const VisaDashboard = () => {
         setError(null);
         const data = await getVisaDashboardStatistics(abortController.signal);
         if (isMounted) {
-          setStatistics(data);
-        }
-      } catch (err: any) {
+          setStatistics(data); }}catch (err: any) {
         // Ignore abort errors
         if (err.name === 'CanceledError' || abortController.signal.aborted) {
           return;
         }
         if (isMounted) {
-          setError(err.message || 'Failed to fetch dashboard statistics');
-        }
-      } finally {
+          setError(err.message || 'Failed to fetch dashboard statistics'); }}finally {
         if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+          setLoading(false); }}};
 
     fetchStatistics();
 
@@ -346,7 +327,7 @@ export const VisaDashboard = () => {
 
       {/* Top Statistics Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <StatCard
             title="Total Applications"
             value={statistics.total_applications}
@@ -354,7 +335,7 @@ export const VisaDashboard = () => {
             color="#2196F3"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <StatCard
             title="Applications Today"
             value={statistics.time_based_counts.today}
@@ -363,7 +344,7 @@ export const VisaDashboard = () => {
             subtitle={`${statistics.time_based_counts.this_week} this week`}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <StatCard
             title="Granted This Month"
             value={statistics.granted_counts.this_month}
@@ -372,7 +353,7 @@ export const VisaDashboard = () => {
             subtitle={`${statistics.granted_counts.today} today`}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <StatCard
             title="Pending Assignments"
             value={statistics.pending_assignments}
@@ -380,7 +361,7 @@ export const VisaDashboard = () => {
             color="#9C27B0"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <StatCard
             title="In Progress"
             value={statistics.status_breakdown.VISA_APPLIED + statistics.status_breakdown.CASE_OPENED}
@@ -388,7 +369,7 @@ export const VisaDashboard = () => {
             color="#FF9800"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <StatCard
             title="Rejected"
             value={statistics.status_breakdown.REJECTED}
@@ -400,13 +381,13 @@ export const VisaDashboard = () => {
 
       {/* Charts and Breakdown */}
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <StatusBreakdown statusBreakdown={statistics.status_breakdown} />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <VisaTypeBreakdown visaTypeBreakdown={statistics.visa_type_breakdown} />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <RecentApplications recentApplications={statistics.recent_applications} />
         </Grid>
       </Grid>

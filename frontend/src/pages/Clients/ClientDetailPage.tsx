@@ -15,9 +15,9 @@ import {
   Alert,
   Tabs,
   Tab,
-  Grid,
   Paper,
   Divider,
+  Grid,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -87,9 +87,7 @@ const formatDate = (dateString?: string): string => {
   try {
     return new Date(dateString).toLocaleDateString();
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Detail row component
@@ -164,10 +162,7 @@ export const ClientDetailPage = () => {
         // Map visa-applications to applications for the store (they share the same loaded section)
         const sectionKey = urlTab === 'visa-applications' ? 'applications' : urlTab;
         markSectionLoaded(sectionKey as keyof typeof loadedSections);
-        setCurrentTab(urlTab);
-      }
-    }
-    return () => {
+        setCurrentTab(urlTab); }}return () => {
       cancelFetchClientById();
       cancelFetchTimeline();
       clearError();
@@ -181,9 +176,7 @@ export const ClientDetailPage = () => {
     if (id) {
       fetchTimeline(parseInt(id, 10), {
         activity_type: activeFilter || undefined,
-      });
-    }
-  };
+      }); }};
 
   // Handle filter change
   const handleFilterChange = (activityType: string | null) => {
@@ -192,23 +185,19 @@ export const ClientDetailPage = () => {
       fetchTimeline(parseInt(id, 10), {
         activity_type: activityType || undefined,
         page: 1,
-      });
-    }
-  };
+      }); }};
 
   // Handle load more
   const handleLoadMore = () => {
     if (id) {
-      loadMore(parseInt(id, 10));
-    }
-  };
+      loadMore(parseInt(id, 10)); }};
 
   const handleBack = () => {
     navigate(fromPath);
   };
 
   const handleEdit = () => {
-    navigate(fromPath, { state: { editClientId: id } });
+    navigate(fromPath, { state: { editClientId: id }});
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: TabValue) => {
@@ -345,7 +334,7 @@ export const ClientDetailPage = () => {
       <TabPanel value="overview" currentValue={activeTab}>
         <Grid container spacing={3}>
           {/* Left Side: Client Basic Details */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
               {/* Profile Picture */}
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
@@ -370,7 +359,7 @@ export const ClientDetailPage = () => {
                 </Box>
               </Box>
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }}/>
 
               {/* Personal Information */}
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -382,7 +371,7 @@ export const ClientDetailPage = () => {
               <DetailRow label="Date of Birth" value={formatDate(client.dob)} />
               <DetailRow label="Country" value={getCountryName(client.country)} />
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }}/>
 
               {/* Contact Information */}
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -391,7 +380,7 @@ export const ClientDetailPage = () => {
               <DetailRow label="Email" value={client.email} />
               <DetailRow label="Phone Number" value={client.phone_number} />
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }}/>
 
               {/* Assignment & Status */}
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -419,7 +408,7 @@ export const ClientDetailPage = () => {
           </Grid>
 
           {/* Right Side: Timeline */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
                 Timeline
@@ -486,15 +475,11 @@ export const ClientDetailPage = () => {
               const newSearchParams = new URLSearchParams(searchParams);
               newSearchParams.set('tab', 'applications');
               newSearchParams.set('collegeApplicationId', applicationId.toString());
-              setSearchParams(newSearchParams, { replace: true });
-            }}
-            onDetailClose={() => {
+              setSearchParams(newSearchParams, { replace: true }); }}onDetailClose={() => {
               // Remove collegeApplicationId from URL when detail is closed
               const newSearchParams = new URLSearchParams(searchParams);
               newSearchParams.delete('collegeApplicationId');
-              setSearchParams(newSearchParams, { replace: true });
-            }}
-          />
+              setSearchParams(newSearchParams, { replace: true }); }}/>
         ) : (
           <Alert severity="info">Click on Applications tab to load applications</Alert>
         )}
@@ -511,15 +496,11 @@ export const ClientDetailPage = () => {
               const newSearchParams = new URLSearchParams(searchParams);
               newSearchParams.set('tab', 'visa-applications');
               newSearchParams.set('visaApplicationId', applicationId.toString());
-              setSearchParams(newSearchParams, { replace: true });
-            }}
-            onDetailClose={() => {
+              setSearchParams(newSearchParams, { replace: true }); }}onDetailClose={() => {
               // Remove visaApplicationId from URL when detail is closed
               const newSearchParams = new URLSearchParams(searchParams);
               newSearchParams.delete('visaApplicationId');
-              setSearchParams(newSearchParams, { replace: true });
-            }}
-          />
+              setSearchParams(newSearchParams, { replace: true }); }}/>
         ) : (
           <Alert severity="info">Click on Visa Applications tab to load applications</Alert>
         )}

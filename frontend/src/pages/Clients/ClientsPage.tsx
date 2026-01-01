@@ -627,12 +627,14 @@ export const ClientsPage = () => {
             onChange={(e) => handleSimpleSearchChange(e.target.value)}
             size="small"
             fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search fontSize="small" />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
           <Button
@@ -668,7 +670,7 @@ export const ClientsPage = () => {
               Advanced Filters
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   select
                   label="Stage"
@@ -686,7 +688,7 @@ export const ClientsPage = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   select
                   label="Active Status"
@@ -704,7 +706,7 @@ export const ClientsPage = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   select
                   label="Visa Category"
@@ -722,7 +724,7 @@ export const ClientsPage = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <UserAutocomplete
                   value={assignedToUser}
                   onChange={(user) => {

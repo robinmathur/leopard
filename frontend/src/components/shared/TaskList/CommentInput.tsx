@@ -245,7 +245,7 @@ export const CommentInput = ({
               {mentionUsers.map((user, index) => (
                 <ListItem
                   key={user.id}
-                  button
+                  component="button"
                   selected={index === selectedMentionIndex}
                   onClick={() => handleInsertMention(user)}
                   sx={{

@@ -273,9 +273,11 @@ export const ClientCollegeApplications = ({
         onClose={handleCloseCreateDialog}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            maxHeight: '90vh',
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: '90vh',
+            },
           },
         }}
       >

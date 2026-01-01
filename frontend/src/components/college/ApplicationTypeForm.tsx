@@ -55,9 +55,7 @@ export const ApplicationTypeForm: React.FC<ApplicationTypeFormProps> = ({
         tax_name: initialData.tax_name || '',
         tax_percentage: initialData.tax_percentage,
         description: initialData.description || '',
-      });
-    }
-  }, [initialData]);
+      }); }}, [initialData]);
 
   const handleChange = (field: string) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -87,7 +85,7 @@ export const ApplicationTypeForm: React.FC<ApplicationTypeFormProps> = ({
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Title"
@@ -98,7 +96,7 @@ export const ApplicationTypeForm: React.FC<ApplicationTypeFormProps> = ({
               />
             </Grid>
 
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 select
@@ -115,7 +113,7 @@ export const ApplicationTypeForm: React.FC<ApplicationTypeFormProps> = ({
               </TextField>
             </Grid>
 
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 label="Tax Name"
@@ -125,19 +123,18 @@ export const ApplicationTypeForm: React.FC<ApplicationTypeFormProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 type="number"
                 label="Tax Percentage (%)"
                 value={formData.tax_percentage}
                 onChange={handleChange('tax_percentage')}
-                inputProps={{ min: 0, max: 100, step: 0.01 }}
-                required
+                inputProps={{ min: 0, max: 100, step: 0.01 }}required
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 multiline

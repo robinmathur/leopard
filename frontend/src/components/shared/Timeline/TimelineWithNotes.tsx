@@ -82,7 +82,6 @@ export const TimelineWithNotes = ({
   const { addNote } = useNoteStore();
   const { hasPermission } = usePermission();
   const canAddNote = hasPermission('add_note');
-  const canAddReminder = hasPermission('add_reminder');
 
   // Note form state
   const [noteContent, setNoteContent] = useState('');
@@ -271,7 +270,7 @@ export const TimelineWithNotes = ({
               fullWidth
               required
               disabled={isSubmittingReminder}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
             <TextField
               label="Reminder Time (Optional)"
@@ -280,7 +279,7 @@ export const TimelineWithNotes = ({
               onChange={(e) => setReminderTime(e.target.value)}
               fullWidth
               disabled={isSubmittingReminder}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
         </DialogContent>
@@ -362,7 +361,7 @@ const GroupedTimelineContent = ({ activities }: { activities: any[] }) => {
 
   return (
     <Box>
-      {groupedActivities.map((group, groupIndex) => (
+      {groupedActivities.map((group) => (
         <Box key={group.key}>
           {/* Date Header */}
           <TimelineDateHeader label={group.label} date={group.date} />
@@ -422,7 +421,7 @@ const TimelineItemWithTimestamp = ({
   isLast: boolean;
 }) => {
   const relativeTime = useRelativeTime(activity.created_at);
-  const { time, date } = formatTimelineDate(activity.created_at);
+  const { time} = formatTimelineDate(activity.created_at);
   
   // Format date more compactly for timeline
   const formatCompactDate = (dateString: string): string => {

@@ -11,12 +11,12 @@ import {
   Skeleton,
   Button,
   Chip,
-  Grid,
   Divider,
   Dialog,
   DialogTitle,
   DialogContent,
   IconButton,
+  Grid,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -76,9 +76,7 @@ const formatDate = (dateString?: string): string => {
       day: 'numeric',
     });
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Format currency for display
@@ -92,9 +90,7 @@ const formatCurrency = (amount: string, currency: string): string => {
       currency: currency || 'USD',
     }).format(value);
   } catch {
-    return `${amount} ${currency}`;
-  }
-};
+    return `${amount} ${currency}`; }};
 
 /**
  * Detail row component
@@ -113,9 +109,9 @@ const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) 
  */
 const DetailSkeleton = () => (
   <Box>
-    <Skeleton variant="rectangular" height={60} sx={{ mb: 2, borderRadius: 1 }} />
-    <Skeleton variant="text" width="60%" height={40} sx={{ mb: 2 }} />
-    <Skeleton variant="text" width="80%" height={40} sx={{ mb: 2 }} />
+    <Skeleton variant="rectangular" height={60} sx={{ mb: 2, borderRadius: 1 }}/>
+    <Skeleton variant="text" width="60%" height={40} sx={{ mb: 2 }}/>
+    <Skeleton variant="text" width="80%" height={40} sx={{ mb: 2 }}/>
     <Skeleton variant="text" width="70%" height={40} />
   </Box>
 );
@@ -155,21 +151,14 @@ export const VisaApplicationDetail = ({
       try {
         const data = await getVisaApplication(visaApplicationId);
         if (!abortController.signal.aborted && isMounted) {
-          setApplication(data);
-        }
-      } catch (err) {
+          setApplication(data); }}catch (err) {
         if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
           return;
         }
         if (isMounted) {
-          setError((err as Error).message || 'Failed to load visa application');
-        }
-      } finally {
+          setError((err as Error).message || 'Failed to load visa application'); }}finally {
         if (isMounted && !abortController.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    };
+          setIsLoading(false); }}};
 
     fetchData();
 
@@ -202,15 +191,11 @@ export const VisaApplicationDetail = ({
 
       // Notify parent component
       if (onUpdate) {
-        onUpdate();
-      }
-    } catch (err: any) {
+        onUpdate(); }}catch (err: any) {
       console.error('Failed to update visa application:', err);
       throw err; // Let the form handle the error
     } finally {
-      setFormLoading(false);
-    }
-  };
+      setFormLoading(false); }};
 
   const handleDocumentsChange = async (documents: DocumentChecklistItem[]) => {
     if (!application) return;
@@ -227,15 +212,11 @@ export const VisaApplicationDetail = ({
 
       // Notify parent component
       if (onUpdate) {
-        onUpdate();
-      }
-    } catch (err: any) {
+        onUpdate(); }}catch (err: any) {
       console.error('Failed to update documents:', err);
       // Revert on error
       const updated = await getVisaApplication(visaApplicationId);
-      setApplication(updated);
-    }
-  };
+      setApplication(updated); }};
 
   const handleDeleteClick = () => {
     setDeleteDialogOpen(true);
@@ -256,15 +237,11 @@ export const VisaApplicationDetail = ({
         onUpdate();
       }
       if (onClose) {
-        onClose();
-      }
-    } catch (err: any) {
+        onClose(); }}catch (err: any) {
       console.error('Failed to delete visa application:', err);
       alert('Failed to delete visa application. Please try again.');
     } finally {
-      setFormLoading(false);
-    }
-  };
+      setFormLoading(false); }};
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -301,11 +278,11 @@ export const VisaApplicationDetail = ({
 
   return (
     <>
-      <Paper sx={{ p: 3, mt: 3 }} elevation={2}>
+      <Paper sx={{ p: 3, mt: 3 }}elevation={2}>
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <FlightTakeoffIcon color="primary" sx={{ fontSize: 32 }} />
+            <FlightTakeoffIcon color="primary" sx={{ fontSize: 32 }}/>
             <Box>
               <Typography variant="h5" fontWeight={600}>
                 {application.visa_type_name}
@@ -329,7 +306,7 @@ export const VisaApplicationDetail = ({
           </Box>
         </Box>
 
-        <Divider sx={{ mb: 3 }} />
+        <Divider sx={{ mb: 3 }}/>
 
         {/* Action Buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 3 }}>
@@ -363,12 +340,12 @@ export const VisaApplicationDetail = ({
           </Box>
         </Box>
 
-        <Divider sx={{ mb: 3 }} />
+        <Divider sx={{ mb: 3 }}/>
 
         {/* Application Details */}
         <Grid container spacing={3}>
           {/* Basic Information */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Basic Information
             </Typography>
@@ -382,7 +359,7 @@ export const VisaApplicationDetail = ({
           </Grid>
 
           {/* Financial Information */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Financial Information
             </Typography>
@@ -397,7 +374,7 @@ export const VisaApplicationDetail = ({
           </Grid>
 
           {/* Important Dates */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Important Dates
             </Typography>
@@ -422,7 +399,7 @@ export const VisaApplicationDetail = ({
           </Grid>
 
           {/* Assignment & Metadata */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Assignment & Metadata
             </Typography>
@@ -437,7 +414,7 @@ export const VisaApplicationDetail = ({
           </Grid>
 
           {/* Required Documents Checklist */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Required Documents
             </Typography>
@@ -452,7 +429,7 @@ export const VisaApplicationDetail = ({
 
           {/* Notes */}
           {application.notes && (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 Notes
               </Typography>
@@ -472,9 +449,11 @@ export const VisaApplicationDetail = ({
         onClose={handleCloseEdit}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            maxHeight: '90vh',
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: '90vh',
+            },
           },
         }}
       >

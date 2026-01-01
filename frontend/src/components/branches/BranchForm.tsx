@@ -82,9 +82,7 @@ export const BranchForm = ({
         state: initialData.state || '',
         postcode: initialData.postcode || '',
         country: initialData.country || '',
-      });
-    }
-  }, [mode, initialData]);
+      }); }}, [mode, initialData]);
 
   const handleChange = (field: keyof FormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -97,9 +95,7 @@ export const BranchForm = ({
         const updated = { ...prev };
         delete updated[field];
         return updated;
-      });
-    }
-  };
+      }); }};
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
@@ -161,7 +157,7 @@ export const BranchForm = ({
     <form onSubmit={handleSubmit}>
       <Grid container spacing={2}>
         {/* Name */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <TextField
             label="Branch Name"
             value={formData.name}
@@ -175,7 +171,7 @@ export const BranchForm = ({
         </Grid>
 
         {/* Region */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <FormControl fullWidth size="small" error={!!getFieldError('region_id')}>
             <InputLabel>Region</InputLabel>
             <Select
@@ -187,9 +183,7 @@ export const BranchForm = ({
                     const updated = { ...prev };
                     delete updated.region_id;
                     return updated;
-                  });
-                }
-              }}
+                  }); }}}
               label="Region"
               disabled={loading}
             >
@@ -209,7 +203,7 @@ export const BranchForm = ({
         </Grid>
 
         {/* Contact Information */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ mb: 1 }}>
             <FormHelperText sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
               Contact Information
@@ -217,7 +211,7 @@ export const BranchForm = ({
           </Box>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Phone Number"
@@ -231,7 +225,7 @@ export const BranchForm = ({
           />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Website"
@@ -246,7 +240,7 @@ export const BranchForm = ({
         </Grid>
 
         {/* Address Information */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ mb: 1, mt: 1 }}>
             <FormHelperText sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
               Address Information
@@ -254,7 +248,7 @@ export const BranchForm = ({
           </Box>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Street Address"
@@ -268,7 +262,7 @@ export const BranchForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Suburb"
@@ -282,7 +276,7 @@ export const BranchForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="State/Province"
@@ -296,7 +290,7 @@ export const BranchForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Postcode"
@@ -311,7 +305,7 @@ export const BranchForm = ({
         </Grid>
 
         {/* Country */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <FormControl fullWidth size="small" error={!!getFieldError('country')}>
             <InputLabel>Country</InputLabel>
             <Select
@@ -323,9 +317,7 @@ export const BranchForm = ({
                     const updated = { ...prev };
                     delete updated.country;
                     return updated;
-                  });
-                }
-              }}
+                  }); }}}
               label="Country"
               disabled={loading}
             >
@@ -345,7 +337,7 @@ export const BranchForm = ({
         </Grid>
 
         {/* Form Actions */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
             <Button
               variant="outlined"

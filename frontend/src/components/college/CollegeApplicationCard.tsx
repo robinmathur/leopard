@@ -26,9 +26,7 @@ const formatDate = (dateString?: string): string => {
   try {
     return new Date(dateString).toLocaleDateString();
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Format currency for display
@@ -42,9 +40,7 @@ const formatCurrency = (amount: string): string => {
       currency: 'USD',
     }).format(value);
   } catch {
-    return amount;
-  }
-};
+    return amount; }};
 
 /**
  * Detail row component
@@ -79,9 +75,7 @@ export const CollegeApplicationCard = ({
           boxShadow: 2,
           cursor: 'pointer',
         },
-        transition: 'all 0.2s ease-in-out',
-      }}
-      onClick={onClick}
+        transition: 'all 0.2s ease-in-out', }}onClick={onClick}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
@@ -103,27 +97,27 @@ export const CollegeApplicationCard = ({
       </Box>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="Application Type" value={application.application_type_title} />
         </Grid>
         {application.location_display && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Location" value={application.location_display} />
           </Grid>
         )}
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="Intake Date" value={formatDate(application.intake_date)} />
         </Grid>
         {application.finish_date && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Finish Date" value={formatDate(application.finish_date)} />
           </Grid>
         )}
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="Tuition Fee" value={formatCurrency(application.total_tuition_fee)} />
         </Grid>
         {application.assigned_to_name && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Assigned To" value={application.assigned_to_name} />
           </Grid>
         )}

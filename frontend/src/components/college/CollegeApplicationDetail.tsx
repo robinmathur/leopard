@@ -55,9 +55,7 @@ const formatDate = (dateString?: string): string => {
       day: 'numeric',
     });
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Format currency for display
@@ -71,9 +69,7 @@ const formatCurrency = (amount: string): string => {
       currency: 'USD',
     }).format(value);
   } catch {
-    return amount;
-  }
-};
+    return amount; }};
 
 /**
  * Detail row component
@@ -92,9 +88,9 @@ const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) 
  */
 const DetailSkeleton = () => (
   <Box>
-    <Skeleton variant="rectangular" height={60} sx={{ mb: 2, borderRadius: 1 }} />
-    <Skeleton variant="text" width="60%" height={40} sx={{ mb: 2 }} />
-    <Skeleton variant="text" width="80%" height={40} sx={{ mb: 2 }} />
+    <Skeleton variant="rectangular" height={60} sx={{ mb: 2, borderRadius: 1 }}/>
+    <Skeleton variant="text" width="60%" height={40} sx={{ mb: 2 }}/>
+    <Skeleton variant="text" width="80%" height={40} sx={{ mb: 2 }}/>
     <Skeleton variant="text" width="70%" height={40} />
   </Box>
 );
@@ -134,21 +130,14 @@ export const CollegeApplicationDetail = ({
       try {
         const data = await getCollegeApplication(collegeApplicationId);
         if (!abortController.signal.aborted && isMounted) {
-          setApplication(data);
-        }
-      } catch (err) {
+          setApplication(data); }}catch (err) {
         if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
           return;
         }
         if (isMounted) {
-          setError((err as Error).message || 'Failed to load college application');
-        }
-      } finally {
+          setError((err as Error).message || 'Failed to load college application'); }}finally {
         if (isMounted && !abortController.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    };
+          setIsLoading(false); }}};
 
     fetchData();
 
@@ -181,15 +170,11 @@ export const CollegeApplicationDetail = ({
 
       // Notify parent component
       if (onUpdate) {
-        onUpdate();
-      }
-    } catch (err: any) {
+        onUpdate(); }}catch (err: any) {
       console.error('Failed to update college application:', err);
       throw err; // Let the form handle the error
     } finally {
-      setFormLoading(false);
-    }
-  };
+      setFormLoading(false); }};
 
   const handleDeleteClick = () => {
     setDeleteDialogOpen(true);
@@ -210,15 +195,11 @@ export const CollegeApplicationDetail = ({
         onUpdate();
       }
       if (onClose) {
-        onClose();
-      }
-    } catch (err: any) {
+        onClose(); }}catch (err: any) {
       console.error('Failed to delete college application:', err);
       alert('Failed to delete college application. Please try again.');
     } finally {
-      setFormLoading(false);
-    }
-  };
+      setFormLoading(false); }};
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -255,11 +236,11 @@ export const CollegeApplicationDetail = ({
 
   return (
     <>
-      <Paper sx={{ p: 3, mt: 3 }} elevation={2}>
+      <Paper sx={{ p: 3, mt: 3 }}elevation={2}>
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <SchoolIcon color="primary" sx={{ fontSize: 32 }} />
+            <SchoolIcon color="primary" sx={{ fontSize: 32 }}/>
             <Box>
               <Typography variant="h5" fontWeight={600}>
                 {application.course_name}
@@ -283,7 +264,7 @@ export const CollegeApplicationDetail = ({
           </Box>
         </Box>
 
-        <Divider sx={{ mb: 3 }} />
+        <Divider sx={{ mb: 3 }}/>
 
         {/* Action Buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 3 }}>
@@ -317,12 +298,12 @@ export const CollegeApplicationDetail = ({
           </Box>
         </Box>
 
-        <Divider sx={{ mb: 3 }} />
+        <Divider sx={{ mb: 3 }}/>
 
         {/* Application Details */}
         <Grid container spacing={3}>
           {/* Basic Information */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Basic Information
             </Typography>
@@ -337,7 +318,7 @@ export const CollegeApplicationDetail = ({
           </Grid>
 
           {/* Institute & Course Information */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Institute & Course
             </Typography>
@@ -347,7 +328,7 @@ export const CollegeApplicationDetail = ({
           </Grid>
 
           {/* Important Dates */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Important Dates
             </Typography>
@@ -358,7 +339,7 @@ export const CollegeApplicationDetail = ({
           </Grid>
 
           {/* Financial Information */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Financial Information
             </Typography>
@@ -372,7 +353,7 @@ export const CollegeApplicationDetail = ({
           </Grid>
 
           {/* Agent Information */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Agent Information
             </Typography>
@@ -388,7 +369,7 @@ export const CollegeApplicationDetail = ({
           </Grid>
 
           {/* Assignment & Metadata */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Assignment & Metadata
             </Typography>
@@ -404,7 +385,7 @@ export const CollegeApplicationDetail = ({
 
           {/* Notes */}
           {application.notes && (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 Notes
               </Typography>
@@ -424,9 +405,11 @@ export const CollegeApplicationDetail = ({
         onClose={handleCloseEdit}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            maxHeight: '90vh',
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: '90vh',
+            },
           },
         }}
       >

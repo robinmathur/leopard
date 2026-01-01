@@ -11,13 +11,14 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-  Grid,
   Button,
   CircularProgress,
   Checkbox,
   FormControlLabel,
+  Grid,
+  Autocomplete,
+  Chip,
 } from '@mui/material';
-import { Autocomplete, Chip } from '@mui/material';
 import { GROUP_OPTIONS } from '@/constants/groups';
 import type { User, UserCreateRequest, UserUpdateRequest } from '@/types/user';
 import type { BranchData } from '@/auth/types';
@@ -80,14 +81,10 @@ export const UserForm = ({
         // In a real scenario, you'd have a branches API endpoint
         const currentUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
         if (currentUser.branches) {
-          setBranches(currentUser.branches);
-        }
-      } catch (error) {
+          setBranches(currentUser.branches); }}catch (error) {
         console.error('Failed to fetch branches:', error);
       } finally {
-        setLoadingBranches(false);
-      }
-    };
+        setLoadingBranches(false); }};
     fetchBranches();
   }, []);
 
@@ -105,13 +102,10 @@ export const UserForm = ({
         tenant_id: initialData.tenant ? String(initialData.tenant) : '',
         branch_ids: initialData.branches_data?.map(b => b.id) || [],
         is_active: initialData.is_active,
-      });
-    }
-  }, [mode, initialData]);
+      }); }}, [mode, initialData]);
 
   const handleChange = (field: keyof FormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown } }
-  ) => {
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown }}) => {
     const value = event.target.value;
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear local error when field changes
@@ -120,9 +114,7 @@ export const UserForm = ({
         const updated = { ...prev };
         delete updated[field];
         return updated;
-      });
-    }
-  };
+      }); }};
 
   const handleCheckboxChange = (field: keyof FormData) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -209,7 +201,7 @@ export const UserForm = ({
       <Grid container spacing={2}>
         {/* Username (only for add mode) */}
         {mode === 'add' && (
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required
               fullWidth
@@ -225,7 +217,7 @@ export const UserForm = ({
         )}
 
         {/* Email */}
-        <Grid item xs={12} sm={mode === 'add' ? 6 : 12}>
+        <Grid sm={mode === 'add' ? 6 : 12}size={{ xs: 12 }}>
           <TextField
             required
             fullWidth
@@ -241,7 +233,7 @@ export const UserForm = ({
         </Grid>
 
         {/* Password */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             required={mode === 'add'}
             fullWidth
@@ -258,7 +250,7 @@ export const UserForm = ({
 
         {/* Confirm Password */}
         {(mode === 'add' || formData.password) && (
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               required={mode === 'add' || !!formData.password}
               fullWidth
@@ -275,7 +267,7 @@ export const UserForm = ({
         )}
 
         {/* First Name */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             required
             fullWidth
@@ -290,7 +282,7 @@ export const UserForm = ({
         </Grid>
 
         {/* Last Name */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             required
             fullWidth
@@ -305,7 +297,7 @@ export const UserForm = ({
         </Grid>
 
         {/* Group */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth size="small" required error={!!getFieldError('group_name')}>
             <InputLabel>Group</InputLabel>
             <Select
@@ -327,7 +319,7 @@ export const UserForm = ({
         </Grid>
 
         {/* Tenant ID */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Tenant ID"
@@ -342,7 +334,7 @@ export const UserForm = ({
         </Grid>
 
         {/* Branches */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <Autocomplete
             multiple
             options={branches}
@@ -352,9 +344,7 @@ export const UserForm = ({
               setFormData((prev) => ({
                 ...prev,
                 branch_ids: newValue.map(b => b.id),
-              }));
-            }}
-            loading={loadingBranches}
+              })); }}loading={loadingBranches}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -379,7 +369,7 @@ export const UserForm = ({
         </Grid>
 
         {/* Active Status */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <FormControlLabel
             control={
               <Checkbox
@@ -393,7 +383,7 @@ export const UserForm = ({
         </Grid>
 
         {/* Action Buttons */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
             <Button
               variant="outlined"

@@ -140,16 +140,12 @@ export const VisaApplicationsManagementPage = () => {
       try {
         const typesResponse = await getVisaTypes({ page_size: 1000 }, abortController.signal);
         if (!abortController.signal.aborted) {
-          setVisaTypes(typesResponse.results);
-        }
-      } catch (err: any) {
+          setVisaTypes(typesResponse.results); }}catch (err: any) {
         // Ignore abort errors
         if (err.name === 'CanceledError' || abortController.signal.aborted) {
           return;
         }
-        console.error('Failed to fetch dropdown data:', err);
-      }
-    };
+        console.error('Failed to fetch dropdown data:', err); }};
 
     fetchDropdownData();
 
@@ -183,9 +179,7 @@ export const VisaApplicationsManagementPage = () => {
       const response = await listVisaApplications(params, signal);
       if (!signal?.aborted) {
         setApplications(response.results);
-        setTotalCount(response.count);
-      }
-    } catch (err: any) {
+        setTotalCount(response.count); }}catch (err: any) {
       // Ignore abort errors
       if (err.name === 'CanceledError' || signal?.aborted) {
         return;
@@ -222,9 +216,7 @@ export const VisaApplicationsManagementPage = () => {
       return () => {
         clearTimeout(debounceTimer);
         fetchAbortControllerRef.current?.abort();
-      };
-    }
-  }, [searchFilters.client_name, page, pageSize, fetchApplications]);
+      }; }}, [searchFilters.client_name, page, pageSize, fetchApplications]);
 
   // Reset advanced filters applied flag when filters are cleared manually
   useEffect(() => {
@@ -237,9 +229,7 @@ export const VisaApplicationsManagementPage = () => {
       searchFilters.date_applied_to !== '';
     
     if (!hasAdvancedFilters) {
-      setAdvancedFiltersApplied(false);
-    }
-  }, [searchFilters]);
+      setAdvancedFiltersApplied(false); }}, [searchFilters]);
 
   // Search handlers
   const handleSimpleSearchChange = (value: string) => {
@@ -361,8 +351,7 @@ export const VisaApplicationsManagementPage = () => {
   const handleView = (application: VisaApplication) => {
     // Navigate to client detail page with visa applications tab and visa application ID
     navigate(`/clients/${application.client}?tab=visa-applications&visaApplicationId=${application.id}`, {
-      state: { from: '/visa-manager/applications' }
-    });
+      state: { from: '/visa-manager/applications' }});
   };
 
   const handleEdit = (application: VisaApplication) => {
@@ -396,9 +385,7 @@ export const VisaApplicationsManagementPage = () => {
         severity: 'error',
       });
     } finally {
-      setDeleteLoading(false);
-    }
-  };
+      setDeleteLoading(false); }};
 
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false);
@@ -444,9 +431,7 @@ export const VisaApplicationsManagementPage = () => {
         severity: 'error',
       });
     } finally {
-      setFormLoading(false);
-    }
-  };
+      setFormLoading(false); }};
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -455,8 +440,7 @@ export const VisaApplicationsManagementPage = () => {
   const handleClientClick = (clientId: number) => {
     // Navigate to client detail page with state for back navigation
     navigate(`/clients/${clientId}`, { 
-      state: { from: '/visa-manager/applications' } 
-    });
+      state: { from: '/visa-manager/applications' }});
   };
 
   const getStatusColor = (status: string): 'default' | 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success' => {
@@ -507,7 +491,7 @@ export const VisaApplicationsManagementPage = () => {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 2 }}onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
@@ -527,12 +511,14 @@ export const VisaApplicationsManagementPage = () => {
                 ? 'Type at least 2 characters to search'
                 : ''
             }
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search fontSize="small" />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
           <Button
@@ -540,8 +526,7 @@ export const VisaApplicationsManagementPage = () => {
             startIcon={<FilterList />}
             endIcon={showAdvancedSearch ? <ExpandLess /> : <ExpandMore />}
             onClick={toggleAdvancedSearch}
-            sx={{ minWidth: 180 }}
-          >
+            sx={{ minWidth: 180 }}>
             Advanced Search
           </Button>
           <IconButton
@@ -561,7 +546,7 @@ export const VisaApplicationsManagementPage = () => {
               Advanced Filters
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   select
                   label="Status"
@@ -579,7 +564,7 @@ export const VisaApplicationsManagementPage = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   select
                   label="Visa Type"
@@ -597,7 +582,7 @@ export const VisaApplicationsManagementPage = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <UserAutocomplete
                   value={assignedToUser}
                   onChange={(user) => {
@@ -610,7 +595,7 @@ export const VisaApplicationsManagementPage = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <UserAutocomplete
                   value={createdByUser}
                   onChange={(user) => {
@@ -623,7 +608,7 @@ export const VisaApplicationsManagementPage = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   type="date"
                   label="Date Applied From"
@@ -631,11 +616,11 @@ export const VisaApplicationsManagementPage = () => {
                   onChange={(e) => handleAdvancedFilterChange('date_applied_from', e.target.value)}
                   size="small"
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   type="date"
                   label="Date Applied To"
@@ -643,7 +628,7 @@ export const VisaApplicationsManagementPage = () => {
                   onChange={(e) => handleAdvancedFilterChange('date_applied_to', e.target.value)}
                   size="small"
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               </Grid>
             </Grid>
@@ -715,9 +700,7 @@ export const VisaApplicationsManagementPage = () => {
                           color: 'primary.main',
                           '&:hover': {
                             textDecoration: 'underline',
-                          },
-                        }}
-                      >
+                          }, }}>
                         {app.client_name}
                       </Link>
                     </TableCell>
@@ -829,14 +812,12 @@ export const VisaApplicationsManagementPage = () => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ width: '100%' }}
-        >
+          sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

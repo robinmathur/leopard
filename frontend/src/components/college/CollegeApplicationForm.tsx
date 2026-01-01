@@ -8,11 +8,11 @@ import {
   Box,
   TextField,
   MenuItem,
-  Grid,
   Button,
   CircularProgress,
   Typography,
   Autocomplete,
+  Grid,
 } from '@mui/material';
 import { CollegeApplication } from '@/types/collegeApplication';
 import {
@@ -194,15 +194,9 @@ export const CollegeApplicationForm = ({
 
           // Auto-select first stage if not in edit mode
           if (mode === 'add' && stagesList.length > 0 && !formData.stage) {
-            handleChange('stage', stagesList[0].id);
-          }
-        } catch (err) {
-          console.error('Failed to fetch stages:', err);
-        }
-      } else {
-        setStages([]);
-      }
-    };
+            handleChange('stage', stagesList[0].id); }}catch (err) {
+          console.error('Failed to fetch stages:', err); }}else {
+        setStages([]); }};
 
     fetchStages();
   }, [formData.application_type]);
@@ -231,21 +225,15 @@ export const CollegeApplicationForm = ({
               (initialData && initialData.institute !== formData.institute)) {
             handleChange('course', '');
             handleChange('location', '');
-            handleChange('start_date', '');
-          }
-        } catch (err) {
-          console.error('Failed to fetch institute-related data:', err);
-        }
-      } else {
+            handleChange('start_date', ''); }}catch (err) {
+          console.error('Failed to fetch institute-related data:', err); }}else {
         // Clear cascading dropdowns
         setCourses([]);
         setLocations([]);
         setIntakes([]);
         handleChange('course', '');
         handleChange('location', '');
-        handleChange('start_date', '');
-      }
-    };
+        handleChange('start_date', ''); }};
 
     fetchInstituteRelatedData();
   }, [formData.institute]);
@@ -258,9 +246,7 @@ export const CollegeApplicationForm = ({
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
-      });
-    }
-  };
+      }); }};
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -337,18 +323,14 @@ export const CollegeApplicationForm = ({
     <Box sx={{ pt: 2 }}>
       <Grid container spacing={2}>
         {/* Client Selection - Searchable Autocomplete */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <Autocomplete
             value={selectedClient}
             onChange={(_, newValue) => {
               setSelectedClient(newValue);
-              handleChange('client', newValue?.id || '');
-            }}
-            inputValue={clientSearchTerm}
+              handleChange('client', newValue?.id || ''); }}inputValue={clientSearchTerm}
             onInputChange={(_, newInputValue) => {
-              setClientSearchTerm(newInputValue);
-            }}
-            options={clientOptions}
+              setClientSearchTerm(newInputValue); }}options={clientOptions}
             getOptionLabel={(option) =>
               `${option.first_name} ${option.last_name}${option.email ? ` (${option.email})` : ''}`
             }
@@ -379,9 +361,7 @@ export const CollegeApplicationForm = ({
                       {clientLoading ? <CircularProgress size={20} /> : null}
                       {params.InputProps.endAdornment}
                     </>
-                  ),
-                }}
-              />
+                  ), }}/>
             )}
             renderOption={(props, option) => (
               <li {...props} key={option.id}>
@@ -401,7 +381,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Application Type */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Application Type *"
@@ -423,7 +403,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Stage */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Stage *"
@@ -445,7 +425,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Institute - Cascading Parent */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Institute *"
@@ -467,7 +447,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Course - Cascades from Institute */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Course *"
@@ -489,7 +469,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Location - Cascades from Institute */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Location *"
@@ -511,7 +491,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Intake Date - Cascades from Institute */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Intake Date *"
@@ -533,7 +513,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Finish Date */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="date"
             label="Finish Date"
@@ -542,12 +522,12 @@ export const CollegeApplicationForm = ({
             fullWidth
             size="small"
             disabled={loading}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Grid>
 
         {/* Tuition Fee */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="number"
             label="Total Tuition Fee *"
@@ -558,12 +538,11 @@ export const CollegeApplicationForm = ({
             disabled={loading}
             error={!!errors.total_tuition_fee}
             helperText={errors.total_tuition_fee}
-            inputProps={{ min: 0, step: 0.01 }}
-          />
+            inputProps={{ min: 0, step: 0.01 }}/>
         </Grid>
 
         {/* Student ID */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             label="Student ID"
             value={formData.student_id}
@@ -576,7 +555,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Super Agent - Filtered by SUPER_AGENT type */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Super Agent"
@@ -596,7 +575,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Sub Agent - Filtered by SUB_AGENT type */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Sub Agent"
@@ -616,7 +595,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Assigned To - Searchable */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <UserAutocomplete
             value={selectedUser}
             onChange={(user) => {
@@ -631,7 +610,7 @@ export const CollegeApplicationForm = ({
         </Grid>
 
         {/* Notes */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             label="Notes"
             value={formData.notes}

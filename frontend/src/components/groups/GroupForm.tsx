@@ -46,9 +46,7 @@ export const GroupForm = ({
     if (mode === 'edit' && initialData) {
       setFormData({
         name: initialData.name || '',
-      });
-    }
-  }, [mode, initialData]);
+      }); }}, [mode, initialData]);
 
   const handleChange = (field: keyof FormData) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -61,9 +59,7 @@ export const GroupForm = ({
         const updated = { ...prev };
         delete updated[field];
         return updated;
-      });
-    }
-  };
+      }); }};
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
@@ -99,7 +95,7 @@ export const GroupForm = ({
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Grid container spacing={2}>
         {/* Group Name */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             required
             fullWidth
@@ -120,7 +116,7 @@ export const GroupForm = ({
         </Grid>
 
         {/* Action Buttons */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
             <Button
               variant="outlined"

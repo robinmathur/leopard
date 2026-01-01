@@ -9,7 +9,6 @@ import {
   Box,
   Paper,
   Typography,
-  Grid,
   Card,
   CardContent,
   ToggleButtonGroup,
@@ -20,6 +19,7 @@ import {
   ListItem,
   ListItemText,
   Chip,
+  Grid,
 } from '@mui/material';
 import {
   School as SchoolIcon,
@@ -50,9 +50,7 @@ export const ApplicationDashboard: React.FC = () => {
     } catch (error) {
       console.error('Failed to load statistics:', error);
     } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(false); }};
 
   React.useEffect(() => {
     loadStatistics(timeFilter);
@@ -87,7 +85,7 @@ export const ApplicationDashboard: React.FC = () => {
 
       {/* Stat Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -103,7 +101,7 @@ export const ApplicationDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -119,7 +117,7 @@ export const ApplicationDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -139,7 +137,7 @@ export const ApplicationDashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -158,7 +156,7 @@ export const ApplicationDashboard: React.FC = () => {
 
       <Grid container spacing={3}>
         {/* Intake Date Breakdown */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Applications by Intake Date (Final Stage Only)
@@ -183,8 +181,7 @@ export const ApplicationDashboard: React.FC = () => {
                     <LinearProgress
                       variant="determinate"
                       value={(item.count / statistics.final_stage_count) * 100}
-                      sx={{ height: 8, borderRadius: 1 }}
-                    />
+                      sx={{ height: 8, borderRadius: 1 }}/>
                   </Box>
                 ))}
               </Box>
@@ -193,7 +190,7 @@ export const ApplicationDashboard: React.FC = () => {
         </Grid>
 
         {/* Application Type Breakdown */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Top Application Types
@@ -218,8 +215,7 @@ export const ApplicationDashboard: React.FC = () => {
                     <LinearProgress
                       variant="determinate"
                       value={(item.count / statistics.total_applications) * 100}
-                      sx={{ height: 8, borderRadius: 1 }}
-                      color="secondary"
+                      sx={{ height: 8, borderRadius: 1 }}color="secondary"
                     />
                   </Box>
                 ))}
@@ -229,7 +225,7 @@ export const ApplicationDashboard: React.FC = () => {
         </Grid>
 
         {/* Institute Breakdown */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Top Institutes
@@ -254,8 +250,7 @@ export const ApplicationDashboard: React.FC = () => {
                     <LinearProgress
                       variant="determinate"
                       value={(item.count / statistics.total_applications) * 100}
-                      sx={{ height: 8, borderRadius: 1 }}
-                      color="info"
+                      sx={{ height: 8, borderRadius: 1 }}color="info"
                     />
                   </Box>
                 ))}
@@ -265,7 +260,7 @@ export const ApplicationDashboard: React.FC = () => {
         </Grid>
 
         {/* Recent Applications */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Recent Applications
@@ -284,9 +279,7 @@ export const ApplicationDashboard: React.FC = () => {
                       border: '1px solid',
                       borderColor: 'divider',
                       borderRadius: 1,
-                      mb: 1,
-                    }}
-                  >
+                      mb: 1, }}>
                     <ListItemText
                       primary={`${app.client__first_name} ${app.client__last_name}`}
                       secondary={

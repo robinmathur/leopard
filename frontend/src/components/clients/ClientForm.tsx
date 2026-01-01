@@ -105,13 +105,10 @@ export const ClientForm = ({
         stage: initialData.stage || 'LE',
         description: initialData.description || '',
         referred_by: initialData.referred_by || '',
-      });
-    }
-  }, [mode, initialData]);
+      }); }}, [mode, initialData]);
 
   const handleChange = (field: keyof FormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown } }
-  ) => {
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown }}) => {
     const value = event.target.value;
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear local error when field changes
@@ -120,9 +117,7 @@ export const ClientForm = ({
         const updated = { ...prev };
         delete updated[field];
         return updated;
-      });
-    }
-  };
+      }); }};
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
@@ -197,7 +192,7 @@ export const ClientForm = ({
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Grid container spacing={2}>
         {/* Name Fields */}
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             required
             fullWidth
@@ -210,7 +205,7 @@ export const ClientForm = ({
             disabled={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             fullWidth
             label="Middle Name"
@@ -222,7 +217,7 @@ export const ClientForm = ({
             disabled={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             fullWidth
             label="Last Name"
@@ -236,7 +231,7 @@ export const ClientForm = ({
         </Grid>
 
         {/* Contact Fields */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Email"
@@ -249,7 +244,7 @@ export const ClientForm = ({
             disabled={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Phone Number"
@@ -263,7 +258,7 @@ export const ClientForm = ({
         </Grid>
 
         {/* Gender */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl component="fieldset" error={!!getFieldError('gender')}>
             <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>
               Gender *
@@ -289,7 +284,7 @@ export const ClientForm = ({
         </Grid>
 
         {/* Date of Birth */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Date of Birth"
@@ -300,12 +295,12 @@ export const ClientForm = ({
             helperText={getFieldError('dob')}
             size="small"
             disabled={loading}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Grid>
 
         {/* Country */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth size="small" error={!!getFieldError('country')} required>
             <InputLabel>Country</InputLabel>
             <Select
@@ -328,7 +323,7 @@ export const ClientForm = ({
 
         {/* Stage (only for add mode) */}
         {mode === 'add' && (
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Stage</InputLabel>
               <Select
@@ -348,7 +343,7 @@ export const ClientForm = ({
         )}
 
         {/* Address Fields */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Street Address"
@@ -360,7 +355,7 @@ export const ClientForm = ({
             disabled={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             fullWidth
             label="Suburb"
@@ -372,7 +367,7 @@ export const ClientForm = ({
             disabled={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             fullWidth
             label="State"
@@ -384,7 +379,7 @@ export const ClientForm = ({
             disabled={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <TextField
             fullWidth
             label="Postcode"
@@ -398,7 +393,7 @@ export const ClientForm = ({
         </Grid>
 
         {/* Additional Fields */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Referred By"
@@ -410,7 +405,7 @@ export const ClientForm = ({
             disabled={loading}
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Description / Notes"
@@ -426,7 +421,7 @@ export const ClientForm = ({
         </Grid>
 
         {/* Actions */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
             <Button variant="outlined" onClick={onCancel} disabled={loading}>
               Cancel

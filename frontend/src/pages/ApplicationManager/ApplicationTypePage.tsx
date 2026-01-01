@@ -8,7 +8,6 @@ import {
   Paper,
   Typography,
   Button,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -22,6 +21,7 @@ import {
   DialogContentText,
   DialogActions,
   CircularProgress,
+  Grid,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -72,27 +72,19 @@ export const ApplicationTypePage: React.FC = () => {
       if (selectedType) {
         const updatedSelectedType = response.results.find((t) => t.id === selectedType.id);
         if (updatedSelectedType) {
-          setSelectedType(updatedSelectedType);
-        }
-      } else if (response.results.length > 0) {
+          setSelectedType(updatedSelectedType); }}else if (response.results.length > 0) {
         // Auto-select first type if available and nothing is selected
-        setSelectedType(response.results[0]);
-      }
-    } catch (error) {
+        setSelectedType(response.results[0]); }}catch (error) {
       showSnackbar('Failed to load application types', 'error');
     } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(false); }};
 
   const loadStages = async (applicationTypeId: number) => {
     try {
       const stagesList = await listStages({ application_type_id: applicationTypeId });
       setStages(stagesList);
     } catch (error) {
-      showSnackbar('Failed to load stages', 'error');
-    }
-  };
+      showSnackbar('Failed to load stages', 'error'); }};
 
   React.useEffect(() => {
     loadApplicationTypes();
@@ -100,9 +92,7 @@ export const ApplicationTypePage: React.FC = () => {
 
   React.useEffect(() => {
     if (selectedType) {
-      loadStages(selectedType.id);
-    }
-  }, [selectedType]);
+      loadStages(selectedType.id); }}, [selectedType]);
 
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
     setSnackbar({ open: true, message, severity });
@@ -136,9 +126,7 @@ export const ApplicationTypePage: React.FC = () => {
       setFormOpen(false);
       await loadApplicationTypes();
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to save application type', 'error');
-    }
-  };
+      showSnackbar(error.response?.data?.detail || 'Failed to save application type', 'error'); }};
 
   const handleDelete = async () => {
     if (!typeToDelete) return;
@@ -157,9 +145,7 @@ export const ApplicationTypePage: React.FC = () => {
 
       await loadApplicationTypes();
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to delete application type', 'error');
-    }
-  };
+      showSnackbar(error.response?.data?.detail || 'Failed to delete application type', 'error'); }};
 
   const handleToggleActive = async (type: ApplicationType) => {
     try {
@@ -167,9 +153,7 @@ export const ApplicationTypePage: React.FC = () => {
       showSnackbar(`Application type ${type.is_active ? 'deactivated' : 'activated'}`, 'success');
       await loadApplicationTypes();
     } catch (error) {
-      showSnackbar('Failed to update status', 'error');
-    }
-  };
+      showSnackbar('Failed to update status', 'error'); }};
 
   const handleStageCreate = async (data: StageCreateRequest) => {
     try {
@@ -178,26 +162,18 @@ export const ApplicationTypePage: React.FC = () => {
       if (selectedType) {
         await loadStages(selectedType.id);
         // Reload application types to update stages_count
-        await loadApplicationTypes();
-      }
-    } catch (error: any) {
+        await loadApplicationTypes(); }}catch (error: any) {
       showSnackbar(error.response?.data?.detail || 'Failed to create stage', 'error');
-      throw error;
-    }
-  };
+      throw error; }};
 
   const handleStageUpdate = async (id: number, data: StageUpdateRequest) => {
     try {
       await updateStage(id, data);
       showSnackbar('Stage updated successfully', 'success');
       if (selectedType) {
-        await loadStages(selectedType.id);
-      }
-    } catch (error: any) {
+        await loadStages(selectedType.id); }}catch (error: any) {
       showSnackbar(error.response?.data?.detail || 'Failed to update stage', 'error');
-      throw error;
-    }
-  };
+      throw error; }};
 
   const handleStageDelete = async (id: number) => {
     try {
@@ -206,13 +182,9 @@ export const ApplicationTypePage: React.FC = () => {
       if (selectedType) {
         await loadStages(selectedType.id);
         // Reload application types to update stages_count
-        await loadApplicationTypes();
-      }
-    } catch (error: any) {
+        await loadApplicationTypes(); }}catch (error: any) {
       showSnackbar(error.response?.data?.detail || 'Failed to delete stage', 'error');
-      throw error;
-    }
-  };
+      throw error; }};
 
   const handleStagesReorder = async (reorderedStages: Stage[]) => {
     try {
@@ -231,9 +203,7 @@ export const ApplicationTypePage: React.FC = () => {
       showSnackbar('Stages reordered successfully', 'success');
     } catch (error: any) {
       showSnackbar(error.response?.data?.detail || 'Failed to reorder stages', 'error');
-      throw error;
-    }
-  };
+      throw error; }};
 
   if (loading) {
     return (
@@ -259,7 +229,7 @@ export const ApplicationTypePage: React.FC = () => {
       ) : (
         <Grid container spacing={2}>
           {/* Left: Application Types List */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 1.5 }}>
               <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600 }}>
                 Application Types ({applicationTypes.length})
@@ -279,23 +249,21 @@ export const ApplicationTypePage: React.FC = () => {
                       '&:hover': {
                         bgcolor: selectedType?.id === type.id ? 'rgba(25, 118, 210, 0.15)' : 'action.hover',
                         borderColor: 'primary.main',
-                      },
-                    }}
-                    onClick={() => setSelectedType(type)}
+                      }, }}onClick={() => setSelectedType(type)}
                   >
-                    <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
+                    <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 }}}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
                             {type.title}
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 0.5 }}>
-                            <Chip label={type.currency} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
-                            <Chip label={`${type.stages_count} stages`} size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                            <Chip label={type.currency} size="small" sx={{ height: 20, fontSize: '0.7rem' }}/>
+                            <Chip label={`${type.stages_count} stages`} size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem' }}/>
                             {type.is_active ? (
-                              <Chip label="Active" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
+                              <Chip label="Active" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }}/>
                             ) : (
-                              <Chip label="Inactive" size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                              <Chip label="Inactive" size="small" sx={{ height: 20, fontSize: '0.7rem' }}/>
                             )}
                           </Box>
                           {type.tax_name && (
@@ -316,8 +284,7 @@ export const ApplicationTypePage: React.FC = () => {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(type); }}
-                      >
+                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(type); }}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </CardActions>
@@ -328,7 +295,7 @@ export const ApplicationTypePage: React.FC = () => {
           </Grid>
 
           {/* Right: Stage Manager */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             {selectedType ? (
               <StageManager
                 applicationTypeId={selectedType.id}

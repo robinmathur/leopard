@@ -304,7 +304,7 @@ export const TaskForm = ({
             error={!!errors.dueDate}
             helperText={errors.dueDate}
             disabled={isSubmitting}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Box>
 

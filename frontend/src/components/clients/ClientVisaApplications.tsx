@@ -11,11 +11,11 @@ import {
   Skeleton,
   Button,
   Chip,
-  Grid,
   Dialog,
   DialogTitle,
   DialogContent,
   IconButton,
+  Grid,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
@@ -70,9 +70,7 @@ const formatDate = (dateString?: string): string => {
   try {
     return new Date(dateString).toLocaleDateString();
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Detail row component
@@ -93,7 +91,7 @@ const VisaApplicationsSkeleton = () => (
   <Box>
     {[...Array(2)].map((_, index) => (
       <Box key={index} sx={{ mb: 2 }}>
-        <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 1 }} />
+        <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 1 }}/>
       </Box>
     ))}
   </Box>
@@ -124,9 +122,7 @@ const VisaApplicationCard = ({
           boxShadow: 2,
           cursor: 'pointer',
         },
-        transition: 'all 0.2s ease-in-out',
-      }}
-      onClick={onClick}
+        transition: 'all 0.2s ease-in-out', }} onClick={onClick}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
@@ -149,32 +145,32 @@ const VisaApplicationCard = ({
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
         {application.date_applied && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Date Applied" value={formatDate(application.date_applied)} />
           </Grid>
         )}
         {application.date_granted && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Date Granted" value={formatDate(application.date_granted)} />
           </Grid>
         )}
         {application.date_rejected && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Date Rejected" value={formatDate(application.date_rejected)} />
           </Grid>
         )}
         {application.expiry_date && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Expiry Date" value={formatDate(application.expiry_date)} />
           </Grid>
         )}
         {application.assigned_to_name && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Assigned To" value={application.assigned_to_name} />
           </Grid>
         )}
         {application.transaction_reference_no && (
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <DetailRow label="Reference Number" value={application.transaction_reference_no} />
           </Grid>
         )}
@@ -216,21 +212,14 @@ export const ClientVisaApplications = ({
           const sorted = data.sort((a, b) => {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           });
-          setApplications(sorted);
-        }
-      } catch (err) {
+          setApplications(sorted); }}catch (err) {
         if ((err as Error).name === 'CanceledError' || abortController.signal.aborted) {
           return;
         }
         if (isMounted) {
-          setError((err as Error).message || 'Failed to load visa applications');
-        }
-      } finally {
+          setError((err as Error).message || 'Failed to load visa applications'); }}finally {
         if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
+          setIsLoading(false); }}};
 
     fetchData();
 
@@ -243,23 +232,17 @@ export const ClientVisaApplications = ({
   // Update selected application when prop changes (from URL params)
   useEffect(() => {
     if (initialSelectedId !== undefined) {
-      setSelectedApplicationId(initialSelectedId);
-    }
-  }, [initialSelectedId]);
+      setSelectedApplicationId(initialSelectedId); }}, [initialSelectedId]);
 
   const handleCardClick = (applicationId: number) => {
     setSelectedApplicationId(applicationId);
     if (onCardClick) {
-      onCardClick(applicationId);
-    }
-  };
+      onCardClick(applicationId); }};
 
   const handleCloseDetail = () => {
     setSelectedApplicationId(undefined);
     if (onDetailClose) {
-      onDetailClose();
-    }
-  };
+      onDetailClose(); }};
 
   const handleApplicationUpdate = () => {
     // Refresh the applications list
@@ -271,15 +254,11 @@ export const ClientVisaApplications = ({
         });
         setApplications(sorted);
       } catch (err) {
-        console.error('Failed to refresh applications:', err);
-      }
-    };
+        console.error('Failed to refresh applications:', err); }};
     fetchData();
 
     if (onApplicationUpdate) {
-      onApplicationUpdate();
-    }
-  };
+      onApplicationUpdate(); }};
 
   const handleOpenCreateDialog = () => {
     setCreateDialogOpen(true);
@@ -305,9 +284,7 @@ export const ClientVisaApplications = ({
       console.error('Failed to create visa application:', err);
       throw err; // Let the form handle the error
     } finally {
-      setFormLoading(false);
-    }
-  };
+      setFormLoading(false); }};
 
   // Loading state
   if (isLoading) {
@@ -355,9 +332,7 @@ export const ClientVisaApplications = ({
           sx={{
             py: 4,
             textAlign: 'center',
-            color: 'text.secondary',
-          }}
-        >
+            color: 'text.secondary', }}>
           <Typography variant="body1" gutterBottom>
             No visa applications yet
           </Typography>
@@ -400,9 +375,11 @@ export const ClientVisaApplications = ({
         onClose={handleCloseCreateDialog}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            maxHeight: '90vh',
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: '90vh',
+            },
           },
         }}
       >

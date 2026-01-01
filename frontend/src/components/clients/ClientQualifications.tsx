@@ -7,7 +7,6 @@ import {
   Box,
   Paper,
   Typography,
-  Grid,
   Alert,
   Skeleton,
   Button,
@@ -19,6 +18,7 @@ import {
   TextField,
   MenuItem,
   IconButton,
+  Grid,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -59,9 +59,7 @@ const formatDate = (dateString?: string): string => {
       year: 'numeric',
     });
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Detail row component
@@ -82,7 +80,7 @@ const QualificationsSkeleton = () => (
   <Box>
     {[...Array(2)].map((_, index) => (
       <Box key={index} sx={{ mb: 2 }}>
-        <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 1 }} />
+        <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 1 }}/>
       </Box>
     ))}
   </Box>
@@ -108,9 +106,7 @@ const QualificationCard = ({ qualification, onEdit, onDelete }: QualificationCar
         mb: 2,
         '&:hover': {
           boxShadow: 1,
-        },
-      }}
-    >
+        }, }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
           <SchoolIcon color="primary" />
@@ -127,7 +123,7 @@ const QualificationCard = ({ qualification, onEdit, onDelete }: QualificationCar
         </Box>
         <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
           {isInProgress && (
-            <Chip label="In Progress" color="info" size="small" sx={{ mr: 1 }} />
+            <Chip label="In Progress" color="info" size="small" sx={{ mr: 1 }}/>
           )}
           <IconButton size="small" onClick={onEdit} color="primary">
             <EditIcon fontSize="small" />
@@ -140,22 +136,22 @@ const QualificationCard = ({ qualification, onEdit, onDelete }: QualificationCar
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
         {qualification.degree && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Degree" value={qualification.degree} />
           </Grid>
         )}
         {qualification.field_of_study && (
-          <Grid item xs={6} sm={4}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <DetailRow label="Field of Study" value={qualification.field_of_study} />
           </Grid>
         )}
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="Country" value={getCountryName(qualification.country)} />
         </Grid>
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="Start Date" value={formatDate(qualification.enroll_date)} />
         </Grid>
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow
             label="Completion Date"
             value={
@@ -211,19 +207,14 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
           if (!b.enroll_date) return -1;
           return new Date(b.enroll_date).getTime() - new Date(a.enroll_date).getTime();
         });
-        setQualifications(sorted);
-      }
-    } catch (err) {
+        setQualifications(sorted); }}catch (err) {
       if ((err as Error).name === 'CanceledError' || signal?.aborted) {
         return;
       }
       setError((err as Error).message || 'Failed to load qualifications');
     } finally {
       if (!signal?.aborted) {
-        setIsLoading(false);
-      }
-    }
-  };
+        setIsLoading(false); }}};
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -290,9 +281,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
     } catch (err) {
       setError((err as Error).message || 'Failed to save qualification');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Handle delete
   const handleDeleteClick = (qualificationId: number) => {
@@ -314,9 +303,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
     } catch (err) {
       setError((err as Error).message || 'Failed to delete qualification');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Loading state
   if (isLoading) {
@@ -362,9 +349,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
           sx={{
             py: 4,
             textAlign: 'center',
-            color: 'text.secondary',
-          }}
-        >
+            color: 'text.secondary', }}>
           <Typography variant="body1" gutterBottom>
             No qualifications recorded
           </Typography>
@@ -454,7 +439,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 onChange={(e) => setFormData({ ...formData, enroll_date: e.target.value })}
                 required
                 fullWidth
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
 
               <TextField
@@ -464,7 +449,7 @@ export const ClientQualifications = ({ clientId }: ClientQualificationsProps) =>
                 onChange={(e) => setFormData({ ...formData, completion_date: e.target.value })}
                 required
                 fullWidth
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
             </Box>
           </DialogContent>
