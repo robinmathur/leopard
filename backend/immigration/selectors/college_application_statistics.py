@@ -128,9 +128,9 @@ def college_application_dashboard_statistics(
     # CRITICAL: Filter for FINAL STAGE applications only (for dashboard counting)
     # ==============================================================================
     # Get max position per application_type using subquery
+    # Note: Stage model uses hard delete (no deleted_at field)
     max_position_subquery = Stage.objects.filter(
-        application_type_id=OuterRef('application_type_id'),
-        deleted_at__isnull=True
+        application_type_id=OuterRef('application_type_id')
     ).values('application_type').annotate(
         max_pos=Max('position')
     ).values('max_pos')[:1]
