@@ -6,7 +6,6 @@ import {
   IconButton,
   Typography,
   InputBase,
-  Badge,
   Avatar,
   Box,
   Breadcrumbs,
@@ -25,7 +24,9 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HomeIcon from '@mui/icons-material/Home';
-import PersonIcon from '@mui/icons-material/Person';
+import PeopleIcon from '@mui/icons-material/People';
+import SchoolIcon from '@mui/icons-material/School';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useAuthStore } from '@/store/authStore';
@@ -287,11 +288,25 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
 
           {/* Right side actions */}
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {/* Assignment Notifications */}
+            {/* Client Assignment Notifications */}
             <NotificationTypeDropdown
-              notificationType="ASSIGNMENTS"
-              icon={<PersonIcon fontSize="small" />}
-              label="Assignments"
+              notificationType="CLIENT_ASSIGNED"
+              icon={<PeopleIcon fontSize="small" />}
+              label="Clients"
+            />
+
+            {/* Application Assignment Notifications */}
+            <NotificationTypeDropdown
+              notificationType="APPLICATION_ASSIGNED"
+              icon={<SchoolIcon fontSize="small" />}
+              label="Applications"
+            />
+
+            {/* Visa Application Assignment Notifications */}
+            <NotificationTypeDropdown
+              notificationType="VISA_APPLICATION_ASSIGNED"
+              icon={<FlightTakeoffIcon fontSize="small" />}
+              label="Visa Applications"
             />
 
             {/* Task Notifications */}

@@ -27,29 +27,59 @@ export function getNotificationRoute(notification: Notification): NotificationNa
       break;
 
     case 'APPLICATION_ASSIGNED':
-      if (meta_info.entity_id && meta_info.entity_type === 'Application') {
+      // Navigate to client detail page with applications tab and application ID
+      const applicationClientId = typeof meta_info.client_id === 'number' 
+        ? meta_info.client_id 
+        : null;
+      const applicationId = (meta_info.entity_id && (meta_info.entity_type === 'CollegeApplication' || meta_info.entity_type === 'Application'))
+        ? meta_info.entity_id
+        : (typeof meta_info.application_id === 'number' ? meta_info.application_id : null);
+      
+      if (applicationClientId && applicationId) {
         return {
-          route: `/applications/${meta_info.entity_id}`,
+          route: `/clients/${applicationClientId}`,
+          params: {
+            tab: 'applications',
+            collegeApplicationId: String(applicationId),
+          },
         };
       }
-      // Fallback: try to get application_id from meta_info
-      if (typeof meta_info.application_id === 'number') {
+      // Fallback: try to navigate to client if we have client_id
+      if (applicationClientId) {
         return {
-          route: `/applications/${meta_info.application_id}`,
+          route: `/clients/${applicationClientId}`,
+          params: {
+            tab: 'applications',
+          },
         };
       }
       break;
 
     case 'VISA_APPLICATION_ASSIGNED':
-      if (meta_info.entity_id && meta_info.entity_type === 'VisaApplication') {
+      // Navigate to client detail page with visa-applications tab and visa application ID
+      const visaClientId = typeof meta_info.client_id === 'number' 
+        ? meta_info.client_id 
+        : null;
+      const visaApplicationId = (meta_info.entity_id && meta_info.entity_type === 'VisaApplication')
+        ? meta_info.entity_id
+        : (typeof meta_info.visa_application_id === 'number' ? meta_info.visa_application_id : null);
+      
+      if (visaClientId && visaApplicationId) {
         return {
-          route: `/visa-applications/${meta_info.entity_id}`,
+          route: `/clients/${visaClientId}`,
+          params: {
+            tab: 'visa-applications',
+            visaApplicationId: String(visaApplicationId),
+          },
         };
       }
-      // Fallback: try to get visa_application_id from meta_info
-      if (typeof meta_info.visa_application_id === 'number') {
+      // Fallback: try to navigate to client if we have client_id
+      if (visaClientId) {
         return {
-          route: `/visa-applications/${meta_info.visa_application_id}`,
+          route: `/clients/${visaClientId}`,
+          params: {
+            tab: 'visa-applications',
+          },
         };
       }
       break;

@@ -195,7 +195,6 @@ const VisaApplicationTable = ({
             <TableRow>
               <TableCell>Client</TableCell>
               <TableCell>Visa Type</TableCell>
-              <TableCell>Status</TableCell>
               <TableCell>Immigration Fee</TableCell>
               <TableCell>Service Fee</TableCell>
               <TableCell>Date Applied</TableCell>
@@ -206,13 +205,13 @@ const VisaApplicationTable = ({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                   <CircularProgress size={32} />
                 </TableCell>
               </TableRow>
             ) : applications.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" color="text.secondary">
                     No applications found
                   </Typography>
@@ -248,13 +247,6 @@ const VisaApplicationTable = ({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={VISA_STATUS_LABELS[app.status]}
-                      size="small"
-                      color={getStatusColor(app.status)}
-                    />
-                  </TableCell>
-                  <TableCell>
                     {formatCurrency(app.immigration_fee, app.immigration_fee_currency)}
                   </TableCell>
                   <TableCell>
@@ -272,16 +264,6 @@ const VisaApplicationTable = ({
                     <Tooltip title="View Details">
                       <IconButton size="small" onClick={() => onView(app)} color="primary">
                         <Visibility fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => onEdit(app)}>
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton size="small" onClick={() => onDelete(app)} color="error">
-                        <Delete fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     {statusTransitions.length > 0 && (

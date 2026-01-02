@@ -13,6 +13,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import BusinessIcon from '@mui/icons-material/Business';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DomainIcon from '@mui/icons-material/Domain';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import { Permission } from '@/auth/types';
 
 /**
@@ -57,7 +58,7 @@ export const navigationConfig: NavItem[] = [
     id: 'visa-manager',
     label: 'Visa Manager',
     path: '/visa-manager',
-    icon: DescriptionIcon,
+    icon: FlightTakeoffIcon,
     permission: 'view_visaapplication',
     children: [
       {

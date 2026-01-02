@@ -111,6 +111,15 @@ def get_linked_client(event: Event) -> Optional[Client]:
         except (VisaApplication.DoesNotExist, AttributeError):
             pass
     
+    # For Application (CollegeApplication), get client directly from the model
+    if event.entity_type == 'CollegeApplication':
+        try:
+            from immigration.models import CollegeApplication
+            application = CollegeApplication.objects.get(id=event.entity_id)
+            return application.client
+        except (CollegeApplication.DoesNotExist, AttributeError):
+            pass
+    
     # For other entities, check for client FK in current_state
     client_id = event.current_state.get('client')
     if client_id:

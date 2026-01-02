@@ -43,6 +43,7 @@ function getNotificationTypesForCategory(
     case 'SYSTEM':
       return ['SYSTEM_ALERT'];
     default:
+      // If it's a specific notification type, return it as a single-item array
       return [category as NotificationType];
   }
 }
@@ -112,13 +113,30 @@ export const NotificationTypeDropdown = ({
 
   const handleViewAll = () => {
     // Navigate to notifications page with filter
-    const typeParam = notificationType === 'ASSIGNMENTS' 
-      ? 'assignments'
-      : notificationType === 'TASKS'
-      ? 'tasks'
-      : notificationType === 'REMINDERS'
-      ? 'reminders'
-      : 'system';
+    let typeParam = 'all';
+    if (notificationType === 'ASSIGNMENTS') {
+      typeParam = 'assignments';
+    } else if (notificationType === 'TASKS') {
+      typeParam = 'tasks';
+    } else if (notificationType === 'REMINDERS') {
+      typeParam = 'reminders';
+    } else if (notificationType === 'SYSTEM') {
+      typeParam = 'system';
+    } else {
+      // For specific notification types, map to category
+      const typeMap: Record<string, string> = {
+        'CLIENT_ASSIGNED': 'assignments',
+        'APPLICATION_ASSIGNED': 'assignments',
+        'VISA_APPLICATION_ASSIGNED': 'assignments',
+        'TASK_ASSIGNED': 'tasks',
+        'TASK_DUE_SOON': 'tasks',
+        'TASK_OVERDUE': 'tasks',
+        'TASK_MENTIONED': 'tasks',
+        'REMINDER_DUE': 'reminders',
+        'SYSTEM_ALERT': 'system',
+      };
+      typeParam = typeMap[notificationType] || 'all';
+    }
     navigate(`/notifications?type=${typeParam}`);
     handleClose();
   };

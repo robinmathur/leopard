@@ -32,17 +32,18 @@ import {
   DialogTitle,
   DialogContent,
   Link,
+  Menu,
 } from '@mui/material';
 import {
   Add,
-  Edit,
-  Delete,
   Visibility,
   Search,
   ExpandMore,
   ExpandLess,
   FilterList,
   Clear,
+  PersonAdd as PersonAddIcon,
+  MoreVert,
 } from '@mui/icons-material';
 import {
   listVisaApplications,
@@ -58,6 +59,8 @@ import { VISA_STATUS_LABELS, VisaType } from '@/types/visaType';
 import { VisaApplicationForm } from '@/components/visa/VisaApplicationForm';
 import { VisaApplicationDeleteDialog } from '@/components/visa/VisaApplicationDeleteDialog';
 import { UserAutocomplete } from '@/components/common/UserAutocomplete';
+import { AssignVisaApplicationDialog } from '@/components/visa/AssignVisaApplicationDialog';
+import { useAuthStore } from '@/store/authStore';
 
 /**
  * Search Filters Interface
@@ -77,7 +80,8 @@ interface SearchFilters {
  */
 export const VisaApplicationsManagementPage = () => {
   const navigate = useNavigate();
-  
+  const { hasPermission } = useAuthStore();
+
   // Data state
   const [applications, setApplications] = useState<VisaApplication[]>([]);
   const [visaTypes, setVisaTypes] = useState<VisaType[]>([]);
@@ -94,6 +98,14 @@ export const VisaApplicationsManagementPage = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Assign dialog state
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedApplicationForAssign, setSelectedApplicationForAssign] = useState<VisaApplication | null>(null);
+
+  // Status change menu state
+  const [statusMenuAnchor, setStatusMenuAnchor] = useState<HTMLElement | null>(null);
+  const [selectedApplicationForStatus, setSelectedApplicationForStatus] = useState<VisaApplication | null>(null);
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -390,6 +402,82 @@ export const VisaApplicationsManagementPage = () => {
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false);
     setSelectedApplication(null);
+  };
+
+  // Status transition function (from Visa Tracker)
+  const getStatusTransitions = (status: VisaApplicationStatus): { label: string; value: VisaApplicationStatus }[] => {
+    if (status === 'TO_BE_APPLIED') {
+      return [
+        { label: 'Move to Visa Applied', value: 'VISA_APPLIED' },
+        { label: 'Move to Withdrawn', value: 'WITHDRAWN' },
+      ];
+    } else if (status === 'VISA_APPLIED') {
+      return [
+        { label: 'Move to Case Opened', value: 'CASE_OPENED' },
+        { label: 'Move to Granted', value: 'GRANTED' },
+        { label: 'Move to Rejected', value: 'REJECTED' },
+      ];
+    } else if (status === 'CASE_OPENED') {
+      return [
+        { label: 'Move to Granted', value: 'GRANTED' },
+        { label: 'Move to Rejected', value: 'REJECTED' },
+      ];
+    }
+    return []; // Terminal states: GRANTED, REJECTED, WITHDRAWN
+  };
+
+  // Assign handlers
+  const handleAssignClick = (app: VisaApplication) => {
+    setSelectedApplicationForAssign(app);
+    setAssignDialogOpen(true);
+  };
+
+  const handleAssignClose = () => {
+    setAssignDialogOpen(false);
+    setSelectedApplicationForAssign(null);
+  };
+
+  const handleAssignSuccess = () => {
+    fetchApplications(); // Refresh the list
+    setSnackbar({
+      open: true,
+      message: 'Application assigned successfully',
+      severity: 'success',
+    });
+    handleAssignClose();
+  };
+
+  // Status change handlers
+  const handleStatusMenuOpen = (event: React.MouseEvent<HTMLElement>, app: VisaApplication) => {
+    setStatusMenuAnchor(event.currentTarget);
+    setSelectedApplicationForStatus(app);
+  };
+
+  const handleStatusMenuClose = () => {
+    setStatusMenuAnchor(null);
+    setSelectedApplicationForStatus(null);
+  };
+
+  const handleStatusChange = async (newStatus: VisaApplicationStatus) => {
+    if (!selectedApplicationForStatus) return;
+
+    try {
+      await updateVisaApplication(selectedApplicationForStatus.id, { status: newStatus });
+      setSnackbar({
+        open: true,
+        message: `Status updated to ${VISA_STATUS_LABELS[newStatus]}`,
+        severity: 'success',
+      });
+      fetchApplications(); // Refresh the list
+      handleStatusMenuClose();
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err.message || 'Failed to update status',
+        severity: 'error',
+      });
+      handleStatusMenuClose();
+    }
   };
 
   const handleAddApplication = () => {
@@ -746,16 +834,26 @@ export const VisaApplicationsManagementPage = () => {
                           <Visibility fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => handleEdit(app)} color="default">
-                          <Edit fontSize="small" />
+                      <Tooltip title="Assign To">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleAssignClick(app)}
+                          color="primary"
+                        >
+                          <PersonAddIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" onClick={() => handleDelete(app)} color="error">
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      {hasPermission('change_visaapplication') && getStatusTransitions(app.status).length > 0 && (
+                        <Tooltip title="Change Status">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleStatusMenuOpen(e, app)}
+                            color="default"
+                          >
+                            <MoreVert fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -805,6 +903,32 @@ export const VisaApplicationsManagementPage = () => {
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
         loading={deleteLoading}
+      />
+
+      {/* Status Change Menu */}
+      <Menu
+        anchorEl={statusMenuAnchor}
+        open={Boolean(statusMenuAnchor)}
+        onClose={handleStatusMenuClose}
+      >
+        {selectedApplicationForStatus &&
+          getStatusTransitions(selectedApplicationForStatus.status).map((transition) => (
+            <MenuItem
+              key={transition.value}
+              onClick={() => handleStatusChange(transition.value)}
+            >
+              {transition.label}
+            </MenuItem>
+          ))
+        }
+      </Menu>
+
+      {/* Assign Dialog */}
+      <AssignVisaApplicationDialog
+        open={assignDialogOpen}
+        onClose={handleAssignClose}
+        application={selectedApplicationForAssign}
+        onSuccess={handleAssignSuccess}
       />
 
       {/* Snackbar */}

@@ -44,16 +44,37 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
     
     created_count = 0
     for user in recipients:
+        # Build meta_info with entity details and client info for navigation
+        meta_info = {
+            'event_id': event.id,
+            'entity_type': event.entity_type,
+            'entity_id': event.entity_id,
+        }
+        
+        # Add client_id for navigation (available in context)
+        if 'client_id' in context:
+            meta_info['client_id'] = context['client_id']
+        
+        # Add application-specific info
+        if event.entity_type == 'CollegeApplication':
+            meta_info['application_id'] = event.entity_id
+            if 'application_type_name' in context:
+                meta_info['application_type_name'] = context['application_type_name']
+            if 'institute_name' in context:
+                meta_info['institute_name'] = context['institute_name']
+        
+        # Add visa application-specific info
+        if event.entity_type == 'VisaApplication':
+            meta_info['visa_application_id'] = event.entity_id
+            if 'visa_type_name' in context:
+                meta_info['visa_type_name'] = context['visa_type_name']
+        
         notification_create(
             notification_type=notification_type,
             assigned_to=user,
             title=title,
             message=message,
-            meta_info={
-                'event_id': event.id,
-                'entity_type': event.entity_type,
-                'entity_id': event.entity_id,
-            },
+            meta_info=meta_info,
             created_by=event.performed_by,
         )
         created_count += 1

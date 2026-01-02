@@ -66,6 +66,22 @@ def get_template_context(event, config: dict) -> Dict[str, Any]:
         except Exception:
             pass
     
+    if event.entity_type == 'CollegeApplication':
+        context['application_id'] = event.entity_id
+        # Try to get application details
+        try:
+            from immigration.models import CollegeApplication
+            application = CollegeApplication.objects.get(id=event.entity_id)
+            if application.client:
+                context['client_id'] = application.client.id
+                context['client_name'] = application.client.full_name or f"Client {application.client.id}"
+            if application.application_type:
+                context['application_type_name'] = str(application.application_type)
+            if application.institute:
+                context['institute_name'] = str(application.institute)
+        except Exception:
+            pass
+    
     if event.performed_by:
         context['performed_by_name'] = (
             event.performed_by.get_full_name() or 

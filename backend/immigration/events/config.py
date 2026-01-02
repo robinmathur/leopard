@@ -163,8 +163,8 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
             'enabled': True,
             'config': {
                 'type': 'VISA_APPLICATION_ASSIGNED',
-                'title_template': 'Visa Application Assigned',
-                'message_template': 'A visa application has been assigned to you.',
+                'title_template': 'Visa Application Assigned: {client_name}',
+                'message_template': 'A visa application for {client_name} ({visa_type_name}) has been assigned to you.',
                 'recipients': [
                     {'field': 'assigned_to'},  # New assigned user
                 ],
@@ -176,7 +176,29 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
     # COLLEGE APPLICATION EVENTS - All optional
     # =========================================================================
     
-    'Application.CREATE': [],  # Configure if needed
+    'CollegeApplication.CREATE': [],  # Configure if needed
+    'CollegeApplication.assigned_to.UPDATE': [
+        {
+            'handler': 'client_activity',
+            'enabled': True,
+            'config': {
+                'activity_type': 'ASSIGNED',
+                'description_template': 'Application is assigned to {assigned_to_name} by {performed_by_name}',
+            },
+        },
+        {
+            'handler': 'notification',
+            'enabled': True,
+            'config': {
+                'type': 'APPLICATION_ASSIGNED',
+                'title_template': 'Application Assigned: {client_name}',
+                'message_template': 'A {application_type_name} application for {client_name} has been assigned to you.',
+                'recipients': [
+                    {'field': 'assigned_to'},  # New assigned user
+                ],
+            },
+        },
+    ],
 }
 
 
@@ -202,8 +224,8 @@ TRACKED_ENTITIES = [
         'track_fields': ['status', 'assigned_to'],
     },
     {
-        'model': 'immigration.Application',
-        'track_fields': ['status'],
+        'model': 'immigration.CollegeApplication',
+        'track_fields': ['status', 'assigned_to'],
     },
     {
         'model': 'immigration.ProfilePicture',
