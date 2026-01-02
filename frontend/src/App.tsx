@@ -28,6 +28,7 @@ import { BranchDetailPage } from './pages/Branches/BranchDetailPage';
 import { RegionsPage } from './pages/Regions/RegionsPage';
 import { RegionDetailPage } from './pages/Regions/RegionDetailPage';
 import { TasksPage } from './pages/Tasks/TasksPage';
+import { CalendarPage } from './pages/Calendar/CalendarPage';
 
 /**
  * Protected Route Component
@@ -68,6 +69,7 @@ function App() {
             <Route path="clients/add" element={<ClientsPage />} />
             <Route path="clients/:id" element={<ClientDetailPage />} />
             <Route path="tasks" element={<TasksPage />} />
+            <Route path="calendar" element={<CalendarPage />} />
             <Route path="leads" element={<LeadsPage />} />
             
             {/* Visa Manager Routes */}

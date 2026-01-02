@@ -16,6 +16,7 @@ from immigration.api.v1.views.users import UserViewSet
 from immigration.api.v1.views.groups import GroupViewSet, PermissionViewSet
 from immigration.api.v1.views.notifications import NotificationViewSet
 from immigration.api.v1.views.tasks import TaskViewSet
+from immigration.api.v1.views.events import EventViewSet
 from immigration.api.v1.views.notes import NoteViewSet
 from immigration.api.v1.views.client_profiles import (
     LanguageExamViewSet,
@@ -55,6 +56,7 @@ router.register(r"groups", GroupViewSet, basename="group")
 router.register(r"permissions", PermissionViewSet, basename="permission")
 router.register(r"notifications", NotificationViewSet, basename="notification")
 router.register(r"tasks", TaskViewSet, basename="task")
+router.register(r"events", EventViewSet, basename="event")
 router.register(r"notes", NoteViewSet, basename="note")
 router.register(r"reminders", ReminderViewSet, basename="reminder")
 router.register(r"language-exams", LanguageExamViewSet, basename="language-exam")

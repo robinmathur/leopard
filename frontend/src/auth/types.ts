@@ -150,6 +150,14 @@ export type Permission =
   | 'change_reminder'
   | 'delete_reminder'
 
+  // Calendar Event permissions
+  | 'view_calendarevent'
+  | 'add_calendarevent'
+  | 'change_calendarevent'
+  | 'delete_calendarevent'
+  | 'view_team_events'
+  | 'assign_calendarevent_to_others'
+
   // Application Stage permission
   | 'add_stage'
   | 'change_stage'

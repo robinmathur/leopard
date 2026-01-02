@@ -22,6 +22,7 @@ from immigration.models.client import Client
 from immigration.models.visa import VisaCategory, VisaType, VisaApplication
 from immigration.models.notification import Notification
 from immigration.models.task import Task
+from immigration.models.event import CalendarEvent
 from immigration.models.profile import LPE, Proficiency, Qualification, Passport, Employment
 from immigration.models.note import Note
 from immigration.models.client_activity import ClientActivity
@@ -59,6 +60,7 @@ __all__ = [
     'VisaApplication',
     'Notification',
     'Task',
+    'CalendarEvent',
     'LPE',
     'Proficiency',
     'Qualification',

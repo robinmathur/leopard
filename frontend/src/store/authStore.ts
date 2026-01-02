@@ -88,6 +88,8 @@ function isValidPermission(value: string): value is Permission {
     'add_stage', 'change_stage', 'delete_stage', 'view_stage',
     'view_applicationtype', 'add_applicationtype', 'change_applicationtype', 'delete_applicationtype',
     'view_collegeapplication', 'add_collegeapplication', 'change_collegeapplication', 'delete_collegeapplication',
+    'add_calendarevent', 'change_calendarevent', 'delete_calendarevent', 'view_calendarevent', 'view_team_events', 'assign_calendarevent_to_others'
+
   ];
   return validPermissions.includes(value as Permission);
 }

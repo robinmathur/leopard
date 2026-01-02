@@ -21,12 +21,14 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import TaskIcon from '@mui/icons-material/Task';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HomeIcon from '@mui/icons-material/Home';
 import { useAuthStore } from '@/store/authStore';
 import { navigationConfig, NavItem } from './navigation.config';
+import { CalendarDialog } from '@/components/calendar/CalendarDialog';
 
 /**
  * Breadcrumb item interface
@@ -177,6 +179,7 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
 
   // Generate breadcrumbs based on current path
@@ -295,6 +298,16 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
               </Badge>
             </IconButton>
 
+            {/* Calendar */}
+            <IconButton
+              size="small"
+              color="inherit"
+              onClick={() => setCalendarDialogOpen(true)}
+              title="Calendar"
+            >
+              <CalendarTodayIcon fontSize="small" />
+            </IconButton>
+
             {/* Profile */}
             <IconButton
               size="small"
@@ -370,6 +383,12 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
           Logout
         </MenuItem>
       </Menu>
+
+      {/* Calendar Dialog */}
+      <CalendarDialog
+        open={calendarDialogOpen}
+        onClose={() => setCalendarDialogOpen(false)}
+      />
     </>
   );
 };
