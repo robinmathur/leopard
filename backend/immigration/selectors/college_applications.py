@@ -176,20 +176,33 @@ def college_application_list(
 
     # Role-based scoping (same logic as visa applications)
     if user.is_in_group(GROUP_CONSULTANT) or user.is_in_group(GROUP_BRANCH_ADMIN):
-        # Filter to applications for clients in the same branch
+        # Filter to applications for clients in the same branches as the user
         user_branches = user.branches.all()
         if user_branches.exists():
             qs = qs.filter(client__branch__in=user_branches)
+        else:
+            # If user has no branches assigned, they see no applications
+            qs = qs.none()
 
     elif user.is_in_group(GROUP_REGION_MANAGER):
-        # Filter to applications for clients in the same regions
+        # Filter to applications for clients in branches within the user's regions
         user_regions = user.regions.all()
         if user_regions.exists():
             branch_ids = Branch.objects.filter(region__in=user_regions).values_list('id', flat=True)
             qs = qs.filter(client__branch_id__in=branch_ids)
+        else:
+            # If user has no regions assigned, they see no applications
+            qs = qs.none()
 
-    # SUPER_ADMIN sees all in current tenant schema (automatic via schema isolation)
-    # SUPER_SUPER_ADMIN sees everything (no additional filter)
+    elif user.is_in_group(GROUP_SUPER_ADMIN):
+        # SUPER_ADMIN sees all college applications in current tenant schema
+        # Schema isolation provides automatic tenant scoping
+        pass
+
+    elif user.is_in_group(GROUP_SUPER_SUPER_ADMIN):
+        # SUPER_SUPER_ADMIN is only for creating tenants, not accessing tenant data
+        # They should not see any college application data
+        qs = qs.none()
 
     # Apply additional filters
     if 'client_id' in filters and filters['client_id']:

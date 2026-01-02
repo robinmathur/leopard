@@ -9,6 +9,13 @@ from django.db.models import QuerySet
 from typing import Optional, Dict, Any
 
 from immigration.models import Client
+from immigration.constants import (
+    GROUP_CONSULTANT,
+    GROUP_BRANCH_ADMIN,
+    GROUP_REGION_MANAGER,
+    GROUP_SUPER_ADMIN,
+    GROUP_SUPER_SUPER_ADMIN,
+)
 
 
 def client_list(*, user, filters: Optional[Dict[str, Any]] = None, include_deleted: bool = False) -> QuerySet[Client]:
@@ -48,25 +55,35 @@ def client_list(*, user, filters: Optional[Dict[str, Any]] = None, include_delet
     # Group-based scoping
     # Multi-tenant: Schema provides automatic tenant isolation, no need to filter by tenant FK
 
-    if user.is_in_group('CONSULTANT') or user.is_in_group('BRANCH_ADMIN'):
-        # Filter to clients assigned to users in the same branches
+    if user.is_in_group(GROUP_CONSULTANT) or user.is_in_group(GROUP_BRANCH_ADMIN):
+        # Filter to clients in the same branches as the user
         user_branches = user.branches.all()
         if user_branches.exists():
-            qs = qs.filter(assigned_to__branches__in=user_branches)
+            qs = qs.filter(branch__in=user_branches)
+        else:
+            # If user has no branches assigned, they see no clients
+            qs = qs.none()
 
-    elif user.is_in_group('REGION_MANAGER'):
-        # Filter to clients assigned to users in the same regions
+    elif user.is_in_group(GROUP_REGION_MANAGER):
+        # Filter to clients in branches within the user's regions
         user_regions = user.regions.all()
         if user_regions.exists():
-            qs = qs.filter(assigned_to__regions__in=user_regions)
+            from immigration.models import Branch
+            branch_ids = Branch.objects.filter(region__in=user_regions).values_list('id', flat=True)
+            qs = qs.filter(branch_id__in=branch_ids)
+        else:
+            # If user has no regions assigned, they see no clients
+            qs = qs.none()
 
-    # REMOVED: SUPER_ADMIN tenant filtering (schema provides isolation)
-    # elif user.is_in_group('SUPER_ADMIN'):
-    #     if user.tenant:
-    #         qs = qs.filter(assigned_to__tenant=user.tenant)
+    elif user.is_in_group(GROUP_SUPER_ADMIN):
+        # SUPER_ADMIN sees all clients in current tenant schema
+        # Schema isolation provides automatic tenant scoping
+        pass
 
-    # SUPER_ADMIN sees all in current tenant schema (automatic)
-    # SUPER_SUPER_ADMIN would need explicit cross-tenant access (not implemented here)
+    elif user.is_in_group(GROUP_SUPER_SUPER_ADMIN):
+        # SUPER_SUPER_ADMIN is only for creating tenants, not accessing tenant data
+        # They should not see any client data
+        qs = qs.none()
     
     # Apply additional filters
     
