@@ -24,6 +24,7 @@ import { Protect } from '@/components/protected/Protect';
 import { Task, getTasks, TaskListParams, TaskStatus } from '@/services/api/taskApi';
 import { EntityTag } from '@/components/shared/TaskList/EntityTag';
 import { STATUS_COLORS } from '@/components/shared/TaskList/types';
+import { TodaysEventsWidget } from '@/components/dashboard/TodaysEventsWidget';
 
 interface StatCardProps {
   title: string;
@@ -276,6 +277,16 @@ export const Dashboard = () => {
         {/* Tasks Section */}
         <Grid size={{ xs: 12, md: 6 }}>
           <TasksSection />
+        </Grid>
+
+        {/* Today's Events */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 2, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+              Today's Events
+            </Typography>
+            <TodaysEventsWidget />
+          </Paper>
         </Grid>
       </Grid>
     </Box>

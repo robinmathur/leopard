@@ -134,8 +134,6 @@ def get_linked_client(event: Event) -> Optional[Client]:
             pass
     
     return None
-
-
 def create_notification_from_config(event: Event, notify_config: dict, context: dict):
     """
     Create notification based on config.
@@ -164,3 +162,5 @@ def create_notification_from_config(event: Event, notify_config: dict, context: 
             },
             created_by=event.performed_by,
         )
+
+

@@ -277,3 +277,35 @@ class EventViewSet(viewsets.ViewSet):
         serializer = EventOutputSerializer(page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        summary="Get today's events",
+        description="Returns calendar events for today. Includes user's own events and team events if user has permission.",
+        responses={200: EventOutputSerializer(many=True)},
+        tags=['events'],
+    )
+    @action(detail=False, methods=['get'], url_path='today')
+    def today(self, request):
+        """Get today's calendar events."""
+        from datetime import datetime, timedelta
+        
+        # Get today's date range (start of day to end of day)
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(days=1)
+        
+        # Filter events for today
+        filters = {
+            'start_date': today_start.isoformat(),
+            'end_date': today_end.isoformat(),
+        }
+        
+        events = event_list(user=request.user, filters=filters)
+        
+        # Order by start time
+        events = events.order_by('start')
+        
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(events, request)
+        serializer = EventOutputSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

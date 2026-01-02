@@ -74,6 +74,7 @@ def resolve_recipients(event: Event, recipients_config: List[dict]) -> List[User
     - {'field': 'assigned_to'} - Get user from entity field
     - {'field': 'client.assigned_to'} - Get user from related entity
     - {'role': 'BRANCH_ADMIN', 'scope': 'branch'} - Get users by role
+    - {'team': 'branch'} - Get all users in the branch (team-wide notification)
     - {'user_ids': [1, 2, 3]} - Specific user IDs
     """
     users = []
@@ -86,6 +87,8 @@ def resolve_recipients(event: Event, recipients_config: List[dict]) -> List[User
             resolved = resolve_field_recipient(event, recipient['field'])
         elif 'role' in recipient:
             resolved = resolve_role_recipients(event, recipient)
+        elif 'team' in recipient:
+            resolved = resolve_team_recipients(event, recipient)
         elif 'user_ids' in recipient:
             resolved = list(User.objects.filter(id__in=recipient['user_ids']))
         
@@ -170,3 +173,40 @@ def resolve_role_recipients(event: Event, config: dict) -> List[User]:
                 pass
     
     return list(users)
+
+
+def resolve_team_recipients(event: Event, config: dict) -> List[User]:
+    """
+    Resolve all team members within a scope (branch/region).
+    
+    Supports:
+    - {'team': 'branch'} - All users in the same branch as the entity
+    - {'team': 'region'} - All users in the same region as the entity
+    """
+    team_scope = config.get('team', 'branch')
+    
+    # Get branch ID from event
+    branch_id = event.current_state.get('branch')
+    if not branch_id:
+        return []
+    
+    if team_scope == 'branch':
+        # Get all users in the same branch
+        users = User.objects.filter(branches__id=branch_id).distinct()
+        return list(users)
+    elif team_scope == 'region':
+        # Get all users in the same region as the branch
+        from immigration.models import Branch
+        try:
+            branch = Branch.objects.get(id=branch_id)
+            if branch.region:
+                # Get users through branches or direct regions
+                users = User.objects.filter(
+                    Q(branches__region=branch.region) | 
+                    Q(regions__id=branch.region.id)
+                ).distinct()
+                return list(users)
+        except Branch.DoesNotExist:
+            pass
+    
+    return []

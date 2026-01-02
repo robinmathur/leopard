@@ -160,6 +160,11 @@ async function loginWithApi(
     isLoading: false,
     error: null,
   });
+
+  // Connect SSE for notifications (lazy import to avoid circular dependency)
+  import('@/store/notificationStore').then(({ useNotificationStore }) => {
+    useNotificationStore.getState().connectSSE();
+  });
 }
 
 /**
@@ -195,6 +200,11 @@ async function loginWithMock(
     isAuthenticated: true,
     isLoading: false,
     error: null,
+  });
+
+  // Connect SSE for notifications (lazy import to avoid circular dependency)
+  import('@/store/notificationStore').then(({ useNotificationStore }) => {
+    useNotificationStore.getState().connectSSE();
   });
 }
 
@@ -319,6 +329,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * Logout - clear all auth state and localStorage
    */
   logout: () => {
+    // Disconnect SSE (lazy import to avoid circular dependency)
+    import('@/store/notificationStore')
+      .then(({ useNotificationStore }) => {
+        useNotificationStore.getState().disconnectSSE();
+      })
+      .catch(() => {
+        // Ignore if notification store not available
+      });
+
     // Clear localStorage
     localStorage.removeItem(STORAGE_KEYS.TOKENS);
     localStorage.removeItem(STORAGE_KEYS.USER);

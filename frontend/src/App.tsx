@@ -29,6 +29,7 @@ import { RegionsPage } from './pages/Regions/RegionsPage';
 import { RegionDetailPage } from './pages/Regions/RegionDetailPage';
 import { TasksPage } from './pages/Tasks/TasksPage';
 import { CalendarPage } from './pages/Calendar/CalendarPage';
+import { NotificationsPage } from './pages/Notifications/NotificationsPage';
 
 /**
  * Protected Route Component
@@ -70,6 +71,7 @@ function App() {
             <Route path="clients/:id" element={<ClientDetailPage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="leads" element={<LeadsPage />} />
             
             {/* Visa Manager Routes */}

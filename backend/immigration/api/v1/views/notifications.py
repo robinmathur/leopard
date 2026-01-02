@@ -259,7 +259,10 @@ async def notification_sse_stream(user):
     Async generator function for SSE stream of notifications using channel layer.
     
     This implements true real-time notifications via Django Channels.
+    Tracks user online status for SSE optimization.
     """
+    from immigration.services.user_presence import mark_user_online, mark_user_offline, refresh_user_online_status
+    
     channel_layer = get_channel_layer()
     if not channel_layer:
         # Fallback: Send error message if channel layer not configured
@@ -273,6 +276,9 @@ async def notification_sse_stream(user):
     try:
         # Add this channel to the user's group
         await channel_layer.group_add(group_name, channel_name)
+        
+        # Mark user as online when connection is established
+        mark_user_online(user.id)
 
         # Send initial connection message
         initial_message = {
@@ -297,7 +303,8 @@ async def notification_sse_stream(user):
                     yield f"data: {json.dumps(notification_data)}\n\n".encode('utf-8')
                 
             except asyncio.TimeoutError:
-                # Send heartbeat to keep connection alive
+                # Send heartbeat to keep connection alive and refresh online status
+                refresh_user_online_status(user.id)
                 heartbeat = {'type': 'heartbeat', 'timestamp': timezone.now().isoformat()}
                 yield f"data: {json.dumps(heartbeat)}\n\n".encode('utf-8')
             except Exception as e:
@@ -307,8 +314,9 @@ async def notification_sse_stream(user):
                 break
 
     finally:
-        # Clean up: remove channel from group
+        # Clean up: remove channel from group and mark user as offline
         await channel_layer.group_discard(group_name, channel_name)
+        mark_user_offline(user.id)
 
 
 def notification_sse_view(request):

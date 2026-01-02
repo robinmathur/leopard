@@ -62,4 +62,12 @@ export const eventApi = {
     });
     return response.data;
   },
+
+  /**
+   * Get today's events
+   */
+  async getToday(): Promise<PaginatedResponse<CalendarEvent>> {
+    const response = await httpClient.get<PaginatedResponse<CalendarEvent>>('/v1/events/today/');
+    return response.data;
+  },
 };

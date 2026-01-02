@@ -19,16 +19,19 @@ import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import TaskIcon from '@mui/icons-material/Task';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HomeIcon from '@mui/icons-material/Home';
+import PersonIcon from '@mui/icons-material/Person';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useAuthStore } from '@/store/authStore';
 import { navigationConfig, NavItem } from './navigation.config';
 import { CalendarDialog } from '@/components/calendar/CalendarDialog';
+import { NotificationTypeDropdown } from '@/components/notifications/NotificationTypeDropdown';
 
 /**
  * Breadcrumb item interface
@@ -284,19 +287,33 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
 
           {/* Right side actions */}
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {/* Notifications */}
-            <IconButton size="small" color="inherit">
-              <Badge badgeContent={4} color="error">
-                <NotificationsIcon fontSize="small" />
-              </Badge>
-            </IconButton>
+            {/* Assignment Notifications */}
+            <NotificationTypeDropdown
+              notificationType="ASSIGNMENTS"
+              icon={<PersonIcon fontSize="small" />}
+              label="Assignments"
+            />
 
-            {/* Tasks */}
-            <IconButton size="small" color="inherit">
-              <Badge badgeContent={2} color="primary">
-                <TaskIcon fontSize="small" />
-              </Badge>
-            </IconButton>
+            {/* Task Notifications */}
+            <NotificationTypeDropdown
+              notificationType="TASKS"
+              icon={<TaskIcon fontSize="small" />}
+              label="Tasks"
+            />
+
+            {/* Reminders */}
+            <NotificationTypeDropdown
+              notificationType="REMINDERS"
+              icon={<NotificationsActiveIcon fontSize="small" />}
+              label="Reminders"
+            />
+
+            {/* System Alerts */}
+            <NotificationTypeDropdown
+              notificationType="SYSTEM"
+              icon={<WarningIcon fontSize="small" />}
+              label="System"
+            />
 
             {/* Calendar */}
             <IconButton

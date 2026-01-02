@@ -83,6 +83,7 @@ def get_default_notification_title_and_message(notification_type: str) -> Tuple[
 def send_notification_to_user(user_id: int, notification_data: dict) -> bool:
     """
     Send a notification to a user via SSE channel layer.
+    Only sends if user is online (has active SSE connection).
 
     Args:
         user_id: User ID to send notification to
@@ -91,6 +92,12 @@ def send_notification_to_user(user_id: int, notification_data: dict) -> bool:
     Returns:
         True if sent successfully, False otherwise
     """
+    # Check if user is online before sending SSE
+    from immigration.services.user_presence import is_user_online
+    if not is_user_online(user_id):
+        # User is offline - skip SSE but notification is still saved in DB
+        return False
+    
     channel_layer = get_channel_layer()
     if not channel_layer:
         return False
