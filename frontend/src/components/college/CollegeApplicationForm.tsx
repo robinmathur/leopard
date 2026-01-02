@@ -28,7 +28,7 @@ import { Agent } from '@/types/agent';
 import { clientApi } from '@/services/api/clientApi';
 import { Client } from '@/types/client';
 import { UserAutocomplete } from '@/components/common/UserAutocomplete';
-import { User } from '@/services/api/userApi';
+import { userApi, User } from '@/services/api/userApi';
 
 interface CollegeApplicationFormProps {
   mode: 'add' | 'edit';
@@ -105,8 +105,15 @@ export const CollegeApplicationForm = ({
 
           // Load assigned user (only in edit mode)
           if (mode === 'edit' && initialData.assigned_to) {
-            const userResponse = await clientApi.getById(initialData.assigned_to);
-            setSelectedUser(userResponse as any); // Type mismatch workaround
+            try {
+              const users = await userApi.getAllActiveUsers();
+              const assignedUser = users.find(u => u.id === initialData.assigned_to);
+              if (assignedUser) {
+                setSelectedUser(assignedUser);
+              }
+            } catch (err) {
+              console.error('Failed to load assigned user:', err);
+            }
           }
         } catch (err) {
           console.error('Failed to load initial data:', err);

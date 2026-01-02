@@ -20,17 +20,18 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   DataGrid,
   GridColDef,
-  GridActionsCellItem,
   GridPaginationModel,
 } from '@mui/x-data-grid';
 import {
   Visibility,
   PersonAdd as PersonAddIcon,
-  SwapHoriz as SwapHorizIcon,
+  ArrowForward as ArrowForwardIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
 import {
@@ -201,10 +202,12 @@ export const ApplicationsList: React.FC = () => {
       field: 'client_name',
       headerName: 'Client',
       width: 180,
+      sortable: false,
       renderCell: (params) => (
         <Link
           component="button"
           variant="body2"
+          fontWeight={500}
           onClick={() => handleClientClick(params.row.client)}
           sx={{
             textDecoration: 'none',
@@ -217,19 +220,21 @@ export const ApplicationsList: React.FC = () => {
       ),
     },
     {
-      field: 'application_type_name',
+      field: 'application_type_title',
       headerName: 'Type',
       width: 150,
+      sortable: false,
     },
     {
       field: 'stage_name',
       headerName: 'Stage',
       width: 150,
+      sortable: false,
       renderCell: (params) => (
         <Chip
           label={params.value}
           size="small"
-          color={params.row.is_final_stage ? 'success' : 'default'}
+          color={params.row.is_final_stage ? 'success' : 'primary'}
         />
       ),
     },
@@ -237,27 +242,32 @@ export const ApplicationsList: React.FC = () => {
       field: 'institute_name',
       headerName: 'Institute',
       width: 200,
+      sortable: false,
     },
     {
       field: 'course_name',
       headerName: 'Course',
       width: 200,
+      sortable: false,
     },
     {
       field: 'intake_date',
       headerName: 'Intake Date',
       width: 130,
+      sortable: false,
       valueFormatter: (value) => new Date(value).toLocaleDateString(),
     },
     {
       field: 'location_display',
       headerName: 'Location',
       width: 150,
+      sortable: false,
     },
     {
       field: 'total_tuition_fee',
       headerName: 'Tuition Fee',
       width: 130,
+      sortable: false,
       valueFormatter: (value) =>
         new Intl.NumberFormat('en-US', {
           style: 'currency',
@@ -268,6 +278,7 @@ export const ApplicationsList: React.FC = () => {
       field: 'assigned_to_name',
       headerName: 'Assigned To',
       width: 150,
+      sortable: false,
       renderCell: (params) => params.value || (
         <Typography variant="caption" color="text.secondary">
           Unassigned
@@ -276,45 +287,60 @@ export const ApplicationsList: React.FC = () => {
     },
     {
       field: 'actions',
-      type: 'actions',
       headerName: 'Actions',
       width: 120,
-      getActions: (params) => {
-        const actions = [];
-
-        if (hasPermission('change_collegeapplication')) {
-          actions.push(
-            <GridActionsCellItem
-              icon={<PersonAddIcon />}
-              label="Assign"
-              onClick={() => setAssignDialog({ open: true, application: params.row })}
-            />,
-            <GridActionsCellItem
-              icon={<SwapHorizIcon />}
-              label="Change Stage"
-              onClick={() => setChangeStageDialog({ open: true, application: params.row })}
-            />
-          );
-        }
-
-        actions.push(
-          <GridActionsCellItem
-            icon={<Visibility />}
-            label="View"
-            onClick={() => handleView(params.row)}
-            showInMenu={false}
-          />
-        );
-
-        return actions;
-      },
+      align: 'right',
+      headerAlign: 'right',
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+          <Tooltip title="View Details">
+            <IconButton
+              size="small"
+              onClick={() => handleView(params.row)}
+              color="primary"
+            >
+              <Visibility fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {hasPermission('change_collegeapplication') && (
+            <>
+              <Tooltip title="Assign">
+                <IconButton
+                  size="small"
+                  onClick={() => setAssignDialog({ open: true, application: params.row })}
+                  color="primary"
+                >
+                  <PersonAddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Change Stage">
+                <IconButton
+                  size="small"
+                  onClick={() => setChangeStageDialog({ open: true, application: params.row })}
+                  color="info"
+                >
+                  <ArrowForwardIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Box>
+      ),
     },
   ];
 
   return (
-    <Box>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
+    <Box
+      sx={{
+        height: { xs: 'auto', md: 'calc(100vh - 100px)' },
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header - Fixed */}
+      <Box sx={{ mb: 2, flexShrink: 0 }}>
         <Typography variant="h4" fontWeight={600} gutterBottom>
           Applications
         </Typography>
@@ -323,8 +349,8 @@ export const ApplicationsList: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Search Section */}
-      <Paper sx={{ p: 2, mb: 3 }}>
+      {/* Search Section - Fixed */}
+      <Paper sx={{ p: 2, mb: 2, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', gap: 2, mb: showAdvancedSearch ? 2 : 0 }}>
           <TextField
             size="small"
@@ -433,13 +459,13 @@ export const ApplicationsList: React.FC = () => {
 
       {/* Error Alert */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
-      {/* DataGrid */}
-      <Paper sx={{ p: 2, height: 'calc(100vh - 300px)' }}>
+      {/* DataGrid - Scrollable */}
+      <Paper sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         <DataGrid
           rows={applications}
           columns={columns}
@@ -450,9 +476,46 @@ export const ApplicationsList: React.FC = () => {
           onPaginationModelChange={setPaginationModel}
           pageSizeOptions={[10, 25, 50, 100]}
           disableRowSelectionOnClick
+          disableColumnMenu
+          // disableColumnFilter
+          // disableColumnSelector
+          // disableDensitySelector
+          columnHeaderHeight={35}
           sx={{
+            flex: 1,
+            border: 'none',
+            // 1. Header Styling: Light background and specific font weight
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#f8f9fa', // Light gray background
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 600, // Matching the bold headers in Visa Manager
+              fontSize: '0.875rem',
+              color: 'text.primary',
+            },
+            // 2. Cell Styling: Remove vertical lines and adjust font
             '& .MuiDataGrid-cell': {
               fontSize: '0.875rem',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+            },
+            // 3. Row Hover Effect
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.04)', // Standard MUI hover
+            },
+            // 4. Clean up focuses
+            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+              outline: 'none',
+            },
+            '& .MuiDataGrid-cell:focus': {
+              outline: 'none',
+            },
+            // 5. Footer matching the standard TablePagination
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: 'none',
             },
           }}
         />

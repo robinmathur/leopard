@@ -8,14 +8,14 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Autocomplete,
-  TextField,
   Typography,
   Alert,
 } from '@mui/material';
-import { userApi, type User } from '@/services/api/userApi';
+import { UserAutocomplete } from '@/components/common/UserAutocomplete';
+import type { User } from '@/types/user';
 import { updateCollegeApplication } from '@/services/api/collegeApplicationApi';
 import type { CollegeApplication } from '@/types/collegeApplication';
+import { userApi } from '@/services/api/userApi';
 
 interface AssignCollegeApplicationDialogProps {
   open: boolean;
@@ -31,39 +31,37 @@ export const AssignCollegeApplicationDialog: React.FC<AssignCollegeApplicationDi
   onSuccess,
 }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fetchingUsers, setFetchingUsers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch users when dialog opens
+  // Load currently assigned user when dialog opens
   useEffect(() => {
-    if (open) {
-      fetchUsers();
-      // Pre-select currently assigned user if any
-      if (application?.assigned_to) {
-        const currentUser = users.find(u => u.id === application.assigned_to);
-        if (currentUser) {
-          setSelectedUser(currentUser);
+    const loadAssignedUser = async () => {
+      if (open && application?.assigned_to) {
+        try {
+          // Fetch the currently assigned user
+          const users = await userApi.getAllActiveUsers();
+          const assignedUser = users.find(u => u.id === application.assigned_to);
+          if (assignedUser) {
+            setSelectedUser(assignedUser);
+          } else {
+            setSelectedUser(null);
+          }
+        } catch (err) {
+          console.error('Failed to load assigned user:', err);
+          setSelectedUser(null);
         }
+      } else if (open) {
+        // No assigned user
+        setSelectedUser(null);
       } else {
+        // Dialog closed
         setSelectedUser(null);
       }
-    }
-  }, [open, application]);
+    };
 
-  const fetchUsers = async () => {
-    try {
-      setFetchingUsers(true);
-      setError(null);
-      const activeUsers = await userApi.getAllActiveUsers();
-      setUsers(activeUsers);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load users');
-    } finally {
-      setFetchingUsers(false);
-    }
-  };
+    loadAssignedUser();
+  }, [open, application]);
 
   const handleAssign = async () => {
     if (!application) return;
@@ -72,7 +70,7 @@ export const AssignCollegeApplicationDialog: React.FC<AssignCollegeApplicationDi
       setLoading(true);
       setError(null);
       await updateCollegeApplication(application.id, {
-        assigned_to: selectedUser?.id || null,
+        assigned_to_id: selectedUser?.id || null,
       });
       onSuccess();
       onClose();
@@ -107,28 +105,20 @@ export const AssignCollegeApplicationDialog: React.FC<AssignCollegeApplicationDi
           </Alert>
         )}
 
-        <Autocomplete
-          options={users}
-          getOptionLabel={(option) => option.full_name}
+        <UserAutocomplete
           value={selectedUser}
-          onChange={(_, value) => setSelectedUser(value)}
-          loading={fetchingUsers}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Assign To"
-              placeholder="Select user..."
-              required
-            />
-          )}
+          onChange={setSelectedUser}
+          label="Assign To"
+          placeholder="Search by name, email, or username..."
           disabled={loading}
+          required
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
-        <Button onClick={handleAssign} variant="contained" disabled={loading || fetchingUsers}>
+        <Button onClick={handleAssign} variant="contained" disabled={loading || !selectedUser}>
           {loading ? 'Assigning...' : 'Assign'}
         </Button>
       </DialogActions>

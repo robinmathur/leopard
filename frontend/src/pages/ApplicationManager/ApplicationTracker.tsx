@@ -72,7 +72,7 @@ export const ApplicationTracker: React.FC = () => {
   const [applicationTypes, setApplicationTypes] = useState<ApplicationType[]>([]);
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState<number | null>(null); // null means not initialized yet
   const [applications, setApplications] = useState<CollegeApplication[]>([]);
   const [stageCounts, setStageCounts] = useState<StageCountsResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -136,7 +136,7 @@ export const ApplicationTracker: React.FC = () => {
   }, [applicationTypes, searchParams]);
 
   // Fetch stages and counts for application type
-  const fetchStagesAndCounts = useCallback(async (typeId: number, signal?: AbortSignal) => {
+  const fetchStagesAndCounts = useCallback(async (typeId: number, signal?: AbortSignal, initialStageId?: number | null, legacyStageIndex?: number | null) => {
     try {
       setStatusCountsLoading(true);
       const [stagesList, counts] = await Promise.all([
@@ -147,6 +147,37 @@ export const ApplicationTracker: React.FC = () => {
       if (!signal?.aborted) {
         setStages(stagesList);
         setStageCounts(counts);
+        
+        // Set tab value from initialStageId if provided
+        if (initialStageId !== null && initialStageId !== undefined && stagesList.length > 0) {
+          const stageIndex = stagesList.findIndex(s => s.id === initialStageId);
+          if (stageIndex >= 0) {
+            setTabValue(stageIndex);
+          } else {
+            setTabValue(0);
+          }
+        } else if (legacyStageIndex !== null && legacyStageIndex !== undefined) {
+          // Handle legacy stageIndex
+          if (legacyStageIndex >= 0 && legacyStageIndex < stagesList.length) {
+            setTabValue(legacyStageIndex);
+            // Update URL to use stageId instead - read current searchParams
+            setSearchParams((prev) => {
+              const newParams = new URLSearchParams(prev);
+              if (typeId) {
+                newParams.set('typeId', String(typeId));
+              }
+              if (stagesList[legacyStageIndex]) {
+                newParams.set('stageId', String(stagesList[legacyStageIndex].id));
+              }
+              newParams.delete('stageIndex');
+              return newParams;
+            }, { replace: true });
+          } else {
+            setTabValue(0);
+          }
+        } else {
+          setTabValue(0);
+        }
       }
     } catch (err: any) {
       if (err.name === 'CanceledError' || signal?.aborted) return;
@@ -156,7 +187,7 @@ export const ApplicationTracker: React.FC = () => {
         setStatusCountsLoading(false);
       }
     }
-  }, []);
+  }, [setSearchParams]);
 
   // Fetch applications for current stage
   const fetchApplications = useCallback(async (typeId: number, stageId: number, signal?: AbortSignal) => {
@@ -184,61 +215,28 @@ export const ApplicationTracker: React.FC = () => {
     }
   }, [page, pageSize]);
 
-  // Load stages when application type changes
+  // Load stages when application type changes (not when URL changes)
   useEffect(() => {
     if (!selectedTypeId) return;
 
     const abortController = new AbortController();
-    fetchStagesAndCounts(selectedTypeId, abortController.signal);
+    // Get stageId from URL for initial load - only read once when type changes
+    const stageIdParam = searchParams.get('stageId');
+    const stageIndexParam = searchParams.get('stageIndex');
+    const initialStageId = stageIdParam ? Number(stageIdParam) : null;
+    const legacyIndex = stageIndexParam ? Number(stageIndexParam) : null;
+    fetchStagesAndCounts(selectedTypeId, abortController.signal, initialStageId, legacyIndex);
 
     return () => {
       abortController.abort();
     };
-  }, [selectedTypeId, fetchStagesAndCounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTypeId]); // Only depend on selectedTypeId - stages don't change when URL changes
 
-  // Set tab value from URL stageId after stages are loaded
-  useEffect(() => {
-    if (stages.length === 0) return;
-
-    const stageIdParam = searchParams.get('stageId');
-    if (stageIdParam) {
-      const stageId = Number(stageIdParam);
-      const stageIndex = stages.findIndex(s => s.id === stageId);
-      if (stageIndex >= 0) {
-        setTabValue(stageIndex);
-      } else {
-        // Stage not found, default to first tab
-        setTabValue(0);
-      }
-    } else {
-      // No stageId in URL, check for legacy stageIndex or default to first tab
-      const stageIndexParam = searchParams.get('stageIndex');
-      if (stageIndexParam) {
-        const index = Number(stageIndexParam);
-        if (!isNaN(index) && index >= 0 && index < stages.length) {
-          setTabValue(index);
-          // Update URL to use stageId instead
-          const newParams = new URLSearchParams(searchParams);
-          if (selectedTypeId) {
-            newParams.set('typeId', String(selectedTypeId));
-          }
-          if (stages[index]) {
-            newParams.set('stageId', String(stages[index].id));
-          }
-          newParams.delete('stageIndex');
-          setSearchParams(newParams, { replace: true });
-        } else {
-          setTabValue(0);
-        }
-      } else {
-        setTabValue(0);
-      }
-    }
-  }, [stages, searchParams, selectedTypeId, setSearchParams]); // Only run when stages or URL params change
 
   // Fetch applications when tab/page changes
   useEffect(() => {
-    if (!selectedTypeId || stages.length === 0) return;
+    if (!selectedTypeId || stages.length === 0 || tabValue === null) return;
 
     const abortController = new AbortController();
     const currentStage = stages[tabValue];
@@ -256,6 +254,7 @@ export const ApplicationTracker: React.FC = () => {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     setPage(1);
+    // Update URL without triggering re-fetch of stages
     const newParams = new URLSearchParams(searchParams);
     if (selectedTypeId) {
       newParams.set('typeId', String(selectedTypeId));
@@ -265,6 +264,18 @@ export const ApplicationTracker: React.FC = () => {
       newParams.set('stageId', String(stages[newValue].id));
     }
     newParams.delete('stageIndex'); // Remove old parameter
+    setSearchParams(newParams, { replace: true });
+    // Note: Only applications will be fetched via the useEffect that watches tabValue
+  };
+
+  const handleTypeChange = (typeId: number) => {
+    setSelectedTypeId(typeId);
+    setTabValue(null); // Reset tab value when type changes
+    setPage(1); // Reset pagination
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('typeId', String(typeId));
+    newParams.delete('stageIndex'); // Reset stage when type changes
+    newParams.delete('stageId'); // Reset stageId when type changes
     setSearchParams(newParams, { replace: true });
   };
 
@@ -289,14 +300,6 @@ export const ApplicationTracker: React.FC = () => {
     });
   };
 
-  const handleTypeChange = (typeId: number) => {
-    setSelectedTypeId(typeId);
-    setPage(1); // Reset pagination
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('typeId', String(typeId));
-    newParams.delete('stageIndex'); // Reset stage when type changes
-    setSearchParams(newParams, { replace: true });
-  };
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -386,11 +389,11 @@ export const ApplicationTracker: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
           <CircularProgress />
         </Box>
-      ) : selectedTypeId && stages.length === 0 ? (
+      ) : selectedTypeId && !statusCountsLoading && stages.length === 0 ? (
         <Alert severity="warning" sx={{ flexShrink: 0 }}>
           No stages defined for this application type. Add stages to start tracking.
         </Alert>
-      ) : selectedTypeId && stages.length > 0 ? (
+      ) : selectedTypeId && stages.length > 0 && tabValue !== null ? (
         <Paper sx={{ px: 2, pt: 0.5, pb: 2, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
           {/* Stage Selection - Wrapping into rows */}
           <Box
@@ -421,7 +424,7 @@ export const ApplicationTracker: React.FC = () => {
                       )}
                       {statusCountsLoading ? (
                         <CircularProgress size={14} />
-                      ) : (
+                      ) : count > 0 ? (
                         <Badge
                           badgeContent={count}
                           max={999}
@@ -438,7 +441,7 @@ export const ApplicationTracker: React.FC = () => {
                             },
                           }}
                         />
-                      )}
+                      ) : null}
                     </Box>
                   }
                   onClick={() => handleTabChange({} as React.SyntheticEvent, index)}
@@ -446,7 +449,7 @@ export const ApplicationTracker: React.FC = () => {
                   variant={isSelected ? 'filled' : 'outlined'}
                   sx={{
                     cursor: 'pointer',
-                    py: 2,
+                    py: 1,
                     height: 'auto',
                     '&:hover': {
                       bgcolor: isSelected ? 'primary.dark' : 'action.hover',
@@ -460,7 +463,7 @@ export const ApplicationTracker: React.FC = () => {
           {/* Table Content */}
           <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {stages.map((_stage, index) => (
-              <TabPanel key={index} value={tabValue} index={index}>
+              <TabPanel key={index} value={tabValue!} index={index}>
                 <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <TableContainer sx={{ flex: 1, overflow: 'auto' }}>
                   <Table size="small" sx={{ minWidth: 1000 }}>
@@ -589,7 +592,7 @@ export const ApplicationTracker: React.FC = () => {
         application={assignDialog.application}
         onSuccess={() => {
           const abortController = new AbortController();
-          if (selectedTypeId && stages[tabValue]) {
+          if (selectedTypeId && tabValue !== null && stages[tabValue]) {
             fetchApplications(selectedTypeId, stages[tabValue].id, abortController.signal);
             fetchStagesAndCounts(selectedTypeId, abortController.signal);
           }
@@ -608,7 +611,7 @@ export const ApplicationTracker: React.FC = () => {
         application={changeStageDialog.application}
         onSuccess={() => {
           const abortController = new AbortController();
-          if (selectedTypeId && stages[tabValue]) {
+          if (selectedTypeId && tabValue !== null && stages[tabValue]) {
             fetchApplications(selectedTypeId, stages[tabValue].id, abortController.signal);
             fetchStagesAndCounts(selectedTypeId, abortController.signal);
           }
