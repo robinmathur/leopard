@@ -83,6 +83,7 @@ export const AssignClientDialog = ({
             placeholder="Search for a user..."
             disabled={loading}
             size="small"
+            excludeUserIds={client.assigned_to ? [client.assigned_to] : []}
           />
         </Box>
 

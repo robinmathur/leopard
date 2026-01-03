@@ -17,6 +17,7 @@ interface UserAutocompleteProps {
   helperText?: string;
   size?: 'small' | 'medium';
   required?: boolean;
+  excludeUserIds?: number[]; // User IDs to exclude from the dropdown
 }
 
 export const UserAutocomplete = ({
@@ -29,6 +30,7 @@ export const UserAutocomplete = ({
   helperText,
   size = 'small',
   required = false,
+  excludeUserIds = [],
 }: UserAutocompleteProps) => {
   const [options, setOptions] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,8 +62,8 @@ export const UserAutocomplete = ({
     loadUsers();
   }, []); // Load once on mount
 
-  // Filter options based on search term (client-side filtering)
-  const filteredOptions = searchTerm
+  // Filter options based on search term and excluded user IDs (client-side filtering)
+  const filteredOptions = (searchTerm
     ? options.filter((user) => {
         const fullName = user.full_name || `${user.first_name} ${user.last_name}`.trim();
         const searchLower = searchTerm.toLowerCase();
@@ -71,7 +73,8 @@ export const UserAutocomplete = ({
           user.username?.toLowerCase().includes(searchLower)
         );
       })
-    : options;
+    : options
+  ).filter((user) => !excludeUserIds.includes(user.id)); // Exclude specified user IDs
 
   return (
     <Autocomplete
