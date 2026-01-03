@@ -6,12 +6,14 @@ Users are marked as online when they connect to SSE stream,
 and marked as offline when they disconnect or after TTL expires.
 """
 
+import logging
 from typing import Optional
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 # TTL for online status (5 minutes)
 ONLINE_TTL = 300  # seconds
@@ -26,6 +28,7 @@ def mark_user_online(user_id: int) -> None:
     """
     cache_key = f"user_online_{user_id}"
     cache.set(cache_key, timezone.now().isoformat(), ONLINE_TTL)
+    logger.info(f"User presence: marked user {user_id} as ONLINE (TTL: {ONLINE_TTL}s)")
 
 
 def mark_user_offline(user_id: int) -> None:
@@ -37,6 +40,7 @@ def mark_user_offline(user_id: int) -> None:
     """
     cache_key = f"user_online_{user_id}"
     cache.delete(cache_key)
+    logger.info(f"User presence: marked user {user_id} as OFFLINE")
 
 
 def is_user_online(user_id: int) -> bool:
@@ -50,7 +54,10 @@ def is_user_online(user_id: int) -> bool:
         True if user is online, False otherwise
     """
     cache_key = f"user_online_{user_id}"
-    return cache.get(cache_key) is not None
+    value = cache.get(cache_key)
+    is_online = value is not None
+    logger.debug(f"User presence: user {user_id} online={is_online}")
+    return is_online
 
 
 def get_online_users(user_ids: list[int]) -> list[int]:

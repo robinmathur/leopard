@@ -28,22 +28,29 @@ interface NotificationStore {
   filterRead: 'all' | 'unread' | 'read';
   sseClient: NotificationSSEClient | null;
   isSSEConnected: boolean;
+  lastFetchTime: number | null; // Track when we last fetched notifications
+  hasFetchedInitial: boolean; // Track if initial fetch is done
 
   // Actions
   fetchNotifications: (page?: number, reset?: boolean) => Promise<void>;
-  fetchNotificationsForBadges: () => Promise<void>; // Fetch unread notifications without filters for badge counts
+  fetchNotificationsForBadges: () => Promise<void>;
   fetchUnreadCount: () => Promise<void>;
   markAsRead: (id: number) => Promise<void>;
   bulkMarkAsRead: (ids: number[]) => Promise<void>;
   updateNotificationState: (id: number, updates: { read?: boolean; is_completed?: boolean }) => Promise<void>;
   addNotification: (notification: Notification) => void;
   removeNotification: (id: number) => void;
+  markNotificationsAsReadLocally: (ids: (number | string)[]) => void; // For SSE cross-browser sync
+  setUnreadCountLocally: (count: number) => void; // For SSE cross-browser sync
   setFilterType: (type: NotificationType | 'all') => void;
   setFilterRead: (read: 'all' | 'unread' | 'read') => void;
   connectSSE: () => void;
   disconnectSSE: () => void;
   resetStore: () => void;
 }
+
+// Cache duration in milliseconds (5 minutes)
+const CACHE_DURATION = 5 * 60 * 1000;
 
 const initialState = {
   notifications: [],
@@ -57,6 +64,8 @@ const initialState = {
   filterRead: 'all' as 'all' | 'unread' | 'read',
   sseClient: null as NotificationSSEClient | null,
   isSSEConnected: false,
+  lastFetchTime: null as number | null,
+  hasFetchedInitial: false,
 };
 
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
@@ -64,9 +73,19 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
   /**
    * Fetch notifications with pagination
+   * Uses caching to avoid unnecessary API calls
    */
   fetchNotifications: async (page = 1, reset = false) => {
     const state = get();
+    
+    // Skip fetch if we have cached data and it's not a forced reset or pagination
+    if (!reset && page === 1 && state.hasFetchedInitial && state.lastFetchTime) {
+      const cacheAge = Date.now() - state.lastFetchTime;
+      if (cacheAge < CACHE_DURATION && state.notifications.length > 0) {
+        console.log('NotificationStore: Using cached notifications');
+        return;
+      }
+    }
     
     if (reset) {
       set({ isLoading: true, error: null, currentPage: 1 });
@@ -75,7 +94,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     }
 
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         page,
         page_size: 20,
       };
@@ -88,8 +107,6 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
       if (state.filterRead === 'unread') {
         params.include_read = false;
       } else if (state.filterRead === 'read') {
-        // For read-only, we need to fetch all and filter client-side
-        // Or use a different approach if backend supports it
         params.include_read = true;
       } else {
         params.include_read = true;
@@ -114,6 +131,8 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
           hasMore: !!response.next,
           isLoading: false,
           isLoadingMore: false,
+          lastFetchTime: Date.now(),
+          hasFetchedInitial: true,
         };
       });
 
@@ -257,10 +276,42 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   },
 
   /**
+   * Mark notifications as read locally (for SSE cross-browser sync)
+   * This is called when another browser session marks notifications as read
+   */
+  markNotificationsAsReadLocally: (ids: (number | string)[]) => {
+    set((state) => {
+      // Convert all IDs to numbers to handle both string and number formats
+      const idsSet = new Set(ids.map((id) => Number(id)));
+      let updatedCount = 0;
+      const updatedNotifications = state.notifications.map((n) => {
+        if (idsSet.has(n.id) && !n.read) {
+          updatedCount++;
+          return { ...n, read: true, read_at: new Date().toISOString() };
+        }
+        return n;
+      });
+      return { 
+        notifications: updatedNotifications,
+        // Also update unread count locally
+        unreadCount: Math.max(0, state.unreadCount - updatedCount),
+      };
+    });
+  },
+
+  /**
+   * Set unread count locally (for SSE cross-browser sync)
+   * This is called when another browser session updates the count
+   */
+  setUnreadCountLocally: (count: number) => {
+    set({ unreadCount: count });
+  },
+
+  /**
    * Set filter type
    */
   setFilterType: (type: NotificationType | 'all') => {
-    set({ filterType: type, currentPage: 1 });
+    set({ filterType: type, currentPage: 1, hasFetchedInitial: false });
     get().fetchNotifications(1, true);
   },
 
@@ -268,7 +319,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
    * Set filter read status
    */
   setFilterRead: (read: 'all' | 'unread' | 'read') => {
-    set({ filterRead: read, currentPage: 1 });
+    set({ filterRead: read, currentPage: 1, hasFetchedInitial: false });
     get().fetchNotifications(1, true);
   },
 
@@ -292,28 +343,44 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     // Create SSE client
     const sseClient = new NotificationSSEClient({
       onMessage: (message: SSEMessage) => {
-        if (message.type === 'notification_message' && message.notification) {
-          // Add new notification
+        console.log('SSE message received:', message.type);
+        
+        if (message.type === 'connection_established') {
+          console.log('SSE: Connection established for user', message.user_id);
+        } else if (message.type === 'notification_message' && message.notification) {
+          console.log('SSE: New notification received');
+          // Add new notification to local state
           get().addNotification(message.notification as Notification);
-          // Refresh unread count
-          get().fetchUnreadCount();
+        } else if (message.type === 'notification_read' && message.notification_ids) {
+          // Cross-browser sync: another session marked notifications as read
+          console.log('SSE: Notifications marked as read in another session:', message.notification_ids);
+          get().markNotificationsAsReadLocally(message.notification_ids as (number | string)[]);
+        } else if (message.type === 'unread_count_update' && message.unread_count !== undefined) {
+          // Cross-browser sync: update unread count from another session
+          const count = Number(message.unread_count);
+          console.log('SSE: Unread count updated from another session:', count);
+          get().setUnreadCountLocally(count);
         } else if (message.type === 'heartbeat') {
           // Heartbeat received, connection is alive
-          // Could update last heartbeat timestamp if needed
+        } else if (message.type === 'error') {
+          console.error('SSE: Server error:', message.message);
         }
       },
       onConnect: () => {
+        console.log('SSE: Connected');
         set({ isSSEConnected: true });
       },
       onDisconnect: () => {
+        console.log('SSE: Disconnected');
         set({ isSSEConnected: false });
       },
       onError: (error) => {
-        console.error('SSE error:', error);
+        console.error('SSE: Connection error:', error);
         set({ isSSEConnected: false });
       },
       reconnectDelay: 3000,
       maxReconnectAttempts: 10,
+      inactivityTimeout: 5 * 60 * 1000, // 5 minutes
     });
 
     set({ sseClient });

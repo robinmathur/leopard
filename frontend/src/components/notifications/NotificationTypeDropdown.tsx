@@ -64,7 +64,6 @@ export const NotificationTypeDropdown = ({
   const {
     notifications,
     isLoading,
-    fetchNotifications,
     fetchNotificationsForBadges,
     markAsRead,
     fetchUnreadCount,
@@ -73,22 +72,20 @@ export const NotificationTypeDropdown = ({
   // Get notification types for this category
   const types = getNotificationTypesForCategory(notificationType);
 
-  // Fetch notifications and unread count on mount to show badge counts
+  // Fetch notifications for badge counts on mount (only if not already loaded)
   useEffect(() => {
-    // Fetch unread notifications for badge counts if not already loaded
     if (notifications.length === 0) {
       fetchNotificationsForBadges();
     }
-    // Always fetch unread count to ensure it's up to date
     fetchUnreadCount();
-  }, [fetchNotificationsForBadges, fetchUnreadCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
-  // Refresh notifications when dropdown opens
-  useEffect(() => {
-    if (open) {
-      fetchNotifications(1, true);
-    }
-  }, [open, fetchNotifications]);
+  // Note: We don't need to fetch on dropdown open because:
+  // 1. Initial notifications are fetched on mount via fetchNotificationsForBadges
+  // 2. New notifications come via SSE and are added to store automatically
+  // 3. Read status updates come via SSE for cross-browser sync
+  // This avoids unnecessary API calls every time user opens dropdown
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);

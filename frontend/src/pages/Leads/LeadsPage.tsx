@@ -4,7 +4,6 @@
  * Shows tabs: All, Lead, Follow Up, Client, Close
  */
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -67,7 +66,6 @@ const getTabCount = (
 type DialogMode = 'add' | null;
 
 export const LeadsPage = () => {
-  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
