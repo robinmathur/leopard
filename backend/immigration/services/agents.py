@@ -86,7 +86,7 @@ def agent_create(*, data: AgentCreateInput, user) -> Agent:
         company_name=data.company_name or '',
         designation=data.designation or '',
         phone_number=data.phone_number or '',
-        email=data.email,
+        email=data.email or None,  # Use None instead of empty string for email
         website=data.website or '',
         invoice_to=data.invoice_to or '',
         street=data.street or '',
@@ -149,7 +149,7 @@ def agent_update(*, agent: Agent, data: AgentUpdateInput, user) -> Agent:
         update_fields.append('phone_number')
 
     if data.email is not None:
-        agent.email = data.email
+        agent.email = data.email or None  # Use None instead of empty string for email
         update_fields.append('email')
 
     if data.website is not None:

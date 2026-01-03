@@ -20,6 +20,7 @@ class AgentOutputSerializer(serializers.ModelSerializer):
     created_by_name = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
     agent_type_display = serializers.CharField(source='get_agent_type_display', read_only=True)
+    country = serializers.SerializerMethodField()
     
     class Meta:
         model = Agent
@@ -67,6 +68,13 @@ class AgentOutputSerializer(serializers.ModelSerializer):
         """Get updater name if exists."""
         if obj.updated_by:
             return f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip() or obj.updated_by.username
+        return None
+    
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_country(self, obj):
+        """Convert Country object to string (country code)."""
+        if obj.country:
+            return str(obj.country)
         return None
 
 
