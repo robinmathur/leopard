@@ -77,8 +77,8 @@ export const ACTIVITY_TYPE_CONFIG: Record<string, {
   PASSPORT_UPDATED: { label: 'Passport Updated', color: '#ed6c02', icon: PassportIcon },
   PROFICIENCY_ADDED: { label: 'Language Proficiency Added', color: '#0288d1', icon: LanguageIcon },
   QUALIFICATION_ADDED: { label: 'Qualification Added', color: '#0288d1', icon: SchoolIcon },
-  VISA_APPLICATION_CREATED: { label: 'Visa Application Created', color: '#2e7d32', icon: FlightIcon },
-  COLLEGE_APPLICATION_CREATED: { label: 'College Application Created', color: '#2e7d32', icon: BusinessIcon },
+  VISA_APPLICATION_CREATED: { label: 'Visa Application Created', color: '#ed6c02', icon: FlightIcon },
+  COLLEGE_APPLICATION_CREATED: { label: 'College Application Created', color: '#9c27b0', icon: BusinessIcon },
   TASK_CREATED: { label: 'Task Created', color: '#ed6c02', icon: TaskIcon },
   TASK_COMPLETED: { label: 'Task Completed', color: '#2e7d32', icon: CheckCircleIcon },
 };

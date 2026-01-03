@@ -3,7 +3,7 @@
  * Displays a single timeline activity with linked entities and reminder dates
  * Inspired by Material-UI Timeline design with timestamp on left
  */
-import { Box, Typography, Chip, Button } from '@mui/material';
+import { Box, Typography, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { TimelineItemProps, ACTIVITY_TYPE_CONFIG } from './types';
 import NoteIcon from '@mui/icons-material/Note';
@@ -32,13 +32,13 @@ const formatReminderDate = (dateString?: string, timeString?: string): string =>
 
 export const TimelineItem = ({ activity }: TimelineItemProps) => {
   const navigate = useNavigate();
-  
+
   const config = ACTIVITY_TYPE_CONFIG[activity.activity_type] || {
     label: activity.activity_type_display || activity.activity_type,
     color: '#1976d2',
     icon: NoteIcon,
   };
-  
+
   const IconComponent = config.icon;
 
   const metadata = activity.metadata || {};
@@ -50,6 +50,72 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
 
   // Check if this is a note with reminder
   const hasReminder = reminderDate && activity.activity_type === 'NOTE_ADDED';
+
+  /**
+   * Render description with clickable chips for applications
+   */
+  const renderDescription = () => {
+    const description = activity.description;
+
+    // For Visa Applications
+    if (visaApplicationId && description.includes('Visa Application')) {
+      const parts = description.split('Visa Application');
+      return (
+        <Box component="span">
+          {parts[0]}
+          <Chip
+            label="Visa Application"
+            size="small"
+            onClick={() => navigate(`/clients/${activity.client}?tab=visa-applications&visaApplicationId=${visaApplicationId}`)}
+            sx={{
+              cursor: 'pointer',
+              bgcolor: '#1976d2',
+              color: 'white',
+              fontWeight: 500,
+              fontSize: '0.65rem',
+              height: '18px',
+              mx: 0.5,
+              '&:hover': {
+                bgcolor: '#1565c0',
+              },
+            }}
+          />
+          {parts[1]}
+        </Box>
+      );
+    }
+
+    // For College Applications
+    if (applicationId && description.includes('College Application')) {
+      const parts = description.split('College Application');
+      return (
+        <Box component="span">
+          {parts[0]}
+          <Chip
+            label="College Application"
+            size="small"
+            onClick={() => navigate(`/clients/${activity.client}?tab=applications&collegeApplicationId=${applicationId}`)}
+            sx={{
+              cursor: 'pointer',
+              bgcolor: '#1976d2',
+              color: 'white',
+              fontWeight: 500,
+              fontSize: '0.65rem',
+              height: '18px',
+              mx: 0.5,
+              '&:hover': {
+                bgcolor: '#1565c0',
+              },
+            }}
+          />
+          {parts[1]}
+        </Box>
+      );
+    }
+
+    // Default: plain text
+    return description;
+  };
 
   return (
     <Box
@@ -76,8 +142,9 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
             bgcolor: config.color,
             color: 'white',
             fontWeight: 500,
-            fontSize: '0.7rem',
-            height: '22px',
+            fontSize: '0.65rem',
+            height: '18px',
+            opacity: 0.7,
             '& .MuiChip-icon': {
               color: 'white !important',
             },
@@ -85,7 +152,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
           icon={
             <IconComponent 
               sx={{ 
-                fontSize: '0.8rem', 
+                fontSize: '0.7rem', 
                 color: 'white !important',
               }} 
             />
@@ -112,6 +179,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
       {/* Activity Description */}
       <Typography
         variant="body2"
+        component="div"
         sx={{
           mb: 0.5,
           color: 'text.primary',
@@ -119,7 +187,7 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
           lineHeight: 1.4,
         }}
       >
-        {activity.description}
+        {renderDescription()}
       </Typography>
 
       {/* Reminder Date (for notes with reminders) */}
@@ -135,8 +203,8 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
         </Box>
       )}
 
-      {/* Linked Entities */}
-      {(taskId || visaApplicationId || applicationId) && (
+      {/* Linked Entities - Only show task ID if present (applications are now clickable chips in description) */}
+      {taskId && (
         <Box
           sx={{
             mt: 0.5,
@@ -149,47 +217,13 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
             alignItems: 'center',
           }}
         >
-          {visaApplicationId && (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => navigate(`/clients/${activity.client}?tab=visa-applications&visaApplicationId=${visaApplicationId}`)}
-              sx={{
-                textTransform: 'none',
-                fontSize: '0.7rem',
-                py: 0.2,
-                px: 0.75,
-                minWidth: 'auto',
-              }}
-            >
-              View Application
-            </Button>
-          )}
-          {applicationId && (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => navigate(`/clients/${activity.client}?tab=visa-applications&visaApplicationId=${applicationId}`)}
-              sx={{
-                textTransform: 'none',
-                fontSize: '0.7rem',
-                py: 0.2,
-                px: 0.75,
-                minWidth: 'auto',
-              }}
-            >
-              View Application
-            </Button>
-          )}
-          {taskId && (
-            <Typography 
-              variant="caption" 
-              color="text.secondary"
-              sx={{ fontSize: '0.7rem' }}
-            >
-              Task ID: {taskId}
-            </Typography>
-          )}
+          <Typography 
+            variant="caption" 
+            color="text.secondary"
+            sx={{ fontSize: '0.7rem' }}
+          >
+            Task ID: {taskId}
+          </Typography>
         </Box>
       )}
 
