@@ -30,6 +30,7 @@ import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 import { navigationConfig, NavItem } from './navigation.config';
 import { CalendarDialog } from '@/components/calendar/CalendarDialog';
 import { NotificationTypeDropdown } from '@/components/notifications/NotificationTypeDropdown';
@@ -181,10 +182,16 @@ const generateBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
 
 export const AppBar = ({ onMenuClick }: AppBarProps) => {
   const { user, logout } = useAuthStore();
+  const { notifications } = useNotificationStore();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
+
+  // Check if there are any unread system alerts
+  const hasSystemAlerts = notifications.some(
+    (n) => n.notification_type === 'SYSTEM_ALERT' && !n.read
+  );
 
   // Generate breadcrumbs based on current path
   const breadcrumbs = generateBreadcrumbs(location.pathname);
@@ -323,12 +330,14 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
               label="Reminders"
             />
 
-            {/* System Alerts */}
-            <NotificationTypeDropdown
-              notificationType="SYSTEM"
-              icon={<WarningIcon fontSize="small" />}
-              label="System"
-            />
+            {/* System Alerts - Only show when there are unread system alerts */}
+            {hasSystemAlerts && (
+              <NotificationTypeDropdown
+                notificationType="SYSTEM"
+                icon={<WarningIcon fontSize="small" />}
+                label="System"
+              />
+            )}
 
             {/* Calendar */}
             <IconButton
