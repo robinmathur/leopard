@@ -16,25 +16,29 @@ import {
   Tabs,
   Tab,
   Paper,
-  Divider,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+  Snackbar,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 import { useClientStore } from '@/store/clientStore';
 import { useClientDetailStore } from '@/store/clientDetailStore';
 import { useTimelineStore } from '@/store/timelineStore';
+import { useAuthStore } from '@/store/authStore';
 import {
   STAGE_LABELS,
   STAGE_COLORS,
-  GENDER_LABELS,
-  COUNTRIES,
+  ClientUpdateRequest,
 } from '@/types/client';
-import { Protect } from '@/components/protected/Protect';
 import { ClientOverview, ClientOverviewSkeleton } from '@/components/clients/ClientOverview';
 import { ProfilePictureUpload } from '@/components/clients/ProfilePictureUpload';
 import { TimelineWithNotes } from '@/components/shared/Timeline/TimelineWithNotes';
-import { ClientNotes } from '@/components/clients/ClientNotes';
 import { ClientPassport } from '@/components/clients/ClientPassport';
 import { ClientProficiency } from '@/components/clients/ClientProficiency';
 import { ClientQualifications } from '@/components/clients/ClientQualifications';
@@ -43,11 +47,16 @@ import { ClientVisaApplications } from '@/components/clients/ClientVisaApplicati
 import { ClientCollegeApplications } from '@/components/clients/ClientCollegeApplications';
 import { ClientTasks } from '@/components/clients/ClientTasks';
 import { ClientReminders } from '@/components/clients/ClientReminders';
+import { ClientForm } from '@/components/clients/ClientForm';
+import { DeleteConfirmDialog } from '@/components/clients/DeleteConfirmDialog';
+import { ClientSummaryPanel } from '@/components/clients/ClientSummaryPanel';
+import { clientApi } from '@/services/api/clientApi';
+import type { ApiError } from '@/services/api/httpClient';
 
 /**
  * Tab value type
  */
-type TabValue = 'overview' | 'profile' | 'notes' | 'documents' | 'applications' | 'visa-applications' | 'tasks' | 'reminders';
+type TabValue = 'overview' | 'profile' | 'documents' | 'applications' | 'visa-applications' | 'tasks' | 'reminders';
 
 /**
  * Tab panel component
@@ -71,43 +80,13 @@ const TabPanel = ({ children, value, currentValue }: TabPanelProps) => {
   );
 };
 
-/**
- * Get country name from code
- */
-const getCountryName = (code: string): string => {
-  const country = COUNTRIES.find((c) => c.code === code);
-  return country?.name || code;
-};
-
-/**
- * Format date for display
- */
-const formatDate = (dateString?: string): string => {
-  if (!dateString) return '-';
-  try {
-    return new Date(dateString).toLocaleDateString();
-  } catch {
-    return dateString; }};
-
-/**
- * Detail row component
- */
-const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <Box sx={{ mb: 2 }}>
-    <Typography variant="caption" color="text.secondary" display="block">
-      {label}
-    </Typography>
-    <Typography variant="body2">{value || '-'}</Typography>
-  </Box>
-);
-
 export const ClientDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const fromPath = (location.state as { from?: string })?.from || '/clients';
-  
+
   // Determine back button label based on where user came from
   let backLabel = 'Back to Clients';
   if (fromPath === '/leads') {
@@ -122,6 +101,20 @@ export const ClientDetailPage = () => {
 
   const { selectedClient, loading, error, fetchClientById, clearError, cancelFetchClientById } = useClientStore();
   const { setCurrentTab, markSectionLoaded, loadedSections, resetStore } = useClientDetailStore();
+  const { hasPermission } = useAuthStore();
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<Record<string, string[]>>({});
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Snackbar state
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const {
     activities,
     isLoading: timelineLoading,
@@ -142,7 +135,7 @@ export const ClientDetailPage = () => {
   // Use lazy initializer to only read from URL once on mount
   const [activeTab, setActiveTab] = useState<TabValue>(() => {
     const urlTab = searchParams.get('tab') as TabValue | null;
-    if (urlTab && ['overview', 'profile', 'notes', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
+    if (urlTab && ['overview', 'profile', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
       return urlTab;
     }
     return 'overview';
@@ -154,11 +147,11 @@ export const ClientDetailPage = () => {
       fetchClientById(parseInt(id, 10));
       fetchTimeline(parseInt(id, 10));
       markSectionLoaded('overview');
-      
+
       // Mark the initial tab section as loaded if it's not overview
       // Read from URL directly to avoid dependency on activeTab state
       const urlTab = searchParams.get('tab') as TabValue | null;
-      if (urlTab && urlTab !== 'overview' && ['overview', 'profile', 'notes', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
+      if (urlTab && urlTab !== 'overview' && ['overview', 'profile', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
         // Map visa-applications to applications for the store (they share the same loaded section)
         const sectionKey = urlTab === 'visa-applications' ? 'applications' : urlTab;
         markSectionLoaded(sectionKey as keyof typeof loadedSections);
@@ -170,6 +163,25 @@ export const ClientDetailPage = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]); // Only run when id changes
+
+  // Handle URL parameter changes (e.g., from "View Application" button in timeline)
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') as TabValue | null;
+
+    // Update active tab if URL has a valid tab parameter
+    if (urlTab && ['overview', 'profile', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
+      if (urlTab !== activeTab) {
+        setActiveTab(urlTab);
+        setCurrentTab(urlTab);
+
+        // Mark section as loaded
+        if (urlTab !== 'overview') {
+          const sectionKey = urlTab === 'visa-applications' ? 'applications' : urlTab;
+          markSectionLoaded(sectionKey as keyof typeof loadedSections);
+        }
+      }
+    }
+  }, [searchParams, activeTab, setCurrentTab, markSectionLoaded]);
 
   // Handle refresh timeline after note is added
   const handleNoteAdded = () => {
@@ -196,8 +208,77 @@ export const ClientDetailPage = () => {
     navigate(fromPath);
   };
 
-  const handleEdit = () => {
-    navigate(fromPath, { state: { editClientId: id }});
+  const handleEditOpen = () => {
+    setEditDialogOpen(true);
+    setEditError({});
+  };
+
+  const handleEditClose = () => {
+    setEditDialogOpen(false);
+    setEditError({});
+  };
+
+  const handleEditSave = async (data: ClientUpdateRequest) => {
+    if (!id) return;
+
+    setEditLoading(true);
+    setEditError({});
+
+    try {
+      await clientApi.update(parseInt(id, 10), data);
+      setSnackbarMessage('Client updated successfully');
+      setSnackbarOpen(true);
+      setEditDialogOpen(false);
+
+      // Refresh client data
+      await fetchClientById(parseInt(id, 10));
+    } catch (err) {
+      const apiError = err as ApiError;
+      if (apiError.fieldErrors) {
+        setEditError(apiError.fieldErrors);
+      } else {
+        setSnackbarMessage(apiError.message || 'Failed to update client');
+        setSnackbarOpen(true);
+      }
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDeleteOpen = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteClose = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!id) return;
+
+    setDeleteLoading(true);
+
+    try {
+      await clientApi.delete(parseInt(id, 10));
+      setSnackbarMessage('Client deleted successfully');
+      setSnackbarOpen(true);
+
+      // Navigate back after a short delay
+      setTimeout(() => {
+        navigate(fromPath);
+      }, 1000);
+    } catch (err) {
+      const apiError = err as ApiError;
+      setSnackbarMessage(apiError.message || 'Failed to delete client');
+      setSnackbarOpen(true);
+      setDeleteDialogOpen(false);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: TabValue) => {
@@ -281,11 +362,20 @@ export const ClientDetailPage = () => {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mr: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ alignSelf: 'flex-start' }}>
             {backLabel}
           </Button>
+
+          {/* Profile Picture */}
+          <ProfilePictureUpload
+            clientId={client.id}
+            clientName={fullName}
+            size={80}
+            editable={true}
+          />
+
           <Box>
             <Typography variant="h4" fontWeight={600}>
               {fullName}
@@ -302,11 +392,18 @@ export const ClientDetailPage = () => {
             </Box>
           </Box>
         </Box>
-        <Protect permission="edit_client">
-          <Button variant="outlined" startIcon={<EditIcon />} onClick={handleEdit}>
-            Edit Client
+
+        {/* Delete Button */}
+        {hasPermission('delete_client') && (
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleDeleteOpen}
+          >
+            Delete Client
           </Button>
-        </Protect>
+        )}
       </Box>
 
       {/* Tabs Navigation */}
@@ -320,7 +417,6 @@ export const ClientDetailPage = () => {
         >
           <Tab label="Overview" value="overview" id="client-tab-overview" />
           <Tab label="Profile" value="profile" id="client-tab-profile" />
-          <Tab label="Notes" value="notes" id="client-tab-notes" />
           <Tab label="Documents" value="documents" id="client-tab-documents" />
           <Tab label="Applications" value="applications" id="client-tab-applications" />
           <Tab label="Visa Applications" value="visa-applications" id="client-tab-visa-applications" />
@@ -333,78 +429,9 @@ export const ClientDetailPage = () => {
       {/* Overview Tab: Client Details (Left) + Timeline (Right) */}
       <TabPanel value="overview" currentValue={activeTab}>
         <Grid container spacing={3}>
-          {/* Left Side: Client Basic Details */}
+          {/* Left Side: Client Summary Panel */}
           <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
-              {/* Profile Picture */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-                <ProfilePictureUpload
-                  clientId={client.id}
-                  clientName={fullName}
-                  size={120}
-                  editable={true}
-                />
-                <Typography variant="h6" sx={{ mt: 2, textAlign: 'center' }}>
-                  {fullName}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <Chip
-                    label={STAGE_LABELS[client.stage]}
-                    color={STAGE_COLORS[client.stage]}
-                    size="small"
-                  />
-                  {!client.active && (
-                    <Chip label="Archived" color="default" size="small" variant="outlined" />
-                  )}
-                </Box>
-              </Box>
-
-              <Divider sx={{ my: 2 }}/>
-
-              {/* Personal Information */}
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Personal Information
-              </Typography>
-              <DetailRow label="First Name" value={client.first_name} />
-              <DetailRow label="Last Name" value={client.last_name} />
-              <DetailRow label="Gender" value={GENDER_LABELS[client.gender]} />
-              <DetailRow label="Date of Birth" value={formatDate(client.dob)} />
-              <DetailRow label="Country" value={getCountryName(client.country)} />
-
-              <Divider sx={{ my: 2 }}/>
-
-              {/* Contact Information */}
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Contact Information
-              </Typography>
-              <DetailRow label="Email" value={client.email} />
-              <DetailRow label="Phone Number" value={client.phone_number} />
-
-              <Divider sx={{ my: 2 }}/>
-
-              {/* Assignment & Status */}
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Assignment & Status
-              </Typography>
-              <DetailRow
-                label="Stage"
-                value={
-                  <Chip
-                    label={STAGE_LABELS[client.stage]}
-                    color={STAGE_COLORS[client.stage]}
-                    size="small"
-                  />
-                }
-              />
-              <DetailRow label="Assigned To" value={client.assigned_to_name} />
-              <DetailRow label="Agent" value={client.agent_name} />
-              <DetailRow label="Visa Category" value={client.visa_category_name} />
-              <DetailRow label="Last Updated" value={formatDate(client.updated_at)} />
-              <DetailRow
-                label="Status"
-                value={client.active ? 'Active' : 'Archived'}
-              />
-            </Paper>
+            <ClientSummaryPanel client={client} onClientUpdate={() => fetchClientById(client.id)} />
           </Grid>
 
           {/* Right Side: Timeline */}
@@ -432,16 +459,22 @@ export const ClientDetailPage = () => {
 
       {/* Profile Tab: Full Client Details */}
       <TabPanel value="profile" currentValue={activeTab}>
-        <ClientOverview client={client} loading={loading} />
-      </TabPanel>
-
-      {/* Notes Tab */}
-      <TabPanel value="notes" currentValue={activeTab}>
-        {loadedSections.notes ? (
-          <ClientNotes clientId={client.id} />
-        ) : (
-          <Alert severity="info">Click on Notes tab to load notes</Alert>
-        )}
+        <ClientOverview
+          client={client}
+          loading={loading}
+          headerActions={
+            hasPermission('change_client') ? (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={handleEditOpen}
+              >
+                Edit Profile
+              </Button>
+            ) : undefined
+          }
+        />
       </TabPanel>
 
       {/* Documents Tab */}
@@ -523,6 +556,56 @@ export const ClientDetailPage = () => {
           <Alert severity="info">Click on Reminders tab to load reminders</Alert>
         )}
       </TabPanel>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={editLoading ? undefined : handleEditClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Edit Client Profile</Typography>
+            <IconButton
+              aria-label="close"
+              onClick={handleEditClose}
+              disabled={editLoading}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <ClientForm
+            mode="edit"
+            initialData={client}
+            onSave={handleEditSave}
+            onCancel={handleEditClose}
+            loading={editLoading}
+            fieldErrors={editError}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        client={client}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteClose}
+        loading={deleteLoading}
+      />
+
+      {/* Success/Error Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 };
