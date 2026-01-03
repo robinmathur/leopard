@@ -16,7 +16,6 @@ import {
   Alert,
   IconButton,
   Tooltip,
-  Button,
   Link,
   Snackbar,
   Dialog,
@@ -30,7 +29,6 @@ import {
 } from '@mui/x-data-grid';
 import {
   Visibility,
-  Add,
   PersonAdd as PersonAddIcon,
   ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
@@ -494,14 +492,6 @@ export const VisaTracker = () => {
             Track and manage visa applications by status
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          size="small"
-          onClick={handleAddClick}
-        >
-          Add Visa Application
-        </Button>
       </Box>
 
       {error && (

@@ -14,6 +14,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DomainIcon from '@mui/icons-material/Domain';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import TaskIcon from '@mui/icons-material/Task';
 import { Permission } from '@/auth/types';
 
 /**
@@ -55,6 +56,43 @@ export const navigationConfig: NavItem[] = [
     permission: 'view_client'
   },
   {
+    id: 'application-manager',
+    label: 'Application Manager',
+    path: '/application-manager',
+    icon: LocalLibraryIcon,
+    permission: 'view_collegeapplication',
+    children: [
+      {
+        id: 'application-dashboard',
+        label: 'Application Dashboard',
+        path: '/application-manager/dashboard',
+        icon: AssignmentIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'application-tracker',
+        label: 'Application Tracker',
+        path: '/application-manager/tracker',
+        icon: TimelineIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'applications',
+        label: 'Applications',
+        path: '/application-manager/applications',
+        icon: DescriptionIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'application-types',
+        label: 'Application Type',
+        path: '/application-manager/types',
+        icon: CategoryIcon,
+        permission: 'view_applicationtype',
+      },
+    ],
+  },
+  {
     id: 'visa-manager',
     label: 'Visa Manager',
     path: '/visa-manager',
@@ -92,41 +130,11 @@ export const navigationConfig: NavItem[] = [
     ],
   },
   {
-    id: 'application-manager',
-    label: 'Application Manager',
-    path: '/application-manager',
-    icon: LocalLibraryIcon,
-    permission: 'view_collegeapplication',
-    children: [
-      {
-        id: 'application-dashboard',
-        label: 'Application Dashboard',
-        path: '/application-manager/dashboard',
-        icon: AssignmentIcon,
-        permission: 'view_collegeapplication',
-      },
-      {
-        id: 'application-tracker',
-        label: 'Application Tracker',
-        path: '/application-manager/tracker',
-        icon: TimelineIcon,
-        permission: 'view_collegeapplication',
-      },
-      {
-        id: 'applications',
-        label: 'Applications',
-        path: '/application-manager/applications',
-        icon: DescriptionIcon,
-        permission: 'view_collegeapplication',
-      },
-      {
-        id: 'application-types',
-        label: 'Application Type',
-        path: '/application-manager/types',
-        icon: CategoryIcon,
-        permission: 'view_applicationtype',
-      },
-    ],
+    id: 'task-manager',
+    label: 'Task Manager',
+    path: '/tasks',
+    icon: TaskIcon,
+    permission: 'view_dashboard', // Tasks are accessible to users with dashboard access
   },
   {
     id: 'institute',

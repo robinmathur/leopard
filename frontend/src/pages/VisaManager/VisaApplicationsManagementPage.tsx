@@ -31,7 +31,6 @@ import {
   GridPaginationModel,
 } from '@mui/x-data-grid';
 import {
-  Add,
   Visibility,
   Search,
   ExpandMore,
@@ -679,14 +678,6 @@ export const VisaApplicationsManagementPage = () => {
             Manage all visa applications with advanced search and filtering
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleAddApplication}
-          size="small"
-        >
-          Add Application
-        </Button>
       </Box>
 
       {error && (
