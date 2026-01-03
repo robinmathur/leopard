@@ -19,7 +19,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  CircularProgress,
   IconButton,
   Tooltip,
 } from '@mui/material';

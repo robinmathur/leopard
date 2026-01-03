@@ -34,38 +34,44 @@ export const UserAutocomplete = ({
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Search users with debouncing
+  // Load all assignable users in same branch/team on mount
   useEffect(() => {
-    const searchUsers = async () => {
-      if (searchTerm.length < 2) {
-        setOptions([]);
-        return;
-      }
-
+    const loadUsers = async () => {
       try {
         setLoading(true);
         const response = await httpClient.get<{ count: number; results: User[] }>(
-          '/v1/users/',
+          '/v1/users/assignable/', // New endpoint - no special permissions required
           {
             params: {
-              search: searchTerm,
-              page_size: 20,
+              page_size: 100, // Load up to 100 users from same branch/team
               is_active: true,
             },
           }
         );
         setOptions(response.data.results);
       } catch (err) {
-        console.error('Failed to search users:', err);
+        console.error('Failed to load assignable users:', err);
         setOptions([]);
       } finally {
         setLoading(false);
       }
     };
 
-    const debounceTimer = setTimeout(searchUsers, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm]);
+    loadUsers();
+  }, []); // Load once on mount
+
+  // Filter options based on search term (client-side filtering)
+  const filteredOptions = searchTerm
+    ? options.filter((user) => {
+        const fullName = user.full_name || `${user.first_name} ${user.last_name}`.trim();
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          fullName.toLowerCase().includes(searchLower) ||
+          user.email?.toLowerCase().includes(searchLower) ||
+          user.username?.toLowerCase().includes(searchLower)
+        );
+      })
+    : options;
 
   return (
     <Autocomplete
@@ -73,18 +79,14 @@ export const UserAutocomplete = ({
       onChange={(_, newValue) => onChange(newValue)}
       inputValue={searchTerm}
       onInputChange={(_, newInputValue) => setSearchTerm(newInputValue)}
-      options={options}
+      options={filteredOptions}
       getOptionLabel={(option) =>
         option.full_name || `${option.first_name} ${option.last_name}`.trim()
       }
       loading={loading}
       disabled={disabled}
       isOptionEqualToValue={(option, value) => option.id === value.id}
-      noOptionsText={
-        searchTerm.length < 2
-          ? 'Type at least 2 characters to search...'
-          : 'No users found'
-      }
+      noOptionsText={searchTerm ? 'No users found' : 'No users available'}
       renderInput={(params) => (
         <TextField
           {...params}
@@ -92,7 +94,7 @@ export const UserAutocomplete = ({
           placeholder={placeholder}
           size={size}
           error={error}
-          helperText={helperText || 'Type to search for users'}
+          helperText={helperText || `${options.length} user(s) from your branch/team`}
           InputProps={{
             ...params.InputProps,
             endAdornment: (

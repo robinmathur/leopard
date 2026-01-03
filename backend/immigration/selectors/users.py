@@ -7,6 +7,13 @@ No role-based filtering - uses Groups and Permissions.
 from typing import Optional
 from django.db.models import QuerySet, Q
 from immigration.models.user import User
+from immigration.constants import (
+    GROUP_CONSULTANT,
+    GROUP_BRANCH_ADMIN,
+    GROUP_REGION_MANAGER,
+    GROUP_SUPER_ADMIN,
+    GROUP_SUPER_SUPER_ADMIN,
+)
 
 
 def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
@@ -29,11 +36,12 @@ def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
         QuerySet of users visible to the requesting user
     """
     # Build base queryset based on user's group
-    # REMOVED: SUPER_SUPER_ADMIN check (operates in public schema, not tenant schemas)
-    if user.is_in_group('SUPER_ADMIN'):
-        # SUPER_ADMIN sees all users in current tenant schema (automatic)
+    if user.is_in_group(GROUP_SUPER_ADMIN):
+        # SUPER_ADMIN sees all users in current tenant schema (automatic via schema isolation)
         qs = User.objects.all()
-    elif user.is_in_group('REGION_MANAGER'):
+
+    elif user.is_in_group(GROUP_REGION_MANAGER):
+        # REGION_MANAGER sees users in branches within their regions
         user_regions = user.regions.all()
         if not user_regions.exists():
             qs = User.objects.none()
@@ -45,12 +53,13 @@ def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
             ).values_list('id', flat=True)
 
             # Return users in those branches + users managing those regions
-            # REMOVED: tenant FK filter (schema provides isolation)
             qs = User.objects.filter(
                 Q(branches__in=region_branches) |
                 Q(regions__in=user_regions)
             ).distinct()
-    elif user.is_in_group('BRANCH_ADMIN'):
+
+    elif user.is_in_group(GROUP_BRANCH_ADMIN) or user.is_in_group(GROUP_CONSULTANT):
+        # BRANCH_ADMIN and CONSULTANT see users in their assigned branches (teammates)
         user_branches = user.branches.all()
         if not user_branches.exists():
             qs = User.objects.none()
@@ -58,9 +67,14 @@ def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
             qs = User.objects.filter(
                 branches__in=user_branches
             ).distinct()
+
+    elif user.is_in_group(GROUP_SUPER_SUPER_ADMIN):
+        # SUPER_SUPER_ADMIN is only for creating tenants, not accessing tenant data
+        qs = User.objects.none()
+
     else:
-        # CONSULTANT (or any other group) sees only themselves
-        qs = User.objects.filter(id=user.id)
+        # Unknown role - no access
+        qs = User.objects.none()
     
     # Apply search filter if provided
     if search:

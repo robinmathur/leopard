@@ -15,7 +15,6 @@ import { UserAutocomplete } from '@/components/common/UserAutocomplete';
 import type { User } from '@/types/user';
 import { updateVisaApplication } from '@/services/api/visaApplicationApi';
 import type { VisaApplication } from '@/types/visaType';
-import { userApi } from '@/services/api/userApi';
 
 interface AssignVisaApplicationDialogProps {
   open: boolean;
@@ -34,33 +33,24 @@ export const AssignVisaApplicationDialog: React.FC<AssignVisaApplicationDialogPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load currently assigned user when dialog opens
+  // Set currently assigned user from application data (no API call needed)
   useEffect(() => {
-    const loadAssignedUser = async () => {
-      if (open && application?.assigned_to) {
-        try {
-          // Fetch the currently assigned user
-          const users = await userApi.getAllActiveUsers();
-          const assignedUser = users.find(u => u.id === application.assigned_to);
-          if (assignedUser) {
-            setSelectedUser(assignedUser);
-          } else {
-            setSelectedUser(null);
-          }
-        } catch (err) {
-          console.error('Failed to load assigned user:', err);
-          setSelectedUser(null);
-        }
-      } else if (open) {
-        // No assigned user
-        setSelectedUser(null);
+    if (open && application) {
+      if (application.assigned_to && application.assigned_to_name) {
+        // Create a minimal User object from application data
+        // UserAutocomplete will load the full list of assignable users
+        setSelectedUser({
+          id: application.assigned_to,
+          full_name: application.assigned_to_name,
+          email: '', // Not needed for initial selection
+          username: '',
+        } as User);
       } else {
-        // Dialog closed
         setSelectedUser(null);
       }
-    };
-
-    loadAssignedUser();
+    } else {
+      setSelectedUser(null);
+    }
   }, [open, application]);
 
   const handleAssign = async () => {

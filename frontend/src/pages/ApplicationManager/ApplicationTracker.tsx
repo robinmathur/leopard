@@ -11,13 +11,6 @@ import {
   Typography,
   Badge,
   CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   Chip,
   IconButton,
   Alert,
@@ -29,10 +22,11 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import { DataGrid, GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import {
   Visibility,
   PersonAdd as PersonAddIcon,
-  SwapHoriz as SwapHorizIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import {
   listApplicationTypes,
@@ -50,20 +44,6 @@ import { AssignCollegeApplicationDialog } from '@/components/college/AssignColle
 import { ChangeStageDialog } from '@/components/college/ChangeStageDialog';
 import { useAuthStore } from '@/store/authStore';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel = ({ children, value, index }: TabPanelProps) => {
-  return (
-    <div role="tabpanel" hidden={value !== index}>
-      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
-    </div>
-  );
-};
-
 export const ApplicationTracker: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -78,10 +58,14 @@ export const ApplicationTracker: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
   const [statusCountsLoading, setStatusCountsLoading] = useState(false);
+
+  // Pagination
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
+  });
 
   // Dialogs
   const [assignDialog, setAssignDialog] = useState<{
@@ -197,8 +181,8 @@ export const ApplicationTracker: React.FC = () => {
       const response = await listCollegeApplications({
         application_type_id: typeId,
         stage_id: stageId,
-        page,
-        page_size: pageSize,
+        page: paginationModel.page + 1, // API uses 1-indexed pages
+        page_size: paginationModel.pageSize,
       }, signal);
 
       if (!signal?.aborted) {
@@ -213,7 +197,7 @@ export const ApplicationTracker: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [page, pageSize]);
+  }, [paginationModel]);
 
   // Load stages when application type changes (not when URL changes)
   useEffect(() => {
@@ -248,12 +232,12 @@ export const ApplicationTracker: React.FC = () => {
     return () => {
       abortController.abort();
     };
-  }, [selectedTypeId, tabValue, stages, page, pageSize, fetchApplications]);
+  }, [selectedTypeId, tabValue, stages, fetchApplications]);
 
   // Handlers
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    setPage(1);
+    setPaginationModel({ ...paginationModel, page: 0 }); // Reset to first page
     // Update URL without triggering re-fetch of stages
     const newParams = new URLSearchParams(searchParams);
     if (selectedTypeId) {
@@ -271,21 +255,12 @@ export const ApplicationTracker: React.FC = () => {
   const handleTypeChange = (typeId: number) => {
     setSelectedTypeId(typeId);
     setTabValue(null); // Reset tab value when type changes
-    setPage(1); // Reset pagination
+    setPaginationModel({ ...paginationModel, page: 0 }); // Reset pagination
     const newParams = new URLSearchParams(searchParams);
     newParams.set('typeId', String(typeId));
     newParams.delete('stageIndex'); // Reset stage when type changes
     newParams.delete('stageId'); // Reset stageId when type changes
     setSearchParams(newParams, { replace: true });
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setPage(1);
   };
 
   const handleView = (application: CollegeApplication) => {
@@ -311,17 +286,126 @@ export const ApplicationTracker: React.FC = () => {
     return stageData?.count || 0;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatCurrency = (amount: string) => {
-    const value = parseFloat(amount);
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  };
+  // DataGrid column definitions (same as ApplicationsList but without stage_name)
+  const columns: GridColDef<CollegeApplication>[] = [
+    {
+      field: 'client_name',
+      headerName: 'Client',
+      width: 180,
+      sortable: false,
+      renderCell: (params) => (
+        <Link
+          component="button"
+          variant="body2"
+          fontWeight={500}
+          onClick={() => handleClientClick(params.row.client)}
+          sx={{
+            textDecoration: 'none',
+            color: 'primary.main',
+            '&:hover': { textDecoration: 'underline' },
+          }}
+        >
+          {params.value}
+        </Link>
+      ),
+    },
+    {
+      field: 'application_type_title',
+      headerName: 'Type',
+      width: 150,
+      sortable: false,
+    },
+    {
+      field: 'institute_name',
+      headerName: 'Institute',
+      width: 200,
+      sortable: false,
+    },
+    {
+      field: 'course_name',
+      headerName: 'Course',
+      width: 200,
+      sortable: false,
+    },
+    {
+      field: 'intake_date',
+      headerName: 'Intake Date',
+      width: 130,
+      sortable: false,
+      valueFormatter: (value) => new Date(value).toLocaleDateString(),
+    },
+    {
+      field: 'location_display',
+      headerName: 'Location',
+      width: 150,
+      sortable: false,
+    },
+    {
+      field: 'total_tuition_fee',
+      headerName: 'Tuition Fee',
+      width: 130,
+      sortable: false,
+      valueFormatter: (value) =>
+        new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        }).format(parseFloat(value)),
+    },
+    {
+      field: 'assigned_to_name',
+      headerName: 'Assigned To',
+      width: 150,
+      sortable: false,
+      renderCell: (params) => params.value || (
+        <Typography variant="caption" color="text.secondary">
+          Unassigned
+        </Typography>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 120,
+      align: 'right',
+      headerAlign: 'right',
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+          <Tooltip title="View Details">
+            <IconButton
+              size="small"
+              onClick={() => handleView(params.row)}
+              color="primary"
+            >
+              <Visibility fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {/* Assign is non-protected - available to all users */}
+          <Tooltip title="Assign">
+            <IconButton
+              size="small"
+              onClick={() => setAssignDialog({ open: true, application: params.row })}
+              color="primary"
+            >
+              <PersonAddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {/* Change Stage requires permission */}
+          {hasPermission('change_collegeapplication') && (
+            <Tooltip title="Change Stage">
+              <IconButton
+                size="small"
+                onClick={() => setChangeStageDialog({ open: true, application: params.row })}
+                color="info"
+              >
+                <ArrowForwardIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      ),
+    },
+  ];
 
   // Loading or error states
   if (initialLoading) {
@@ -460,127 +544,58 @@ export const ApplicationTracker: React.FC = () => {
             })}
           </Box>
 
-          {/* Table Content */}
-          <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {stages.map((_stage, index) => (
-              <TabPanel key={index} value={tabValue!} index={index}>
-                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <TableContainer sx={{ flex: 1, overflow: 'auto' }}>
-                  <Table size="small" sx={{ minWidth: 1000 }}>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ minWidth: 150 }}>Client</TableCell>
-                        <TableCell sx={{ minWidth: 200 }}>Institute</TableCell>
-                        <TableCell sx={{ minWidth: 200 }}>Course</TableCell>
-                        <TableCell sx={{ minWidth: 120 }}>Intake Date</TableCell>
-                        <TableCell sx={{ minWidth: 150 }}>Location</TableCell>
-                        <TableCell sx={{ minWidth: 120 }}>Tuition Fee</TableCell>
-                        <TableCell sx={{ minWidth: 150 }}>Assigned To</TableCell>
-                        <TableCell align="right" sx={{ minWidth: 100 }}>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {loading ? (
-                        <TableRow>
-                          <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                            <CircularProgress size={32} />
-                          </TableCell>
-                        </TableRow>
-                      ) : applications.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              No applications found
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        applications.map((app) => (
-                          <TableRow key={app.id} hover>
-                            <TableCell>
-                              <Link
-                                component="button"
-                                variant="body2"
-                                fontWeight={500}
-                                onClick={() => handleClientClick(app.client)}
-                                sx={{
-                                  cursor: 'pointer',
-                                  textDecoration: 'none',
-                                  color: 'primary.main',
-                                  '&:hover': {
-                                    textDecoration: 'underline',
-                                  },
-                                }}
-                              >
-                                {app.client_name}
-                              </Link>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">{app.institute_name}</Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">{app.course_name}</Typography>
-                            </TableCell>
-                            <TableCell>{formatDate(app.intake_date)}</TableCell>
-                            <TableCell>{app.location_display}</TableCell>
-                            <TableCell>{formatCurrency(app.total_tuition_fee)}</TableCell>
-                            <TableCell>
-                              {app.assigned_to_name || (
-                                <Typography variant="caption" color="text.secondary">
-                                  Unassigned
-                                </Typography>
-                              )}
-                            </TableCell>
-                            <TableCell align="right">
-                              {hasPermission('change_collegeapplication') && (
-                                <>
-                                  <Tooltip title="Assign To">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => setAssignDialog({ open: true, application: app })}
-                                    >
-                                      <PersonAddIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Change Stage">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => setChangeStageDialog({ open: true, application: app })}
-                                    >
-                                      <SwapHorizIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </>
-                              )}
-                              <Tooltip title="View Details">
-                                <IconButton size="small" onClick={() => handleView(app)} color="primary">
-                                  <Visibility fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-
-                {!loading && applications.length > 0 && (
-                  <Box sx={{ borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
-                    <TablePagination
-                      component="div"
-                      count={totalCount}
-                      page={page - 1}
-                      onPageChange={(_, newPage) => handlePageChange(newPage + 1)}
-                      rowsPerPage={pageSize}
-                      onRowsPerPageChange={(event) => handlePageSizeChange(parseInt(event.target.value, 10))}
-                      rowsPerPageOptions={[10, 25, 50, 100]}
-                    />
-                  </Box>
-                )}
-              </Box>
-            </TabPanel>
-          ))}
+          {/* DataGrid Content */}
+          <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', pt: 2 }}>
+            <DataGrid
+              rows={applications}
+              columns={columns}
+              loading={loading}
+              rowCount={totalCount}
+              paginationMode="server"
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[10, 25, 50, 100]}
+              disableRowSelectionOnClick
+              disableColumnMenu
+              columnHeaderHeight={35}
+              sx={{
+                flex: 1,
+                border: 'none',
+                // 1. Header Styling: Light background and specific font weight
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: '#f8f9fa', // Light gray background
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                },
+                '& .MuiDataGrid-columnHeaderTitle': {
+                  fontWeight: 600, // Matching the bold headers
+                  fontSize: '0.875rem',
+                  color: 'text.primary',
+                },
+                // 2. Cell Styling: Remove vertical lines and adjust font
+                '& .MuiDataGrid-cell': {
+                  fontSize: '0.875rem',
+                  borderBottom: '1px solid #f0f0f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+                // 3. Row Hover Effect
+                '& .MuiDataGrid-row:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)', // Standard MUI hover
+                },
+                // 4. Clean up focuses
+                '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+                  outline: 'none',
+                },
+                '& .MuiDataGrid-cell:focus': {
+                  outline: 'none',
+                },
+                // 5. Footer matching the standard TablePagination
+                '& .MuiDataGrid-footerContainer': {
+                  borderTop: 'none',
+                },
+              }}
+            />
           </Box>
         </Paper>
       ) : null}
