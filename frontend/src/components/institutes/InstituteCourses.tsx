@@ -506,7 +506,7 @@ export const InstituteCourses = ({ instituteId }: InstituteCoursesProps) => {
                       <TableCell>${course.coe_fee}</TableCell>
                       <TableCell>{course.description || '-'}</TableCell>
                       {hasAnyAction && (
-                        <TableCell align="right">
+                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                           <Protect permission={'change_course'}>
                             <IconButton size="small" onClick={() => handleEdit(course)}>
                               <EditIcon fontSize="small" />
