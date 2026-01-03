@@ -227,10 +227,6 @@ TRACKED_ENTITIES = [
         'model': 'immigration.CollegeApplication',
         'track_fields': ['status', 'assigned_to'],
     },
-    {
-        'model': 'immigration.ProfilePicture',
-        'track_fields': [],
-    },
 ]
 
 

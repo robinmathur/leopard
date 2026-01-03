@@ -55,8 +55,6 @@ class TenantJWTAuthentication(JWTAuthentication):
         # Step 3: CRITICAL - Validate tenant BEFORE user lookup
         current_tenant_schema = connection.schema_name
 
-        logger.debug(f"🔐 JWT Auth - Current schema: {current_tenant_schema}")
-
         # Extract tenant name from current schema (e.g., "main" from "tenant_main")
         if current_tenant_schema.startswith('tenant_'):
             current_tenant_name = current_tenant_schema[7:]  # Remove "tenant_" prefix
@@ -65,8 +63,6 @@ class TenantJWTAuthentication(JWTAuthentication):
 
         # Get tenant identifier from token
         token_tenant_name = validated_token.get('tid')
-
-        logger.debug(f"🔐 JWT Auth - Token tid: {token_tenant_name}, Current tenant: {current_tenant_name}")
 
         # Handle tokens without tid (backwards compatibility)
         if token_tenant_name is None:
