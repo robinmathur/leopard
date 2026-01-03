@@ -35,7 +35,6 @@ import {
 import { Protect } from '@/components/protected/Protect';
 import { ClientTable } from '@/components/clients/ClientTable';
 import { ClientForm } from '@/components/clients/ClientForm';
-import { DeleteConfirmDialog } from '@/components/clients/DeleteConfirmDialog';
 import { MoveStageDialog } from '@/components/clients/MoveStageDialog';
 import { AssignClientDialog } from '@/components/clients/AssignClientDialog';
 import { UserAutocomplete } from '@/components/common/UserAutocomplete';
@@ -46,7 +45,7 @@ import { User } from '@/services/api/userApi';
 import { getVisaCategories } from '@/services/api/visaTypeApi';
 import { VisaCategory } from '@/types/visaType';
 
-type DialogMode = 'add' | 'edit' | null;
+type DialogMode = 'add' | null;
 
 /**
  * Search Filters Interface
@@ -71,7 +70,6 @@ export const ClientsPage = () => {
   // Dialog states
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
@@ -113,7 +111,6 @@ export const ClientsPage = () => {
     fetchClients,
     addClient,
     updateClient,
-    deleteClient,
     moveToStage,
     clearError,
     cancelFetchClients,
@@ -409,48 +406,6 @@ export const ClientsPage = () => {
     navigate('/clients/add');
   };
 
-  // --- Edit Client ---
-  const handleEdit = (client: Client) => {
-    setDialogMode('edit');
-    setSelectedClient(client);
-    setFieldErrors({});
-  };
-
-  // --- Delete Client ---
-  const handleDelete = (client: Client) => {
-    setSelectedClient(client);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedClient) return;
-
-    setFormLoading(true);
-    const success = await deleteClient(selectedClient.id);
-    setFormLoading(false);
-
-    if (success) {
-      setDeleteDialogOpen(false);
-      setSelectedClient(null);
-      setSnackbar({
-        open: true,
-        message: `Client "${selectedClient.first_name}" deleted successfully`,
-        severity: 'success',
-      });
-    } else {
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete client',
-        severity: 'error',
-      });
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setSelectedClient(null);
-  };
-
   // --- Assign Client ---
   const handleAssign = (client: Client) => {
     setSelectedClient(client);
@@ -561,16 +516,6 @@ export const ClientsPage = () => {
             // Refresh list after adding
             fetchClients({ active: true });
           }
-        } else if (dialogMode === 'edit' && selectedClient) {
-          const result = await updateClient(selectedClient.id, data as ClientUpdateRequest);
-          if (result) {
-            handleCloseDialog();
-            setSnackbar({
-              open: true,
-              message: `Client "${result.first_name}" updated successfully`,
-              severity: 'success',
-            });
-          }
         }
       } catch (err) {
         const apiError = err as ApiError;
@@ -587,7 +532,7 @@ export const ClientsPage = () => {
         setFormLoading(false);
       }
     },
-    [dialogMode, selectedClient, addClient, updateClient, fetchClients, isAddMode, navigate]
+    [dialogMode, addClient, fetchClients, isAddMode, navigate]
   );
 
   const handleCloseSnackbar = () => {
@@ -765,14 +710,12 @@ export const ClientsPage = () => {
           pagination={pagination}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
           onMove={handleMove}
           onAssign={handleAssign}
         />
       </Paper>
 
-      {/* Add/Edit Client Dialog */}
+      {/* Add Client Dialog */}
       <Dialog
         open={dialogMode !== null}
         onClose={formLoading ? undefined : handleCloseDialog}
@@ -780,7 +723,7 @@ export const ClientsPage = () => {
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {dialogMode === 'add' ? 'Add New Client' : 'Edit Client'}
+          Add New Client
           <IconButton
             onClick={handleCloseDialog}
             disabled={formLoading}
@@ -800,15 +743,6 @@ export const ClientsPage = () => {
           />
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        open={deleteDialogOpen}
-        client={selectedClient}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        loading={formLoading}
-      />
 
       {/* Move Stage Dialog */}
       <MoveStageDialog

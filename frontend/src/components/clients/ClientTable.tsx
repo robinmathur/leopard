@@ -30,8 +30,6 @@ interface ClientTableProps {
   };
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
   onMove: (client: Client) => void;
   onAssign: (client: Client) => void;
 }
@@ -93,8 +91,6 @@ const LoadingSkeleton = () => (
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <Skeleton variant="circular" width={28} height={28} />
             <Skeleton variant="circular" width={28} height={28} />
-            <Skeleton variant="circular" width={28} height={28} />
-            <Skeleton variant="circular" width={28} height={28} />
           </Box>
         </TableCell>
       </TableRow>
@@ -108,8 +104,6 @@ export const ClientTable = ({
   pagination,
   onPageChange,
   onPageSizeChange,
-  onEdit,
-  onDelete,
   onMove,
   onAssign,
 }: ClientTableProps) => {
@@ -236,8 +230,6 @@ export const ClientTable = ({
                   <TableCell>
                     <ClientActions
                       client={client}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
                       onMove={onMove}
                       onAssign={onAssign}
                     />

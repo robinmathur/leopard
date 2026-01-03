@@ -26,8 +26,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Protect } from '@/components/protected/Protect';
 import { ClientTable } from '@/components/clients/ClientTable';
 import { ClientForm } from '@/components/clients/ClientForm';
-import { DeleteConfirmDialog } from '@/components/clients/DeleteConfirmDialog';
 import { MoveStageDialog } from '@/components/clients/MoveStageDialog';
+import { AssignClientDialog } from '@/components/clients/AssignClientDialog';
 import { useClientStore } from '@/store/clientStore';
 import { Client, ClientCreateRequest, ClientUpdateRequest, ClientStage, STAGE_LABELS } from '@/types/client';
 import { ApiError } from '@/services/api/httpClient';
@@ -64,7 +64,7 @@ const getTabCount = (
   return stageCounts[stage];
 };
 
-type DialogMode = 'add' | 'edit' | null;
+type DialogMode = 'add' | null;
 
 export const LeadsPage = () => {
   const navigate = useNavigate();
@@ -78,8 +78,8 @@ export const LeadsPage = () => {
   // Dialog states
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
@@ -95,7 +95,6 @@ export const LeadsPage = () => {
     fetchStageCounts,
     addClient,
     updateClient,
-    deleteClient,
     moveToStage,
     setPage,
     setPageSize,
@@ -161,54 +160,46 @@ export const LeadsPage = () => {
     setFieldErrors({});
   };
 
-  // --- Edit Client ---
-  const handleEdit = (client: Client) => {
-    setDialogMode('edit');
+  // --- Assign Client ---
+  const handleAssign = (client: Client) => {
     setSelectedClient(client);
-    setFieldErrors({});
+    setAssignDialogOpen(true);
   };
 
-  // --- Delete Client ---
-  const handleDelete = (client: Client) => {
-    setSelectedClient(client);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
+  const handleConfirmAssign = async (userId: number | null) => {
     if (!selectedClient) return;
 
     setFormLoading(true);
-    const success = await deleteClient(selectedClient.id);
+    const updateData: ClientUpdateRequest = {
+      assigned_to_id: userId === null ? null : userId,
+    };
+    const result = await updateClient(selectedClient.id, updateData);
     setFormLoading(false);
 
-    if (success) {
-      setDeleteDialogOpen(false);
-      setSelectedClient(null);
+    if (result) {
+      setAssignDialogOpen(false);
       setSnackbar({
         open: true,
-        message: `Client "${selectedClient.first_name}" deleted successfully`,
+        message: userId
+          ? `Client "${selectedClient.first_name}" assigned successfully`
+          : `Client "${selectedClient.first_name}" unassigned successfully`,
         severity: 'success',
       });
-      // Refresh current tab and stage counts
+      setSelectedClient(null);
+      // Refresh current tab
       fetchWithStageFilter(TABS[tabValue].stage);
-      fetchStageCounts();
     } else {
       setSnackbar({
         open: true,
-        message: 'Failed to delete client',
+        message: 'Failed to assign client',
         severity: 'error',
       });
     }
   };
 
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
+  const handleCancelAssign = () => {
+    setAssignDialogOpen(false);
     setSelectedClient(null);
-  };
-
-  // --- View Client ---
-  const handleView = (client: Client) => {
-    navigate(`/clients/${client.id}`, { state: { from: '/leads' } });
   };
 
   // --- Move Client Stage ---
@@ -275,19 +266,6 @@ export const LeadsPage = () => {
             fetchWithStageFilter(TABS[tabValue].stage);
             fetchStageCounts();
           }
-        } else if (dialogMode === 'edit' && selectedClient) {
-          const result = await updateClient(selectedClient.id, data as ClientUpdateRequest);
-          if (result) {
-            handleCloseDialog();
-            setSnackbar({
-              open: true,
-              message: `Client "${result.first_name}" updated successfully`,
-              severity: 'success',
-            });
-            // Refresh current tab and stage counts (in case stage changed)
-            fetchWithStageFilter(TABS[tabValue].stage);
-            fetchStageCounts();
-          }
         }
       } catch (err) {
         const apiError = err as ApiError;
@@ -304,7 +282,7 @@ export const LeadsPage = () => {
         setFormLoading(false);
       }
     },
-    [dialogMode, selectedClient, addClient, updateClient, tabValue, fetchWithStageFilter, fetchStageCounts]
+    [dialogMode, addClient, tabValue, fetchWithStageFilter, fetchStageCounts]
   );
 
   const handleCloseSnackbar = () => {
@@ -384,17 +362,15 @@ export const LeadsPage = () => {
                 pagination={pagination}
                 onPageChange={handlePageChange}
                 onPageSizeChange={handlePageSizeChange}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onView={handleView}
                 onMove={handleMove}
+                onAssign={handleAssign}
               />
             </Box>
           </TabPanel>
         ))}
       </Paper>
 
-      {/* Add/Edit Client Dialog */}
+      {/* Add Client Dialog */}
       <Dialog
         open={dialogMode !== null}
         onClose={formLoading ? undefined : handleCloseDialog}
@@ -402,7 +378,7 @@ export const LeadsPage = () => {
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {dialogMode === 'add' ? 'Add New Client' : 'Edit Client'}
+          Add New Client
           <IconButton
             onClick={handleCloseDialog}
             disabled={formLoading}
@@ -423,12 +399,12 @@ export const LeadsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        open={deleteDialogOpen}
+      {/* Assign Client Dialog */}
+      <AssignClientDialog
+        open={assignDialogOpen}
         client={selectedClient}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmAssign}
+        onCancel={handleCancelAssign}
         loading={formLoading}
       />
 

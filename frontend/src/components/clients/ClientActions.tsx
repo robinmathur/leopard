@@ -3,16 +3,12 @@
  * Action buttons for client row operations
  */
 import { IconButton, Tooltip, Box } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Client, NEXT_STAGE, STAGE_LABELS } from '@/types/client';
 
 interface ClientActionsProps {
   client: Client;
-  onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
   onMove: (client: Client) => void;
   onAssign: (client: Client) => void;
   disabled?: boolean;
@@ -20,8 +16,6 @@ interface ClientActionsProps {
 
 export const ClientActions = ({
   client,
-  onEdit,
-  onDelete,
   onMove,
   onAssign,
   disabled = false,
@@ -46,18 +40,6 @@ export const ClientActions = ({
         </IconButton>
       </Tooltip>
 
-      {/* Edit Client */}
-      <Tooltip title="Edit Client">
-        <IconButton
-          size="small"
-          onClick={() => onEdit(client)}
-          disabled={disabled}
-          color="default"
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
-
       {/* Move to Next Stage or Change Stage */}
       <Tooltip title={canMove ? (isInCloseStage ? 'Change Stage' : `Move to ${nextStageLabel}`) : 'Already in final stage'}>
         <span>
@@ -70,18 +52,6 @@ export const ClientActions = ({
             <ArrowForwardIcon fontSize="small" />
           </IconButton>
         </span>
-      </Tooltip>
-
-      {/* Delete Client */}
-      <Tooltip title="Delete Client">
-        <IconButton
-          size="small"
-          onClick={() => onDelete(client)}
-          disabled={disabled}
-          color="error"
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
       </Tooltip>
     </Box>
   );

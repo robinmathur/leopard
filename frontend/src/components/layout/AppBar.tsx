@@ -25,7 +25,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HomeIcon from '@mui/icons-material/Home';
 import PeopleIcon from '@mui/icons-material/People';
-import SchoolIcon from '@mui/icons-material/School';
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -298,7 +298,7 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
             {/* Application Assignment Notifications */}
             <NotificationTypeDropdown
               notificationType="APPLICATION_ASSIGNED"
-              icon={<SchoolIcon fontSize="small" />}
+              icon={<LocalLibraryIcon fontSize="small" />}
               label="Applications"
             />
 
