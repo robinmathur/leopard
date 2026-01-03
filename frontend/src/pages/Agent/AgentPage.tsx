@@ -79,7 +79,8 @@ export const AgentPage = () => {
     return () => {
       cancelFetchAgents();
     };
-  }, [paginationModel.page, paginationModel.pageSize, fetchAgents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginationModel.page, paginationModel.pageSize]);
 
   // Show error in snackbar
   useEffect(() => {
@@ -104,20 +105,21 @@ export const AgentPage = () => {
 
     const timer = setTimeout(() => {
       setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
-      fetchAgents({ 
-        page: 1, 
+      fetchAgents({
+        page: 1,
         page_size: paginationModel.pageSize,
-        search: searchTerm.trim() || undefined 
+        search: searchTerm.trim() || undefined
       });
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, fetchAgents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
     setPaginationModel(newModel);
     fetchAgents({ 
-      page: newModel.page + 1, 
+      page: newModel.page + 1,
       page_size: newModel.pageSize,
       search: searchTerm.trim() || undefined 
     });
@@ -130,9 +132,69 @@ export const AgentPage = () => {
   };
 
   // --- View Agent ---
-  const handleView = (agent: Agent) => {
-    navigate(`/agent/${agent.id}`, { state: { from: '/agent' } });
+  const handleView = (agentId: number) => {
+    navigate(`/agent/${agentId}`, { state: { from: '/agent' } });
   };
+
+  // DataGrid column definitions
+  const columns: GridColDef<Agent>[] = [
+    {
+      field: 'agent_name',
+      headerName: 'Agent Name',
+      width: 200,
+      sortable: false,
+      renderCell: (params) => (
+        <Link
+          component="button"
+          variant="body2"
+          fontWeight={500}
+          onClick={() => handleView(params.row.id)}
+          sx={{
+            textDecoration: 'none',
+            color: 'primary.main',
+            '&:hover': { textDecoration: 'underline' },
+          }}
+        >
+          {params.value}
+        </Link>
+      ),
+    },
+    {
+      field: 'agent_type',
+      headerName: 'Type',
+      width: 150,
+      sortable: false,
+      renderCell: (params) => (
+        <Chip
+          label={params.row.agent_type_display || AGENT_TYPE_LABELS[params.value]}
+          size="small"
+          color={params.value === 'SUPER_AGENT' ? 'primary' : 'default'}
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      field: 'company_name',
+      headerName: 'Company',
+      width: 200,
+      sortable: false,
+      renderCell: (params) => params.value || '-',
+    },
+    {
+      field: 'designation',
+      headerName: 'Designation',
+      width: 180,
+      sortable: false,
+      renderCell: (params) => params.value || '-',
+    },
+    {
+      field: 'country',
+      headerName: 'Country',
+      width: 120,
+      sortable: false,
+      renderCell: (params) => params.value || '-',
+    },
+  ];
 
   // --- Save Agent (Create only - edit is on detail page) ---
   const handleSaveAgent = async (data: AgentCreateRequest | AgentUpdateRequest) => {
@@ -150,7 +212,11 @@ export const AgentPage = () => {
             severity: 'success',
           });
           // Refresh list
-          fetchAgents({ search: searchTerm.trim() || undefined });
+          fetchAgents({
+            page: paginationModel.page + 1,
+            page_size: paginationModel.pageSize,
+            search: searchTerm.trim() || undefined
+          });
         }
       }
     } catch (error) {
@@ -231,83 +297,58 @@ export const AgentPage = () => {
         />
       </Paper>
 
-      {/* Agents Table */}
-      <Paper sx={{ p: 2 }}>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Agent Name</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Country</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    <CircularProgress size={24} />
-                  </TableCell>
-                </TableRow>
-              ) : agents.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {searchTerm ? 'No agents found matching your search' : 'No agents found'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                agents.map((agent) => (
-                  <TableRow key={agent.id} hover>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        fontWeight={500}
-                        sx={{
-                          cursor: 'pointer',
-                          color: 'primary.main',
-                          '&:hover': {
-                            textDecoration: 'underline',
-                          },
-                        }}
-                        onClick={() => handleView(agent)}
-                      >
-                        {agent.agent_name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={agent.agent_type_display || AGENT_TYPE_LABELS[agent.agent_type]}
-                        size="small"
-                        color={agent.agent_type === 'SUPER_AGENT' ? 'primary' : 'default'}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{agent.email || '-'}</TableCell>
-                    <TableCell>{agent.phone_number || '-'}</TableCell>
-                    <TableCell>{agent.country || '-'}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Pagination */}
-        {!loading && agents.length > 0 && (
-          <TablePagination
-            component="div"
-            count={pagination.count}
-            page={pagination.page - 1}
-            onPageChange={handlePageChange}
-            rowsPerPage={pagination.pageSize}
-            onRowsPerPageChange={handlePageSizeChange}
-            rowsPerPageOptions={[10, 25, 50, 100]}
-          />
-        )}
+      {/* Agents DataGrid */}
+      <Paper sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+        <DataGrid
+          rows={agents}
+          columns={columns}
+          loading={loading}
+          rowCount={pagination.count}
+          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={handlePaginationModelChange}
+          pageSizeOptions={[10, 25, 50, 100]}
+          disableRowSelectionOnClick
+          disableColumnMenu
+          columnHeaderHeight={35}
+          sx={{
+            flex: 1,
+            border: 'none',
+            // 1. Header Styling: Light background and specific font weight
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#f8f9fa',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              color: 'text.primary',
+            },
+            // 2. Cell Styling
+            '& .MuiDataGrid-cell': {
+              fontSize: '0.875rem',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+            },
+            // 3. Row Hover Effect
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            },
+            // 4. Clean up focuses
+            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+              outline: 'none',
+            },
+            '& .MuiDataGrid-cell:focus': {
+              outline: 'none',
+            },
+            // 5. Footer
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: 'none',
+            },
+          }}
+        />
       </Paper>
 
       {/* Add Agent Dialog */}
