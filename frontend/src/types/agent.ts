@@ -10,6 +10,8 @@ export interface Agent {
   agent_name: string;
   agent_type: AgentType;
   agent_type_display?: string;
+  company_name?: string;
+  designation?: string;
   phone_number?: string;
   email?: string;
   website?: string;
@@ -31,6 +33,8 @@ export interface Agent {
 export interface AgentCreateRequest {
   agent_name: string;
   agent_type: AgentType;
+  company_name?: string;
+  designation?: string;
   phone_number?: string;
   email?: string;
   website?: string;
@@ -46,6 +50,8 @@ export interface AgentCreateRequest {
 export interface AgentUpdateRequest {
   agent_name?: string;
   agent_type?: AgentType;
+  company_name?: string;
+  designation?: string;
   phone_number?: string;
   email?: string;
   website?: string;

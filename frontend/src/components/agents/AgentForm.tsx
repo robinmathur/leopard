@@ -36,6 +36,8 @@ interface AgentFormProps {
 interface FormData {
   agent_name: string;
   agent_type: AgentType;
+  company_name: string;
+  designation: string;
   phone_number: string;
   email: string;
   website: string;
@@ -51,6 +53,8 @@ interface FormData {
 const initialFormData: FormData = {
   agent_name: '',
   agent_type: 'SUB_AGENT',
+  company_name: '',
+  designation: '',
   phone_number: '',
   email: '',
   website: '',
@@ -80,6 +84,8 @@ export const AgentForm = ({
       setFormData({
         agent_name: initialData.agent_name || '',
         agent_type: initialData.agent_type || 'SUB_AGENT',
+        company_name: initialData.company_name || '',
+        designation: initialData.designation || '',
         phone_number: initialData.phone_number || '',
         email: initialData.email || '',
         website: initialData.website || '',
@@ -153,6 +159,8 @@ export const AgentForm = ({
     };
 
     // Add optional fields if they have values
+    if (formData.company_name.trim()) data.company_name = formData.company_name.trim();
+    if (formData.designation.trim()) data.designation = formData.designation.trim();
     if (formData.phone_number.trim()) data.phone_number = formData.phone_number.trim();
     if (formData.email.trim()) data.email = formData.email.trim();
     if (formData.website.trim()) data.website = formData.website.trim();
@@ -214,6 +222,36 @@ export const AgentForm = ({
               <FormHelperText>{getFieldError('agent_type')}</FormHelperText>
             )}
           </FormControl>
+        </Grid>
+
+        {/* Company Name */}
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            fullWidth
+            label="Company Name"
+            value={formData.company_name}
+            onChange={handleChange('company_name')}
+            error={!!getFieldError('company_name')}
+            helperText={getFieldError('company_name')}
+            size="small"
+            disabled={loading}
+            placeholder="Enter company name"
+          />
+        </Grid>
+
+        {/* Designation */}
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            fullWidth
+            label="Designation"
+            value={formData.designation}
+            onChange={handleChange('designation')}
+            error={!!getFieldError('designation')}
+            helperText={getFieldError('designation')}
+            size="small"
+            disabled={loading}
+            placeholder="Enter designation"
+          />
         </Grid>
 
         {/* Contact Information */}

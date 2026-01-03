@@ -104,6 +104,16 @@ export const AgentOverview = ({ agent, loading = false }: AgentOverviewProps) =>
                 }
               />
             </Grid>
+            {agent.company_name && (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <DetailRow label="Company Name" value={agent.company_name} />
+              </Grid>
+            )}
+            {agent.designation && (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <DetailRow label="Designation" value={agent.designation} />
+              </Grid>
+            )}
             {agent.description && (
               <Grid size={{ xs: 12 }}>
                 <DetailRow label="Description" value={agent.description} />

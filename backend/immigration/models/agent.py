@@ -25,6 +25,8 @@ class Agent(LifeCycleModel, SoftDeletionModel):
         choices=AGENT_TYPE_CHOICES,
         default='SUB_AGENT'
     )
+    company_name = models.CharField(max_length=100, blank=True)
+    designation = models.CharField(max_length=100, blank=True)
     phone_number = models.CharField(max_length=15, blank=True)
     email = models.EmailField(blank=True)
     website = models.URLField(max_length=100, blank=True)
