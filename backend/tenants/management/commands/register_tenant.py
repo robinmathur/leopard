@@ -36,13 +36,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         name = options["name"]
-        tenant = options["tenant"]
+        tenant_domain_name = options["tenant"]
 
         # Get configuration from settings
         app_subdomain = getattr(settings, "APP_SUBDOMAIN", "app")
         base_domain = getattr(settings, "BASE_DOMAIN", "localhost")
 
-        schema_name = f"tenant_{tenant}"
+        schema_name = f"tenant_{tenant_domain_name}"
 
         self.stdout.write(f'Creating tenant "{name}"...')
 
@@ -66,7 +66,7 @@ class Command(BaseCommand):
         try:
             # FLATTENED subdomain: acme-immigrate.logiclucent.in
             # (instead of acme.immigrate.logiclucent.in)
-            domain_name = f"{tenant}-{app_subdomain}.{base_domain}"
+            domain_name = f"{tenant_domain_name}-{app_subdomain}.{base_domain}"
 
             domain = Domain(domain=domain_name, tenant=tenant, is_primary=True)
             domain.save()
@@ -78,9 +78,9 @@ class Command(BaseCommand):
             return
 
         # Success summary
-        access_url = f"https://{tenant}-{app_subdomain}.{base_domain}"
+        access_url = f"https://{tenant_domain_name}-{app_subdomain}.{base_domain}"
         if base_domain == 'localhost':
-            access_url = f"http://{tenant}-{app_subdomain}.{base_domain}:8000"
+            access_url = f"http://{tenant_domain_name}-{app_subdomain}.{base_domain}:8000"
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -105,6 +105,6 @@ class Command(BaseCommand):
                     f'\n⚠  Development Setup Required:\n'
                     f'   Add this line to /etc/hosts (macOS/Linux) or\n'
                     f'   C:\\Windows\\System32\\drivers\\etc\\hosts (Windows):\n\n'
-                    f'   127.0.0.1 {tenant}-{app_subdomain}.{base_domain}\n'
+                    f'   127.0.0.1 {tenant_domain_name}-{app_subdomain}.{base_domain}\n'
                 )
             )
