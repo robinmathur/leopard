@@ -2,8 +2,7 @@
 Task Handler
 
 Creates tasks based on event configuration.
-Task creation does NOT automatically trigger notification - 
-notification must be explicitly configured via 'notify' block.
+Notifications are handled separately via the notification handler.
 """
 
 from datetime import timedelta
@@ -25,7 +24,7 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
     """
     Create a task.
     
-    Notification is OPTIONAL - only sent if 'notify' block is configured.
+    Notifications are handled separately via the notification handler.
     """
     config = handler_config.get('config', {})
     context = get_template_context(event, config)
@@ -53,7 +52,7 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
     # Get content type and object_id for linking
     content_type, object_id = get_content_type_and_id(event)
     
-    # Create task directly (no automatic notification)
+    # Create task directly (notifications handled separately via notification handler)
     task = Task.objects.create(
         title=title,
         detail=detail,
@@ -65,13 +64,6 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
         content_type=content_type,
         object_id=object_id,
     )
-    
-    # Notification is handled separately if 'notify' block is configured
-    notify_config = handler_config.get('notify', {})
-    if notify_config.get('enabled'):
-        context['task_id'] = task.id
-        context['task_title'] = task.title
-        create_notification_from_config(event, notify_config, context)
     
     return HandlerResult(
         handler_name='task',
@@ -126,33 +118,3 @@ def get_content_type_and_id(event: Event):
             pass
     
     return None, None
-
-
-def create_notification_from_config(event: Event, notify_config: dict, context: dict):
-    """
-    Create notification based on config.
-    This automatically triggers SSE via notification_create().
-    """
-    from immigration.services.notifications import notification_create
-    from immigration.events.handlers.notification_handler import resolve_recipients
-    
-    from immigration.constants import NotificationType
-    notification_type = notify_config.get('type', NotificationType.SYSTEM_ALERT.value)
-    title = render_template(notify_config.get('title_template', 'Notification'), context)
-    message = render_template(notify_config.get('message_template', ''), context)
-    
-    recipients = resolve_recipients(event, notify_config.get('recipients', []))
-    
-    for user in recipients:
-        notification_create(
-            notification_type=notification_type,
-            assigned_to=user,
-            title=title,
-            message=message,
-            meta_info={
-                'event_id': event.id,
-                'entity_type': event.entity_type,
-                'entity_id': event.entity_id,
-            },
-            created_by=event.performed_by,
-        )

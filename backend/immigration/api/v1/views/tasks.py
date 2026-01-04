@@ -29,6 +29,7 @@ from immigration.services.tasks import (
     task_delete,
     task_get_overdue,
     task_get_due_soon,
+    task_claim_from_branch,
 )
 from immigration.api.v1.serializers.task import (
     TaskOutputSerializer,
@@ -52,32 +53,66 @@ class TaskViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Get tasks for the authenticated user based on filters.
-        Supports filtering by content_type and object_id for generic FK queries.
+        Get tasks based on filters.
+
+        Behavior:
+        - Returns ALL tasks by default (no role-based restrictions)
+        - If assigned_to_me=true: returns only tasks assigned to current user
         """
         from immigration.models.task import Task
         from django.contrib.contenttypes.models import ContentType
-        
+
         # Handle schema generation
         if getattr(self, 'swagger_fake_view', False):
             return Task.objects.none()
-        
-        # Start with tasks assigned to the user
-        queryset = Task.objects.filter(assigned_to=self.request.user)
-        
+
+        # Get query parameters for filtering
+        assigned_to_me = self.request.query_params.get('assigned_to_me', 'false').lower() == 'true'
+        content_type = self.request.query_params.get('content_type')
+        object_id = self.request.query_params.get('object_id')
+        client_id = self.request.query_params.get('client')
+
+        if assigned_to_me:
+            # Check user's role to determine what tasks to show
+            from immigration.constants import GROUP_BRANCH_ADMIN, GROUP_REGION_MANAGER, GROUP_SUPER_ADMIN
+
+            # Check if user is branch admin or above
+            is_admin = self.request.user.groups.filter(name__in=[
+                GROUP_BRANCH_ADMIN,
+                GROUP_REGION_MANAGER,
+                GROUP_SUPER_ADMIN,
+            ]).exists()
+
+            if is_admin:
+                # For admins: Show tasks assigned to them OR tasks assigned to their branches
+                user_branch_ids = list(self.request.user.branches.values_list('id', flat=True))
+                queryset = Task.objects.filter(
+                    Q(assigned_to=self.request.user) |
+                    Q(branch_id__in=user_branch_ids)
+                )
+            else:
+                # For consultants: Show only tasks assigned directly to them
+                queryset = Task.objects.filter(assigned_to=self.request.user)
+        else:
+            # Default: show ALL tasks (no restrictions)
+            queryset = Task.objects.all()
+
+        # Use select_related to optimize queries
+        queryset = queryset.select_related(
+            'assigned_to', 'assigned_by', 'content_type', 'branch'
+        )
+
         # Filter by status if provided
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-        
+
         # Filter by priority if provided
         priority = self.request.query_params.get('priority')
         if priority:
             queryset = queryset.filter(priority=priority)
-        
+
         # Filter by content_type and object_id if provided (for generic FK)
-        content_type = self.request.query_params.get('content_type')
-        object_id = self.request.query_params.get('object_id')
         if content_type and object_id:
             try:
                 ct = ContentType.objects.get(id=int(content_type))
@@ -85,25 +120,21 @@ class TaskViewSet(viewsets.ModelViewSet):
             except (ContentType.DoesNotExist, ValueError):
                 pass
         
-        # Also support legacy client_id filter for backward compatibility
-        client_id = self.request.query_params.get('client')
+        # Support client filter via generic FK
         if client_id:
             try:
                 client_content_type = ContentType.objects.get(app_label='immigration', model='client')
-                queryset = queryset.filter(
-                    Q(client_id=int(client_id)) |
-                    Q(content_type=client_content_type, object_id=int(client_id))
-                )
+                queryset = queryset.filter(content_type=client_content_type, object_id=int(client_id))
             except (ContentType.DoesNotExist, ValueError):
                 pass
         
         # Filter overdue tasks if needed
-        include_overdue_default = str(settings.TASKS_INCLUDE_OVERDUE_DEFAULT).lower() == 'true'
+        include_overdue_default = getattr(settings, 'TASKS_INCLUDE_OVERDUE_DEFAULT', 'true')
         include_overdue = self.request.query_params.get('include_overdue', str(include_overdue_default)).lower() == 'true'
         if not include_overdue:
             queryset = queryset.filter(
                 Q(due_date__gte=timezone.now()) |
-                Q(status__in=['COMPLETED', 'CANCELLED'])
+                Q(status__in=[TaskStatus.COMPLETED.value, TaskStatus.CANCELLED.value])
             )
         
         return queryset.order_by('-due_date', '-created_at')
@@ -120,7 +151,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     
     @extend_schema(
         summary="List tasks",
-        description="Get all tasks for the authenticated user. Can filter by status, priority, content_type, object_id, and overdue.",
+        description="Get all tasks (no role-based restrictions). Can filter by status, priority, content_type, object_id, assigned_to_me, and overdue.",
         parameters=[
             OpenApiParameter(
                 name='status',
@@ -154,7 +185,14 @@ class TaskViewSet(viewsets.ModelViewSet):
                 name='client',
                 type=OpenApiTypes.INT,
                 location=OpenApiParameter.QUERY,
-                description='Filter by client ID (legacy, prefer using content_type + object_id)',
+                description='Filter by client ID (uses content_type + object_id)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='assigned_to_me',
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description='Set to true to only return tasks assigned to current user or user\'s branches (default: false, returns all tasks)',
                 required=False,
             ),
             OpenApiParameter(
@@ -169,7 +207,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         tags=['tasks'],
     )
     def list(self, request, *args, **kwargs):
-        """List all tasks for the authenticated user."""
+        """List all tasks."""
         return super().list(request, *args, **kwargs)
     
     @extend_schema(
@@ -190,7 +228,8 @@ class TaskViewSet(viewsets.ModelViewSet):
                     'due_date': '2025-12-15T17:00:00Z',
                     'assigned_to': 1,
                     'tags': ['document-review', 'urgent'],
-                    'client_id': 5,
+                    'content_type': 10,
+                    'object_id': 5,
                 },
                 request_only=True,
             ),
@@ -203,9 +242,16 @@ class TaskViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             validated_data = serializer.validated_data.copy()
             
-            # Extract User objects from IDs
-            assigned_to_id = validated_data.pop('assigned_to')
-            assigned_to = User.objects.get(id=assigned_to_id)
+            # Extract User objects from IDs (assigned_to is now optional)
+            assigned_to = None
+            if 'assigned_to' in validated_data and validated_data['assigned_to']:
+                assigned_to_id = validated_data.pop('assigned_to')
+                assigned_to = User.objects.get(id=assigned_to_id)
+            else:
+                validated_data.pop('assigned_to', None)  # Remove if present but None
+            
+            # Extract branch_id
+            branch_id = validated_data.pop('branch_id', None)
             
             assigned_by = None
             if 'assigned_by' in validated_data and validated_data['assigned_by']:
@@ -215,14 +261,32 @@ class TaskViewSet(viewsets.ModelViewSet):
                 # Default to request.user if not provided
                 assigned_by = request.user
             
-            # Extract generic FK fields
-            content_type = validated_data.pop('content_type', None)
-            object_id = validated_data.pop('object_id', None)
-            
+            # Extract and convert entity linking fields (multi-tenant safe)
+            linked_entity_type = validated_data.pop('linked_entity_type', None)
+            linked_entity_id = validated_data.pop('linked_entity_id', None)
+            content_type_id = None
+            object_id = None
+
+            if linked_entity_type and linked_entity_id:
+                from django.contrib.contenttypes.models import ContentType
+                try:
+                    ct = ContentType.objects.get(
+                        app_label='immigration',
+                        model=linked_entity_type.lower()
+                    )
+                    content_type_id = ct.id
+                    object_id = linked_entity_id
+                except ContentType.DoesNotExist:
+                    return Response(
+                        {'error': f'Invalid entity type: {linked_entity_type}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
             task_obj = task_create(
                 assigned_to=assigned_to,
+                branch_id=branch_id,
                 assigned_by=assigned_by,
-                content_type=content_type,
+                content_type=content_type_id,
                 object_id=object_id,
                 created_by=request.user,
                 **validated_data
@@ -243,12 +307,12 @@ class TaskViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         """Retrieve a specific task."""
         task_obj = task_get(kwargs.get('pk'))
-        if not task_obj or task_obj.assigned_to != request.user:
+        if not task_obj:
             return Response(
-                {'error': 'Task not found or access denied'},
+                {'error': 'Task not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         serializer = TaskOutputSerializer(task_obj)
         return Response(serializer.data)
     
@@ -317,34 +381,69 @@ class TaskViewSet(viewsets.ModelViewSet):
     def _update_task(self, request, task_id, partial=False):
         """Internal method to handle task updates."""
         task_obj = task_get(task_id)
-        if not task_obj or task_obj.assigned_to != request.user:
+        if not task_obj:
             return Response(
                 {'error': 'Task not found or access denied'},
                 status=status.HTTP_404_NOT_FOUND
             )
         
+        # Permission check is handled in task_update service
         serializer = TaskUpdateSerializer(data=request.data, partial=partial)
         if serializer.is_valid():
             validated_data = serializer.validated_data.copy()
+            
+            # Handle assigned_to if provided (can be null to unassign)
+            if 'assigned_to' in validated_data:
+                assigned_to_id = validated_data.pop('assigned_to')
+                if assigned_to_id is not None:
+                    validated_data['assigned_to'] = User.objects.get(id=assigned_to_id)
+                    # When assigning to a user, clear branch assignment
+                    validated_data['branch'] = None
+                else:
+                    validated_data['assigned_to'] = None
+            
+            # Handle branch_id if provided (can be null to unassign)
+            if 'branch_id' in validated_data:
+                branch_id = validated_data.pop('branch_id')
+                if branch_id is not None:
+                    from immigration.models.branch import Branch
+                    validated_data['branch'] = Branch.objects.get(id=branch_id)
+                    # When assigning to a branch, clear user assignment
+                    validated_data['assigned_to'] = None
+                else:
+                    validated_data['branch'] = None
             
             # Handle assigned_by if provided
             if 'assigned_by' in validated_data and validated_data['assigned_by']:
                 assigned_by_id = validated_data.pop('assigned_by')
                 validated_data['assigned_by'] = User.objects.get(id=assigned_by_id)
-            
-            # Handle content_type/object_id if provided
-            if 'content_type' in validated_data and validated_data['content_type']:
+
+            # Handle entity linking (multi-tenant safe)
+            linked_entity_type = validated_data.pop('linked_entity_type', None)
+            linked_entity_id = validated_data.pop('linked_entity_id', None)
+
+            if linked_entity_type and linked_entity_id:
                 from django.contrib.contenttypes.models import ContentType
-                content_type_id = validated_data.pop('content_type')
-                validated_data['content_type'] = ContentType.objects.get(id=content_type_id)
-            
+                try:
+                    ct = ContentType.objects.get(
+                        app_label='immigration',
+                        model=linked_entity_type.lower()
+                    )
+                    validated_data['content_type'] = ct
+                    validated_data['object_id'] = linked_entity_id
+                except ContentType.DoesNotExist:
+                    return Response(
+                        {'error': f'Invalid entity type: {linked_entity_type}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
             updated_task = task_update(task_id, request.user, **validated_data)
             if updated_task:
                 output_serializer = TaskOutputSerializer(updated_task)
                 return Response(output_serializer.data)
             return Response(
-                {'error': 'Failed to update task'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'Task not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -493,3 +592,32 @@ class TaskViewSet(viewsets.ModelViewSet):
         tasks = task_get_due_soon(request.user, days)
         serializer = TaskOutputSerializer(tasks, many=True)
         return Response(serializer.data)
+    
+    @extend_schema(
+        summary="Claim branch task",
+        description="Claim a branch-assigned task for the current user. The task will be assigned to the user and removed from the branch pool.",
+        request=None,
+        responses={
+            200: TaskOutputSerializer,
+            400: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+        tags=['tasks'],
+    )
+    @action(detail=True, methods=['post'])
+    def claim(self, request, pk=None):
+        """Claim a branch-assigned task."""
+        try:
+            task_obj = task_claim_from_branch(pk, request.user)
+            if task_obj:
+                serializer = TaskOutputSerializer(task_obj)
+                return Response(serializer.data)
+            return Response(
+                {'error': 'Task not found or cannot be claimed'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

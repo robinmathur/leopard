@@ -8,6 +8,7 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework_simplejwt.views import TokenRefreshView
 from immigration.api.v1.auth_views import TenantTokenObtainPairView
+from immigration.api.v1.views.notifications import notification_sse_view
 
 admin.site.site_header = 'Upright India'  # default: "Django Administration"
 admin.site.index_title = 'Features area'  # default: "Site administration"
@@ -31,6 +32,9 @@ urlpatterns = [
     # JWT Authentication endpoints (CSRF exempt) - TENANT-BOUND TOKENS
     path('api/token/', csrf_exempt(TenantTokenObtainPairView.as_view()), name='token_obtain_pair'),
     path('api/token/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='token_refresh'),
+    # SSE endpoint - MUST be before api/v1/ include to bypass DRF content negotiation
+    # This returns StreamingHttpResponse and needs to bypass DRF middleware
+    path('api/v1/notifications/stream/', csrf_exempt(notification_sse_view), name='notification-stream'),
     # API endpoints (tenant-specific)
     path('api/v1/', include('immigration.api.v1.urls')),
     # OpenAPI schema and documentation (tenant-specific)

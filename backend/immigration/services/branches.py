@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from immigration.models.branch import Branch
-from immigration.constants import GROUP_SUPER_SUPER_ADMIN
 
 
 class BranchCreateInput(BaseModel):
@@ -39,6 +38,7 @@ class BranchCreateInput(BaseModel):
 class BranchUpdateInput(BaseModel):
     """Input model for branch updates with validation."""
 
+    region_id: Optional[int] = None
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     phone: Optional[str] = Field(None, max_length=15)
     website: Optional[str] = Field(None, max_length=100)
@@ -137,6 +137,20 @@ def branch_update(*, branch: Branch, data: BranchUpdateInput, user) -> Branch:
 
     # Update only provided fields
     update_fields = ['updated_by']
+
+    # Handle region update
+    if data.region_id is not None:
+        from immigration.models.region import Region
+        if data.region_id:
+            try:
+                region = Region.objects.get(id=data.region_id)
+                # REMOVED: tenant FK check (schema ensures region belongs to current tenant)
+            except Region.DoesNotExist:
+                raise ValueError(f"Region with id={data.region_id} does not exist")
+            branch.region = region
+        else:
+            branch.region = None
+        update_fields.append('region')
 
     if data.name is not None:
         # Check for name conflicts if name is changing (within current tenant schema)

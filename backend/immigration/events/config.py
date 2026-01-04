@@ -2,9 +2,11 @@
 Event-driven framework configuration.
 
 Handler execution order:
-1. ClientActivityHandler - Creates timeline entry, optionally triggers notification
-2. TaskHandler - Creates task, optionally triggers notification
+1. ClientActivityHandler - Creates timeline entry only
+2. TaskHandler - Creates task only
 3. NotificationHandler - Creates notification (directly), triggers SSE automatically
+
+All handlers run in parallel. Notifications are handled separately via the notification handler.
 """
 
 from typing import Dict, List, Any
@@ -35,9 +37,12 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
                 'activity_type': 'ASSIGNED',
                 'description_template': 'Client assigned to {assigned_to_name}',
             },
-            'notify': {
-                'enabled': True,
-                'type': 'CLIENT_ASSIGNED',  # NotificationType → SSE
+        },
+        {
+            'handler': 'notification',
+            'enabled': True,
+            'config': {
+                'type': 'CLIENT_ASSIGNED',
                 'title_template': 'Client Assigned: {client_name}',
                 'message_template': 'Client "{client_name}" has been assigned to you.',
                 'recipients': [
@@ -56,8 +61,11 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
                 'activity_type': 'STAGE_CHANGED',
                 'description_template': 'Client converted to {new_stage} from {old_stage}',
             },
-            'notify': {
-                'enabled': True,
+        },
+        {
+            'handler': 'notification',
+            'enabled': True,
+            'config': {
                 'type': 'CLIENT_STAGE_CHANGED',
                 'title_template': 'Client Stage Changed: {client_name}',
                 'message_template': 'Client "{client_name}" stage changed to {new_stage}.',
@@ -149,11 +157,14 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
                 'activity_type': 'ASSIGNED',
                 'description_template': 'Visa Application is assigned to {assigned_to_name} by {performed_by_name}',
             },
-            'notify': {
-                'enabled': True,
+        },
+        {
+            'handler': 'notification',
+            'enabled': True,
+            'config': {
                 'type': 'VISA_APPLICATION_ASSIGNED',
-                'title_template': 'Visa Application Assigned',
-                'message_template': 'A visa application has been assigned to you.',
+                'title_template': 'Visa Application Assigned: {client_name}',
+                'message_template': 'A visa application for {client_name} ({visa_type_name}) has been assigned to you.',
                 'recipients': [
                     {'field': 'assigned_to'},  # New assigned user
                 ],
@@ -165,7 +176,29 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
     # COLLEGE APPLICATION EVENTS - All optional
     # =========================================================================
     
-    'Application.CREATE': [],  # Configure if needed
+    'CollegeApplication.CREATE': [],  # Configure if needed
+    'CollegeApplication.assigned_to.UPDATE': [
+        {
+            'handler': 'client_activity',
+            'enabled': True,
+            'config': {
+                'activity_type': 'ASSIGNED',
+                'description_template': 'Application is assigned to {assigned_to_name} by {performed_by_name}',
+            },
+        },
+        {
+            'handler': 'notification',
+            'enabled': True,
+            'config': {
+                'type': 'APPLICATION_ASSIGNED',
+                'title_template': 'Application Assigned: {client_name}',
+                'message_template': 'A {application_type_name} application for {client_name} has been assigned to you.',
+                'recipients': [
+                    {'field': 'assigned_to'},  # New assigned user
+                ],
+            },
+        },
+    ],
 }
 
 
@@ -191,12 +224,8 @@ TRACKED_ENTITIES = [
         'track_fields': ['status', 'assigned_to'],
     },
     {
-        'model': 'immigration.Application',
-        'track_fields': ['status'],
-    },
-    {
-        'model': 'immigration.ProfilePicture',
-        'track_fields': [],
+        'model': 'immigration.CollegeApplication',
+        'track_fields': ['status', 'assigned_to'],
     },
 ]
 

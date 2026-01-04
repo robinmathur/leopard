@@ -80,9 +80,55 @@ def get_default_notification_title_and_message(notification_type: str) -> Tuple[
     )
 
 
+def send_sse_event(user_id: int, event_type: str, data: dict) -> bool:
+    """
+    Send an SSE event to a user via channel layer.
+    Only sends if user is online (has active SSE connection).
+
+    Args:
+        user_id: User ID to send event to
+        event_type: Type of SSE event (notification_message, notification_read, etc.)
+        data: Event data dictionary
+
+    Returns:
+        True if sent successfully, False otherwise
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Check if user is online before sending SSE
+    from immigration.services.user_presence import is_user_online
+    
+    is_online = is_user_online(user_id)
+    
+    if not is_online:
+        logger.debug(f"SSE: Skipping - user {user_id} is offline")
+        return False
+    
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        logger.error(f"SSE: No channel layer configured")
+        return False
+
+    try:
+        group_name = f"user_{user_id}"
+        message = {
+            'type': event_type,
+            'data': data
+        }
+        logger.debug(f"SSE: Sending {event_type} to group {group_name}")
+        async_to_sync(channel_layer.group_send)(group_name, message)
+        logger.info(f"SSE: Successfully sent {event_type} to user {user_id}")
+        return True
+    except Exception as e:
+        logger.error(f"SSE: Error sending to user {user_id}: {e}")
+        return False
+
+
 def send_notification_to_user(user_id: int, notification_data: dict) -> bool:
     """
-    Send a notification to a user via SSE channel layer.
+    Send a new notification to a user via SSE channel layer.
+    Only sends if user is online (has active SSE connection).
 
     Args:
         user_id: User ID to send notification to
@@ -91,24 +137,42 @@ def send_notification_to_user(user_id: int, notification_data: dict) -> bool:
     Returns:
         True if sent successfully, False otherwise
     """
-    channel_layer = get_channel_layer()
-    if not channel_layer:
-        return False
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"SSE Send: user={user_id}, notification_id={notification_data.get('id')}")
+    
+    return send_sse_event(user_id, 'notification_message', {'notification': notification_data})
 
-    try:
-        group_name = f"user_{user_id}"
-        async_to_sync(channel_layer.group_send)(
-            group_name,
-            {
-                'type': 'notification_message',
-                'notification': notification_data
-            }
-        )
-        return True
-    except Exception as e:
-        # Log error but don't fail notification creation
-        print(f"Error sending notification via channel layer: {e}")
-        return False
+
+def send_notification_read_event(user_id: int, notification_ids: list) -> bool:
+    """
+    Send notification read event to sync across browser sessions.
+
+    Args:
+        user_id: User ID to send event to
+        notification_ids: List of notification IDs that were marked as read
+
+    Returns:
+        True if sent successfully, False otherwise
+    """
+    # Ensure IDs are integers for consistent JSON serialization
+    int_ids = [int(id) for id in notification_ids]
+    return send_sse_event(user_id, 'notification_read', {'notification_ids': int_ids})
+
+
+def send_unread_count_update(user_id: int, unread_count: int) -> bool:
+    """
+    Send unread count update to sync across browser sessions.
+
+    Args:
+        user_id: User ID to send event to
+        unread_count: New unread count
+
+    Returns:
+        True if sent successfully, False otherwise
+    """
+    return send_sse_event(user_id, 'unread_count_update', {'unread_count': unread_count})
 
 
 def notification_create(
@@ -263,7 +327,16 @@ def notification_mark_read(notification_id: int, user: User) -> Optional[Notific
     """
     notification = notification_get(notification_id)
     if notification and notification.assigned_to == user:
+        was_unread = not notification.read
         notification.mark_as_read()
+        
+        # Send SSE event for cross-browser sync if notification was previously unread
+        if was_unread:
+            send_notification_read_event(user.id, [notification_id])
+            # Send updated unread count
+            unread_count = notification_get_unread_count(user)
+            send_unread_count_update(user.id, unread_count)
+        
         return notification
     return None
 
@@ -279,12 +352,27 @@ def notification_bulk_mark_read(user: User, notification_ids: List[int]) -> int:
     Returns:
         Number of notifications marked as read
     """
+    # Get IDs of notifications that are currently unread (for SSE sync)
+    unread_ids = list(Notification.objects.filter(
+        id__in=notification_ids,
+        assigned_to=user,
+        read=False
+    ).values_list('id', flat=True))
+    
     notifications = Notification.objects.filter(
         id__in=notification_ids,
         assigned_to=user,
         read=False
     )
     count = notifications.update(read=True, read_at=timezone.now())
+    
+    # Send SSE events for cross-browser sync if any notifications were marked as read
+    if unread_ids:
+        send_notification_read_event(user.id, unread_ids)
+        # Send updated unread count
+        unread_count = notification_get_unread_count(user)
+        send_unread_count_update(user.id, unread_count)
+    
     return count
 
 

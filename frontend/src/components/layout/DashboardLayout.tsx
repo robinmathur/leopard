@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Box, CssBaseline } from '@mui/material';
 import { AppBar } from './AppBar';
 import { Sidebar } from './Sidebar';
+import { useNotificationStore } from '@/store/notificationStore';
 
 /**
  * Main Dashboard Layout
@@ -10,6 +11,24 @@ import { Sidebar } from './Sidebar';
  */
 export const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { connectSSE, disconnectSSE, isSSEConnected } = useNotificationStore();
+
+  // Connect SSE when dashboard mounts (user is authenticated)
+  useEffect(() => {
+    console.log('DashboardLayout: Connecting SSE...');
+    connectSSE();
+    
+    // Disconnect on unmount (logout)
+    return () => {
+      console.log('DashboardLayout: Disconnecting SSE...');
+      disconnectSSE();
+    };
+  }, [connectSSE, disconnectSSE]);
+
+  // Log SSE connection status changes
+  useEffect(() => {
+    console.log('DashboardLayout: SSE connected =', isSSEConnected);
+  }, [isSSEConnected]);
 
   const handleToggleSidebar = () => {
     setSidebarOpen((prev) => !prev);

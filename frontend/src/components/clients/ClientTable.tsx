@@ -14,7 +14,9 @@ import {
   Typography,
   Box,
   Skeleton,
+  Link,
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { Client, STAGE_LABELS, STAGE_COLORS, COUNTRIES } from '@/types/client';
 import { ClientActions } from './ClientActions';
 
@@ -28,10 +30,8 @@ interface ClientTableProps {
   };
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
-  onView: (client: Client) => void;
   onMove: (client: Client) => void;
+  onAssign: (client: Client) => void;
 }
 
 /**
@@ -77,8 +77,8 @@ const LoadingSkeleton = () => (
     {[...Array(5)].map((_, index) => (
       <TableRow key={index}>
         <TableCell><Skeleton variant="text" width={40} /></TableCell>
-        <TableCell><Skeleton variant="text" width={80} /></TableCell>
         <TableCell><Skeleton variant="text" width={120} /></TableCell>
+        <TableCell><Skeleton variant="text" width={80} /></TableCell>
         <TableCell><Skeleton variant="text" width={100} /></TableCell>
         <TableCell><Skeleton variant="text" width={150} /></TableCell>
         <TableCell><Skeleton variant="text" width={80} /></TableCell>
@@ -89,8 +89,6 @@ const LoadingSkeleton = () => (
         <TableCell><Skeleton variant="rounded" width={70} height={24} /></TableCell>
         <TableCell>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Skeleton variant="circular" width={28} height={28} />
-            <Skeleton variant="circular" width={28} height={28} />
             <Skeleton variant="circular" width={28} height={28} />
             <Skeleton variant="circular" width={28} height={28} />
           </Box>
@@ -106,10 +104,8 @@ export const ClientTable = ({
   pagination,
   onPageChange,
   onPageSizeChange,
-  onEdit,
-  onDelete,
-  onView,
   onMove,
+  onAssign,
 }: ClientTableProps) => {
   const handleChangePage = (_event: unknown, newPage: number) => {
     onPageChange(newPage + 1); // MUI uses 0-based, API uses 1-based
@@ -126,8 +122,8 @@ export const ClientTable = ({
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 600, minWidth: 60 }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>Added Date</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 150 }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>Added Date</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>Phone No</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 180 }}>Email</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>DOB</TableCell>
@@ -163,13 +159,24 @@ export const ClientTable = ({
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatDate(client.created_at)}
-                    </Typography>
+                    <Link
+                      component={RouterLink}
+                      to={`/clients/${client.id}`}
+                      sx={{
+                        color: 'primary.main',
+                        textDecoration: 'none',
+                        fontWeight: 500,
+                        '&:hover': {
+                          textDecoration: 'underline',
+                        },
+                      }}
+                    >
+                      {formatClientName(client)}
+                    </Link>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" fontWeight={500}>
-                      {formatClientName(client)}
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDate(client.created_at)}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -223,10 +230,8 @@ export const ClientTable = ({
                   <TableCell>
                     <ClientActions
                       client={client}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onView={onView}
                       onMove={onMove}
+                      onAssign={onAssign}
                     />
                   </TableCell>
                 </TableRow>

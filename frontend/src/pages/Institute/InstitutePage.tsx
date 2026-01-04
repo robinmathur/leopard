@@ -62,7 +62,6 @@ export const InstitutePage = () => {
     institutes,
     loading,
     error,
-    pagination,
     fetchInstitutes,
     addInstitute,
     updateInstitute,
@@ -88,9 +87,7 @@ export const InstitutePage = () => {
         message: error.message || 'An error occurred',
         severity: 'error',
       });
-      clearError();
-    }
-  }, [error, clearError]);
+      clearError(); }}, [error, clearError]);
 
   // --- Add Institute ---
   const handleAdd = () => {
@@ -138,9 +135,7 @@ export const InstitutePage = () => {
         open: true,
         message: 'Failed to delete institute',
         severity: 'error',
-      });
-    }
-  };
+      }); }};
 
   // --- View Institute ---
   const handleView = (institute: Institute) => {
@@ -177,20 +172,12 @@ export const InstitutePage = () => {
     if (formData.phone && formData.phone.trim() !== '') {
       const phoneRegex = /^[\d\s\-\+\(\)]+$/;
       if (!phoneRegex.test(formData.phone)) {
-        errors.phone = 'Please enter a valid phone number';
-      }
-    }
-
-    // Validate website format if provided
+        errors.phone = 'Please enter a valid phone number'; }}// Validate website format if provided
     if (formData.website && formData.website.trim() !== '') {
       try {
         new URL(formData.website.startsWith('http') ? formData.website : `https://${formData.website}`);
       } catch {
-        errors.website = 'Please enter a valid website URL';
-      }
-    }
-
-    if (Object.keys(errors).length > 0) {
+        errors.website = 'Please enter a valid website URL'; }}if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
@@ -212,9 +199,7 @@ export const InstitutePage = () => {
             message: `Institute "${result.name}" added successfully`,
             severity: 'success',
           });
-          fetchInstitutes();
-        }
-      } else if (dialogMode === 'edit' && selectedInstitute) {
+          fetchInstitutes(); }}else if (dialogMode === 'edit' && selectedInstitute) {
         const updateData: InstituteUpdateRequest = {
           name: formData.name.trim(),
           short_name: formData.short_name.trim(),
@@ -228,25 +213,23 @@ export const InstitutePage = () => {
             open: true,
             message: `Institute "${result.name}" updated successfully`,
             severity: 'success',
-          });
-        }
-      }
-    } catch (err) {
+          }); }}} catch (err) {
       const apiError = err as ApiError;
       // Handle field-specific errors from backend
       if (apiError.fieldErrors) {
-        setFormErrors(apiError.fieldErrors);
+        // Convert Record<string, string[]> to Record<string, string>
+        const convertedErrors: Record<string, string> = {};
+        Object.entries(apiError.fieldErrors).forEach(([key, value]) => {
+          convertedErrors[key] = Array.isArray(value) ? value.join(', ') : value;
+        });
+        setFormErrors(convertedErrors);
       } else {
         setSnackbar({
           open: true,
           message: apiError.message || 'Failed to save institute',
           severity: 'error',
-        });
-      }
-    } finally {
-      setFormLoading(false);
-    }
-  }, [dialogMode, selectedInstitute, formData, addInstitute, updateInstitute, fetchInstitutes]);
+        }); }}finally {
+      setFormLoading(false); }}, [dialogMode, selectedInstitute, formData, addInstitute, updateInstitute, fetchInstitutes]);
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -282,9 +265,7 @@ export const InstitutePage = () => {
             alignItems: 'center',
             justifyContent: 'center',
             p: 6,
-            textAlign: 'center',
-          }}
-        >
+            textAlign: 'center', }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No institutes found
           </Typography>
@@ -297,7 +278,7 @@ export const InstitutePage = () => {
       ) : (
         <Grid container spacing={2}>
           {institutes.map((institute) => (
-            <Grid item xs={12} sm={6} md={4} key={institute.id}>
+            <Grid key={institute.id}size={{ xs: 12, sm: 6, md: 4 }}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -367,9 +348,7 @@ export const InstitutePage = () => {
               value={formData.name}
               onChange={(e) => {
                 setFormData({ ...formData, name: e.target.value });
-                if (formErrors.name) setFormErrors({ ...formErrors, name: '' });
-              }}
-              required
+                if (formErrors.name) setFormErrors({ ...formErrors, name: '' }); }}required
               fullWidth
               disabled={formLoading}
               error={!!formErrors.name}
@@ -381,9 +360,7 @@ export const InstitutePage = () => {
               value={formData.short_name}
               onChange={(e) => {
                 setFormData({ ...formData, short_name: e.target.value });
-                if (formErrors.short_name) setFormErrors({ ...formErrors, short_name: '' });
-              }}
-              required
+                if (formErrors.short_name) setFormErrors({ ...formErrors, short_name: '' }); }}required
               fullWidth
               disabled={formLoading}
               error={!!formErrors.short_name}
@@ -394,9 +371,7 @@ export const InstitutePage = () => {
               value={formData.phone}
               onChange={(e) => {
                 setFormData({ ...formData, phone: e.target.value });
-                if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' });
-              }}
-              fullWidth
+                if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' }); }}fullWidth
               disabled={formLoading}
               error={!!formErrors.phone}
               helperText={formErrors.phone || 'Optional'}
@@ -407,9 +382,7 @@ export const InstitutePage = () => {
               value={formData.website}
               onChange={(e) => {
                 setFormData({ ...formData, website: e.target.value });
-                if (formErrors.website) setFormErrors({ ...formErrors, website: '' });
-              }}
-              fullWidth
+                if (formErrors.website) setFormErrors({ ...formErrors, website: '' }); }}fullWidth
               disabled={formLoading}
               error={!!formErrors.website}
               helperText={formErrors.website || 'Optional (e.g., www.example.com)'}
@@ -436,14 +409,12 @@ export const InstitutePage = () => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ width: '100%' }}
-        >
+          sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -7,7 +7,6 @@ import {
   Box,
   Paper,
   Typography,
-  Grid,
   Alert,
   Skeleton,
   Button,
@@ -18,6 +17,7 @@ import {
   TextField,
   MenuItem,
   IconButton,
+  Grid,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -58,9 +58,7 @@ const formatDate = (dateString?: string): string => {
       year: 'numeric',
     });
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Detail row component
@@ -81,7 +79,7 @@ const EmploymentSkeleton = () => (
   <Box>
     {[...Array(2)].map((_, index) => (
       <Box key={index} sx={{ mb: 2 }}>
-        <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 1 }} />
+        <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 1 }}/>
       </Box>
     ))}
   </Box>
@@ -105,9 +103,7 @@ const EmploymentCard = ({ employment, onEdit, onDelete }: EmploymentCardProps) =
         mb: 2,
         '&:hover': {
           boxShadow: 1,
-        },
-      }}
-    >
+        }, }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
           <WorkIcon color="primary" />
@@ -131,13 +127,13 @@ const EmploymentCard = ({ employment, onEdit, onDelete }: EmploymentCardProps) =
       </Box>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="Start Date" value={formatDate(employment.start_date)} />
         </Grid>
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="End Date" value={formatDate(employment.end_date)} />
         </Grid>
-        <Grid item xs={6} sm={4}>
+        <Grid size={{ xs: 6, sm: 4 }}>
           <DetailRow label="Country" value={getCountryName(employment.country)} />
         </Grid>
       </Grid>
@@ -182,19 +178,14 @@ export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
           if (!b.end_date) return -1;
           return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
         });
-        setEmployments(sorted);
-      }
-    } catch (err) {
+        setEmployments(sorted); }}catch (err) {
       if ((err as Error).name === 'CanceledError' || signal?.aborted) {
         return;
       }
       setError((err as Error).message || 'Failed to load employment history');
     } finally {
       if (!signal?.aborted) {
-        setIsLoading(false);
-      }
-    }
-  };
+        setIsLoading(false); }}};
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -248,9 +239,7 @@ export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
     } catch (err) {
       setError((err as Error).message || 'Failed to save employment');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Handle delete
   const handleDeleteClick = (employmentId: number) => {
@@ -272,9 +261,7 @@ export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
     } catch (err) {
       setError((err as Error).message || 'Failed to delete employment');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Loading state
   if (isLoading) {
@@ -320,9 +307,7 @@ export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
           sx={{
             py: 4,
             textAlign: 'center',
-            color: 'text.secondary',
-          }}
-        >
+            color: 'text.secondary', }}>
           <Typography variant="body1" gutterBottom>
             No employment history recorded
           </Typography>
@@ -380,7 +365,7 @@ export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 required
                 fullWidth
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
 
               <TextField
@@ -390,7 +375,7 @@ export const ClientEmployment = ({ clientId }: ClientEmploymentProps) => {
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 required
                 fullWidth
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
 
               <TextField

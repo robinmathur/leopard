@@ -6,7 +6,6 @@ import {
   IconButton,
   Typography,
   InputBase,
-  Badge,
   Avatar,
   Box,
   Breadcrumbs,
@@ -15,17 +14,26 @@ import {
   MenuItem,
   Divider,
 } from '@mui/material';
-import { styled, alpha } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
+import { alpha } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import TaskIcon from '@mui/icons-material/Task';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HomeIcon from '@mui/icons-material/Home';
+import PeopleIcon from '@mui/icons-material/People';
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 import { navigationConfig, NavItem } from './navigation.config';
+import { CalendarDialog } from '@/components/calendar/CalendarDialog';
+import { NotificationTypeDropdown } from '@/components/notifications/NotificationTypeDropdown';
 
 /**
  * Breadcrumb item interface
@@ -174,9 +182,16 @@ const generateBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
 
 export const AppBar = ({ onMenuClick }: AppBarProps) => {
   const { user, logout } = useAuthStore();
+  const { notifications } = useNotificationStore();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
+
+  // Check if there are any unread system alerts
+  const hasSystemAlerts = notifications.some(
+    (n) => n.notification_type === 'SYSTEM_ALERT' && !n.read
+  );
 
   // Generate breadcrumbs based on current path
   const breadcrumbs = generateBreadcrumbs(location.pathname);
@@ -280,18 +295,58 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
 
           {/* Right side actions */}
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {/* Notifications */}
-            <IconButton size="small" color="inherit">
-              <Badge badgeContent={4} color="error">
-                <NotificationsIcon fontSize="small" />
-              </Badge>
-            </IconButton>
+            {/* Client Assignment Notifications */}
+            <NotificationTypeDropdown
+              notificationType="CLIENT_ASSIGNED"
+              icon={<PeopleIcon fontSize="small" />}
+              label="Clients"
+            />
 
-            {/* Tasks */}
-            <IconButton size="small" color="inherit">
-              <Badge badgeContent={2} color="primary">
-                <TaskIcon fontSize="small" />
-              </Badge>
+            {/* Application Assignment Notifications */}
+            <NotificationTypeDropdown
+              notificationType="APPLICATION_ASSIGNED"
+              icon={<LocalLibraryIcon fontSize="small" />}
+              label="Applications"
+            />
+
+            {/* Visa Application Assignment Notifications */}
+            <NotificationTypeDropdown
+              notificationType="VISA_APPLICATION_ASSIGNED"
+              icon={<FlightTakeoffIcon fontSize="small" />}
+              label="Visa Applications"
+            />
+
+            {/* Task Notifications */}
+            <NotificationTypeDropdown
+              notificationType="TASKS"
+              icon={<TaskIcon fontSize="small" />}
+              label="Tasks"
+            />
+
+            {/* Reminders */}
+            <NotificationTypeDropdown
+              notificationType="REMINDERS"
+              icon={<NotificationsActiveIcon fontSize="small" />}
+              label="Reminders"
+            />
+
+            {/* System Alerts - Only show when there are unread system alerts */}
+            {hasSystemAlerts && (
+              <NotificationTypeDropdown
+                notificationType="SYSTEM"
+                icon={<WarningIcon fontSize="small" />}
+                label="System"
+              />
+            )}
+
+            {/* Calendar */}
+            <IconButton
+              size="small"
+              color="inherit"
+              onClick={() => setCalendarDialogOpen(true)}
+              title="Calendar"
+            >
+              <CalendarTodayIcon fontSize="small" />
             </IconButton>
 
             {/* Profile */}
@@ -369,6 +424,12 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
           Logout
         </MenuItem>
       </Menu>
+
+      {/* Calendar Dialog */}
+      <CalendarDialog
+        open={calendarDialogOpen}
+        onClose={() => setCalendarDialogOpen(false)}
+      />
     </>
   );
 };

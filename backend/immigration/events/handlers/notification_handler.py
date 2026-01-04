@@ -44,16 +44,37 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
     
     created_count = 0
     for user in recipients:
+        # Build meta_info with entity details and client info for navigation
+        meta_info = {
+            'event_id': event.id,
+            'entity_type': event.entity_type,
+            'entity_id': event.entity_id,
+        }
+        
+        # Add client_id for navigation (available in context)
+        if 'client_id' in context:
+            meta_info['client_id'] = context['client_id']
+        
+        # Add application-specific info
+        if event.entity_type == 'CollegeApplication':
+            meta_info['application_id'] = event.entity_id
+            if 'application_type_name' in context:
+                meta_info['application_type_name'] = context['application_type_name']
+            if 'institute_name' in context:
+                meta_info['institute_name'] = context['institute_name']
+        
+        # Add visa application-specific info
+        if event.entity_type == 'VisaApplication':
+            meta_info['visa_application_id'] = event.entity_id
+            if 'visa_type_name' in context:
+                meta_info['visa_type_name'] = context['visa_type_name']
+        
         notification_create(
             notification_type=notification_type,
             assigned_to=user,
             title=title,
             message=message,
-            meta_info={
-                'event_id': event.id,
-                'entity_type': event.entity_type,
-                'entity_id': event.entity_id,
-            },
+            meta_info=meta_info,
             created_by=event.performed_by,
         )
         created_count += 1
@@ -74,6 +95,7 @@ def resolve_recipients(event: Event, recipients_config: List[dict]) -> List[User
     - {'field': 'assigned_to'} - Get user from entity field
     - {'field': 'client.assigned_to'} - Get user from related entity
     - {'role': 'BRANCH_ADMIN', 'scope': 'branch'} - Get users by role
+    - {'team': 'branch'} - Get all users in the branch (team-wide notification)
     - {'user_ids': [1, 2, 3]} - Specific user IDs
     """
     users = []
@@ -86,6 +108,8 @@ def resolve_recipients(event: Event, recipients_config: List[dict]) -> List[User
             resolved = resolve_field_recipient(event, recipient['field'])
         elif 'role' in recipient:
             resolved = resolve_role_recipients(event, recipient)
+        elif 'team' in recipient:
+            resolved = resolve_team_recipients(event, recipient)
         elif 'user_ids' in recipient:
             resolved = list(User.objects.filter(id__in=recipient['user_ids']))
         
@@ -170,3 +194,40 @@ def resolve_role_recipients(event: Event, config: dict) -> List[User]:
                 pass
     
     return list(users)
+
+
+def resolve_team_recipients(event: Event, config: dict) -> List[User]:
+    """
+    Resolve all team members within a scope (branch/region).
+    
+    Supports:
+    - {'team': 'branch'} - All users in the same branch as the entity
+    - {'team': 'region'} - All users in the same region as the entity
+    """
+    team_scope = config.get('team', 'branch')
+    
+    # Get branch ID from event
+    branch_id = event.current_state.get('branch')
+    if not branch_id:
+        return []
+    
+    if team_scope == 'branch':
+        # Get all users in the same branch
+        users = User.objects.filter(branches__id=branch_id).distinct()
+        return list(users)
+    elif team_scope == 'region':
+        # Get all users in the same region as the branch
+        from immigration.models import Branch
+        try:
+            branch = Branch.objects.get(id=branch_id)
+            if branch.region:
+                # Get users through branches or direct regions
+                users = User.objects.filter(
+                    Q(branches__region=branch.region) | 
+                    Q(regions__id=branch.region.id)
+                ).distinct()
+                return list(users)
+        except Branch.DoesNotExist:
+            pass
+    
+    return []

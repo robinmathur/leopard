@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import { TaskListProps, TaskStatus } from './types';
 import { TaskItem } from './TaskItem';
+import { ExpandableTaskItem } from './ExpandableTaskItem';
 
 /**
  * Loading skeleton for tasks
@@ -38,9 +39,14 @@ export const TaskList = ({
   onStatusChange,
   onTaskEdit,
   onTaskDelete,
+  onQuickAssign,
   showFilters = true,
   activeStatusFilter = 'all',
   onFilterChange,
+  useExpandableItems = false,
+  onTaskUpdate,
+  selectedTaskId = null,
+  emptyMessage,
 }: TaskListProps) => {
   const [activeTab, setActiveTab] = useState<TaskStatus | 'all'>(activeStatusFilter);
 
@@ -56,6 +62,19 @@ export const TaskList = ({
     IN_PROGRESS: tasks.filter((t) => t.status === 'IN_PROGRESS').length,
     COMPLETED: tasks.filter((t) => t.status === 'COMPLETED').length,
     OVERDUE: tasks.filter((t) => t.status === 'OVERDUE').length,
+  };
+
+  // Map status codes to display names
+  const getStatusDisplayName = (status: TaskStatus | 'all'): string => {
+    const statusMap: Record<TaskStatus | 'all', string> = {
+      all: 'All',
+      PENDING: 'Pending',
+      IN_PROGRESS: 'In Progress',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled',
+      OVERDUE: 'Overdue',
+    };
+    return statusMap[status] || status;
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: TaskStatus | 'all') => {
@@ -110,11 +129,12 @@ export const TaskList = ({
           }}
         >
           <Typography variant="body1" gutterBottom>
-            {tasks.length === 0
-              ? 'No tasks yet'
-              : `No tasks ${activeTab !== 'all' ? `with status "${activeTab}"` : ''}`}
+            {emptyMessage ||
+              (tasks.length === 0
+                ? 'No tasks yet'
+                : `No tasks ${activeTab !== 'all' ? `with status "${getStatusDisplayName(activeTab)}"` : ''}`)}
           </Typography>
-          {tasks.length === 0 && (
+          {!emptyMessage && tasks.length === 0 && (
             <Typography variant="body2" color="text.secondary">
               Create a task to get started
             </Typography>
@@ -122,16 +142,22 @@ export const TaskList = ({
         </Box>
       ) : (
         <>
-          {filteredTasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onClick={onTaskClick}
-              onStatusChange={onStatusChange}
-              onEdit={onTaskEdit}
-              onDelete={onTaskDelete}
-            />
-          ))}
+          {filteredTasks.map((task) => {
+            const TaskItemComponent = useExpandableItems ? ExpandableTaskItem : TaskItem;
+            return (
+              <TaskItemComponent
+                key={task.id}
+                task={task}
+                onClick={onTaskClick}
+                onStatusChange={onStatusChange}
+                onEdit={onTaskEdit}
+                onDelete={onTaskDelete}
+                onQuickAssign={onQuickAssign}
+                onTaskUpdate={onTaskUpdate}
+                isSelected={selectedTaskId === task.id}
+              />
+            );
+          })}
           <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
             Showing {filteredTasks.length} of {tasks.length} tasks
           </Typography>

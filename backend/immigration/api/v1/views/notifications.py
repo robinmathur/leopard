@@ -7,6 +7,7 @@ Business logic lives in services - views are thin wrappers.
 
 import asyncio
 import json
+import logging
 
 from django.http import StreamingHttpResponse, JsonResponse
 from django.conf import settings
@@ -21,7 +22,10 @@ from drf_spectacular.types import OpenApiTypes
 
 from channels.layers import get_channel_layer
 
+logger = logging.getLogger(__name__)
+
 from immigration.api.v1.authentication import JWTQueryParamAuthentication
+from immigration.models import Notification
 from immigration.pagination import StandardResultsSetPagination
 from immigration.services.notifications import (
     notification_list,
@@ -258,20 +262,31 @@ async def notification_sse_stream(user):
     Async generator function for SSE stream of notifications using channel layer.
     
     This implements true real-time notifications via Django Channels.
+    Tracks user online status for SSE optimization.
     """
+    from immigration.services.user_presence import mark_user_online, mark_user_offline, refresh_user_online_status
+    
+    logger.info(f"SSE: Starting stream for user {user.id} ({user.username})")
+    
     channel_layer = get_channel_layer()
     if not channel_layer:
-        # Fallback: Send error message if channel layer not configured
-        yield f"data: {json.dumps({'error': 'Channel layer not configured'})}\n\n".encode('utf-8')
+        logger.error(f"SSE: Channel layer not configured for user {user.id}")
+        yield f"data: {json.dumps({'type': 'error', 'message': 'Channel layer not configured'})}\n\n".encode('utf-8')
         return
 
     # Create unique channel name for this connection
     group_name = f"user_{user.id}"
     channel_name = await channel_layer.new_channel()
+    logger.info(f"SSE: Created channel {channel_name} for group {group_name}")
 
     try:
         # Add this channel to the user's group
         await channel_layer.group_add(group_name, channel_name)
+        logger.info(f"SSE: Added to group {group_name}")
+        
+        # Mark user as online when connection is established
+        mark_user_online(user.id)
+        logger.info(f"SSE: Marked user {user.id} as online")
 
         # Send initial connection message
         initial_message = {
@@ -280,6 +295,7 @@ async def notification_sse_stream(user):
             'user_id': user.id
         }
         yield f"data: {json.dumps(initial_message)}\n\n".encode('utf-8')
+        logger.info(f"SSE: Sent connection_established to user {user.id}")
 
         # Keep connection alive and listen for messages
         while True:
@@ -289,25 +305,60 @@ async def notification_sse_stream(user):
                     channel_layer.receive(channel_name),
                     timeout=30.0  # 30 second timeout for heartbeat
                 )
+                
+                msg_type = message.get('type')
+                logger.debug(f"SSE: Received message for user {user.id}: {msg_type}")
 
                 # Handle different message types
-                if message.get('type') == 'notification_message':
-                    notification_data = message.get('notification', {})
-                    yield f"data: {json.dumps(notification_data)}\n\n".encode('utf-8')
+                if msg_type == 'notification_message':
+                    data = message.get('data', {})
+                    notification_data = data.get('notification', {})
+                    # IMPORTANT: Wrap notification with type so frontend can identify it
+                    sse_message = {
+                        'type': 'notification_message',
+                        'notification': notification_data
+                    }
+                    yield f"data: {json.dumps(sse_message)}\n\n".encode('utf-8')
+                    logger.info(f"SSE: Sent notification {notification_data.get('id')} to user {user.id}")
+                
+                elif msg_type == 'notification_read':
+                    # Forward read event for cross-browser sync
+                    data = message.get('data', {})
+                    sse_message = {
+                        'type': 'notification_read',
+                        'notification_ids': data.get('notification_ids', [])
+                    }
+                    yield f"data: {json.dumps(sse_message)}\n\n".encode('utf-8')
+                    logger.debug(f"SSE: Sent notification_read to user {user.id}")
+                
+                elif msg_type == 'unread_count_update':
+                    # Forward unread count update for cross-browser sync
+                    data = message.get('data', {})
+                    sse_message = {
+                        'type': 'unread_count_update',
+                        'unread_count': data.get('unread_count', 0)
+                    }
+                    yield f"data: {json.dumps(sse_message)}\n\n".encode('utf-8')
+                    logger.debug(f"SSE: Sent unread_count_update to user {user.id}")
                 
             except asyncio.TimeoutError:
-                # Send heartbeat to keep connection alive
+                # Send heartbeat to keep connection alive and refresh online status
+                refresh_user_online_status(user.id)
                 heartbeat = {'type': 'heartbeat', 'timestamp': timezone.now().isoformat()}
                 yield f"data: {json.dumps(heartbeat)}\n\n".encode('utf-8')
+                logger.debug(f"SSE: Sent heartbeat to user {user.id}")
             except Exception as e:
-                # Log error but continue
+                logger.error(f"SSE: Error for user {user.id}: {e}")
                 error_msg = {'type': 'error', 'message': str(e)}
                 yield f"data: {json.dumps(error_msg)}\n\n".encode('utf-8')
                 break
 
     finally:
-        # Clean up: remove channel from group
+        # Clean up: remove channel from group and mark user as offline
+        logger.info(f"SSE: Cleaning up for user {user.id}")
         await channel_layer.group_discard(group_name, channel_name)
+        mark_user_offline(user.id)
+        logger.info(f"SSE: User {user.id} disconnected")
 
 
 def notification_sse_view(request):

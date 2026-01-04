@@ -28,6 +28,8 @@ class AgentOutputSerializer(serializers.ModelSerializer):
             'agent_name',
             'agent_type',
             'agent_type_display',
+            'company_name',
+            'designation',
             'phone_number',
             'email',
             'website',
@@ -77,6 +79,8 @@ class AgentCreateSerializer(serializers.Serializer):
     
     agent_name = serializers.CharField(max_length=100)
     agent_type = serializers.ChoiceField(choices=['SUPER_AGENT', 'SUB_AGENT'])
+    company_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    designation = serializers.CharField(max_length=100, required=False, allow_blank=True)
     phone_number = serializers.CharField(max_length=15, required=False, allow_blank=True)
     email = serializers.EmailField(required=False, allow_blank=True)
     website = serializers.URLField(max_length=100, required=False, allow_blank=True)
@@ -101,6 +105,8 @@ class AgentUpdateSerializer(serializers.Serializer):
     
     agent_name = serializers.CharField(max_length=100, required=False)
     agent_type = serializers.ChoiceField(choices=['SUPER_AGENT', 'SUB_AGENT'], required=False)
+    company_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    designation = serializers.CharField(max_length=100, required=False, allow_blank=True)
     phone_number = serializers.CharField(max_length=15, required=False, allow_blank=True)
     email = serializers.EmailField(required=False, allow_blank=True)
     website = serializers.URLField(max_length=100, required=False, allow_blank=True)

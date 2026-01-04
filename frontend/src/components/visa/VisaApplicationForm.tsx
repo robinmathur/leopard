@@ -7,7 +7,6 @@ import {
   Box,
   TextField,
   MenuItem,
-  Grid,
   Button,
   CircularProgress,
   Typography,
@@ -20,6 +19,7 @@ import {
   IconButton,
   Divider,
   Autocomplete,
+  Grid,
 } from '@mui/material';
 import { ArrowForward, ArrowBack, Close } from '@mui/icons-material';
 import { VisaApplication } from '@/services/api/visaApplicationApi';
@@ -37,6 +37,8 @@ interface VisaApplicationFormProps {
   onSave: (data: any) => void;
   onCancel: () => void;
   loading: boolean;
+  /** If true, client field is pre-selected and cannot be changed */
+  clientLocked?: boolean;
 }
 
 export const VisaApplicationForm = ({
@@ -45,6 +47,7 @@ export const VisaApplicationForm = ({
   onSave,
   onCancel,
   loading,
+  clientLocked = false,
 }: VisaApplicationFormProps) => {
   const [visaTypes, setVisaTypes] = useState<VisaType[]>([]);
   const [dropdownLoading, setDropdownLoading] = useState(false);
@@ -61,32 +64,27 @@ export const VisaApplicationForm = ({
   // Document selection state
   const [availableDocuments, setAvailableDocuments] = useState<string[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>(
-    initialData?.required_documents || []
+    initialData?.required_documents?.map((doc) => (typeof doc === 'string' ? doc : doc.name)) || []
   );
   const [customDocument, setCustomDocument] = useState('');
 
-  // Load initial client and user if in edit mode
+  // Load initial client and user if in edit mode or client is locked
   useEffect(() => {
     const loadInitialData = async () => {
-      if (mode === 'edit' && initialData) {
+      if (initialData) {
         try {
-          // Load client
+          // Load client if we have a client ID (edit mode or locked client)
           if (initialData.client) {
             const client = await clientApi.getById(initialData.client);
             setSelectedClient(client);
           }
-          
-          // Load assigned user
-          if (initialData.assigned_to) {
+
+          // Load assigned user (only in edit mode)
+          if (mode === 'edit' && initialData.assigned_to) {
             const response = await httpClient.get<User>(`/v1/users/${initialData.assigned_to}/`);
-            setSelectedUser(response.data);
-          }
-        } catch (err) {
-          console.error('Failed to load initial data:', err);
-        }
-      }
-    };
-    
+            setSelectedUser(response.data); }}catch (err) {
+          console.error('Failed to load initial data:', err); }}};
+
     loadInitialData();
   }, [initialData, mode]);
 
@@ -131,9 +129,7 @@ export const VisaApplicationForm = ({
         console.error('Failed to search clients:', err);
         setClientOptions([]);
       } finally {
-        setClientLoading(false);
-      }
-    };
+        setClientLoading(false); }};
 
     const debounceTimer = setTimeout(searchClients, 300);
     return () => clearTimeout(debounceTimer);
@@ -149,9 +145,7 @@ export const VisaApplicationForm = ({
       } catch (err: any) {
         console.error('Failed to fetch dropdown data:', err);
       } finally {
-        setDropdownLoading(false);
-      }
-    };
+        setDropdownLoading(false); }};
 
     fetchDropdownData();
   }, []);
@@ -169,12 +163,8 @@ export const VisaApplicationForm = ({
             checklist.filter(doc => !selectedDocuments.includes(doc))
           );
         } catch (err) {
-          console.error('Failed to fetch visa type checklist:', err);
-        }
-      } else {
-        setAvailableDocuments([]);
-      }
-    };
+          console.error('Failed to fetch visa type checklist:', err); }}else {
+        setAvailableDocuments([]); }};
 
     fetchVisaTypeChecklist();
   }, [formData.visa_type_id]);
@@ -187,9 +177,7 @@ export const VisaApplicationForm = ({
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
-      });
-    }
-  };
+      }); }};
 
   // Document selection handlers
   const handleMoveToSelected = (document: string) => {
@@ -205,9 +193,7 @@ export const VisaApplicationForm = ({
   const handleAddCustomDocument = () => {
     if (customDocument.trim() && !selectedDocuments.includes(customDocument.trim())) {
       setSelectedDocuments(prev => [...prev, customDocument.trim()]);
-      setCustomDocument('');
-    }
-  };
+      setCustomDocument(''); }};
 
 
   const validate = () => {
@@ -275,37 +261,37 @@ export const VisaApplicationForm = ({
     <Box sx={{ pt: 2 }}>
       <Grid container spacing={2}>
         {/* Client Selection - Searchable Autocomplete */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <Autocomplete
             value={selectedClient}
             onChange={(_, newValue) => {
               setSelectedClient(newValue);
-              handleChange('client_id', newValue?.id || '');
-            }}
-            inputValue={clientSearchTerm}
+              handleChange('client_id', newValue?.id || ''); }}inputValue={clientSearchTerm}
             onInputChange={(_, newInputValue) => {
-              setClientSearchTerm(newInputValue);
-            }}
-            options={clientOptions}
-            getOptionLabel={(option) => 
+              setClientSearchTerm(newInputValue); }}options={clientOptions}
+            getOptionLabel={(option) =>
               `${option.first_name} ${option.last_name}${option.email ? ` (${option.email})` : ''}`
             }
             loading={clientLoading}
-            disabled={loading || mode === 'edit'}
+            disabled={loading || mode === 'edit' || clientLocked}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             noOptionsText={
-              clientSearchTerm.length < 2 
-                ? "Type at least 2 characters to search..." 
+              clientSearchTerm.length < 2
+                ? "Type at least 2 characters to search..."
                 : "No clients found"
             }
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="Client *"
-                placeholder="Search by name or email..."
+                placeholder={clientLocked ? "" : "Search by name or email..."}
                 size="small"
                 error={!!errors.client_id}
-                helperText={errors.client_id || 'Type to search for clients'}
+                helperText={
+                  clientLocked
+                    ? 'Client is pre-selected for this application'
+                    : errors.client_id || 'Type to search for clients'
+                }
                 InputProps={{
                   ...params.InputProps,
                   endAdornment: (
@@ -313,9 +299,7 @@ export const VisaApplicationForm = ({
                       {clientLoading ? <CircularProgress size={20} /> : null}
                       {params.InputProps.endAdornment}
                     </>
-                  ),
-                }}
-              />
+                  ), }}/>
             )}
             renderOption={(props, option) => (
               <li {...props} key={option.id}>
@@ -335,7 +319,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Visa Type */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Visa Type *"
@@ -357,7 +341,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Status */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Status"
@@ -376,7 +360,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Assigned To - Searchable */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <UserAutocomplete
             value={selectedUser}
             onChange={(user) => {
@@ -391,7 +375,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Immigration Fee */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="number"
             label="Immigration Fee *"
@@ -402,12 +386,11 @@ export const VisaApplicationForm = ({
             disabled={loading}
             error={!!errors.immigration_fee}
             helperText={errors.immigration_fee}
-            inputProps={{ min: 0, step: 0.01 }}
-          />
+            inputProps={{ min: 0, step: 0.01 }}/>
         </Grid>
 
         {/* Immigration Fee Currency */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Immigration Fee Currency"
@@ -427,7 +410,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Service Fee */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="number"
             label="Service Fee *"
@@ -438,12 +421,11 @@ export const VisaApplicationForm = ({
             disabled={loading}
             error={!!errors.service_fee}
             helperText={errors.service_fee}
-            inputProps={{ min: 0, step: 0.01 }}
-          />
+            inputProps={{ min: 0, step: 0.01 }}/>
         </Grid>
 
         {/* Service Fee Currency */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             select
             label="Service Fee Currency"
@@ -463,7 +445,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Transaction Reference No */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             label="Transaction Reference No"
             value={formData.transaction_reference_no}
@@ -476,7 +458,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Dependent Switch */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControlLabel
             control={
               <Switch
@@ -490,7 +472,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Date Applied */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="date"
             label="Date Applied"
@@ -499,12 +481,12 @@ export const VisaApplicationForm = ({
             fullWidth
             size="small"
             disabled={loading}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Grid>
 
         {/* Date Opened */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="date"
             label="Date Opened"
@@ -513,12 +495,12 @@ export const VisaApplicationForm = ({
             fullWidth
             size="small"
             disabled={loading}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Grid>
 
         {/* Date Granted */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="date"
             label="Date Granted"
@@ -527,12 +509,12 @@ export const VisaApplicationForm = ({
             fullWidth
             size="small"
             disabled={loading}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Grid>
 
         {/* Expiry Date */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             type="date"
             label="Expiry Date"
@@ -541,12 +523,12 @@ export const VisaApplicationForm = ({
             fullWidth
             size="small"
             disabled={loading}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Grid>
 
         {/* Notes */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             label="Notes"
             value={formData.notes}
@@ -561,7 +543,7 @@ export const VisaApplicationForm = ({
         </Grid>
 
         {/* Document Selection */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ mt: 2 }}>
             Required Documents
           </Typography>
@@ -574,12 +556,12 @@ export const VisaApplicationForm = ({
           {formData.visa_type_id && (
             <Grid container spacing={2}>
               {/* Available Documents */}
-              <Grid item xs={12} md={5}>
+              <Grid size={{ xs: 12, md: 5 }}>
                 <Paper variant="outlined" sx={{ p: 2, minHeight: 200, maxHeight: 300 }}>
                   <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                     Available Documents ({availableDocuments.length})
                   </Typography>
-                  <Divider sx={{ my: 1 }} />
+                  <Divider sx={{ my: 1 }}/>
                   <List dense sx={{ maxHeight: 200, overflow: 'auto' }}>
                     {availableDocuments.length === 0 ? (
                       <Typography variant="caption" color="text.secondary" sx={{ p: 2, display: 'block', textAlign: 'center' }}>
@@ -602,13 +584,11 @@ export const VisaApplicationForm = ({
                           }
                           sx={{ 
                             py: 0.5,
-                            '&:hover': { backgroundColor: 'action.hover' }
-                          }}
+                            '&:hover': { backgroundColor: 'action.hover' }}}
                         >
                           <ListItemText
                             primary={doc}
-                            primaryTypographyProps={{ variant: 'body2' }}
-                          />
+                            primaryTypographyProps={{ variant: 'body2' }}/>
                         </ListItem>
                       ))
                     )}
@@ -617,25 +597,25 @@ export const VisaApplicationForm = ({
               </Grid>
 
               {/* Center Arrow */}
-              <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Grid sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} size={{ xs: 12, md: 2 }}>
                 <Box sx={{ display: { xs: 'none', md: 'block' }, textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary">
                     Move
                   </Typography>
                   <Box>
-                    <ArrowForward sx={{ display: 'block', my: 0.5 }} />
-                    <ArrowBack sx={{ display: 'block', my: 0.5 }} />
+                    <ArrowForward sx={{ display: 'block', my: 0.5 }}/>
+                    <ArrowBack sx={{ display: 'block', my: 0.5 }}/>
                   </Box>
                 </Box>
               </Grid>
 
               {/* Selected Documents */}
-              <Grid item xs={12} md={5}>
+              <Grid size={{ xs: 12, md: 5 }}>
                 <Paper variant="outlined" sx={{ p: 2, minHeight: 200, maxHeight: 300 }}>
                   <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                     Selected Documents ({selectedDocuments.length})
                   </Typography>
-                  <Divider sx={{ my: 1 }} />
+                  <Divider sx={{ my: 1 }}/>
                   <List dense sx={{ maxHeight: 200, overflow: 'auto' }}>
                     {selectedDocuments.length === 0 ? (
                       <Typography variant="caption" color="text.secondary" sx={{ p: 2, display: 'block', textAlign: 'center' }}>
@@ -658,13 +638,11 @@ export const VisaApplicationForm = ({
                           }
                           sx={{
                             py: 0.5,
-                            '&:hover': { backgroundColor: 'action.hover' }
-                          }}
+                            '&:hover': { backgroundColor: 'action.hover' }}}
                         >
                           <ListItemText
                             primary={doc}
-                            primaryTypographyProps={{ variant: 'body2' }}
-                          />
+                            primaryTypographyProps={{ variant: 'body2' }}/>
                         </ListItem>
                       ))
                     )}
@@ -673,7 +651,7 @@ export const VisaApplicationForm = ({
               </Grid>
 
               {/* Add Custom Document */}
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                   <TextField
                     value={customDocument}
@@ -685,16 +663,13 @@ export const VisaApplicationForm = ({
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        handleAddCustomDocument();
-                      }
-                    }}
+                        handleAddCustomDocument(); }}}
                   />
                   <Button
                     variant="outlined"
                     onClick={handleAddCustomDocument}
                     disabled={loading || !customDocument.trim()}
-                    sx={{ minWidth: 100 }}
-                  >
+                    sx={{ minWidth: 100 }}>
                     Add
                   </Button>
                 </Box>

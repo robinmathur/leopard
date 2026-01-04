@@ -6,7 +6,7 @@
  * - Other tabs: Notes, Documents, Applications, Tasks, Reminders
  */
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -15,9 +15,9 @@ import {
   Alert,
   Tabs,
   Tab,
-  Grid,
   Paper,
   Divider,
+  Grid,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -47,7 +47,7 @@ import { ClientReminders } from '@/components/clients/ClientReminders';
 /**
  * Tab value type
  */
-type TabValue = 'overview' | 'profile' | 'notes' | 'documents' | 'applications' | 'tasks' | 'reminders';
+type TabValue = 'overview' | 'profile' | 'notes' | 'documents' | 'applications' | 'visa-applications' | 'tasks' | 'reminders';
 
 /**
  * Tab panel component
@@ -87,9 +87,7 @@ const formatDate = (dateString?: string): string => {
   try {
     return new Date(dateString).toLocaleDateString();
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Detail row component
@@ -107,6 +105,7 @@ export const ClientDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fromPath = (location.state as { from?: string })?.from || '/clients';
   
   // Determine back button label based on where user came from
@@ -117,6 +116,8 @@ export const ClientDetailPage = () => {
     backLabel = 'Back to Visa Applications';
   } else if (fromPath === '/visa-manager/tracker') {
     backLabel = 'Back to Visa Tracker';
+  } else if (fromPath === '/application-manager/tracker') {
+    backLabel = 'Back to Application Tracker';
   }
 
   const { selectedClient, loading, error, fetchClientById, clearError, cancelFetchClientById } = useClientStore();
@@ -132,7 +133,20 @@ export const ClientDetailPage = () => {
     loadMore,
     cancelFetchTimeline,
   } = useTimelineStore();
-  const [activeTab, setActiveTab] = useState<TabValue>('overview');
+  
+  // Get URL params
+  const visaApplicationIdParam = searchParams.get('visaApplicationId');
+  const collegeApplicationIdParam = searchParams.get('collegeApplicationId');
+  
+  // Initialize tab state - read from URL on mount if present, otherwise default to 'overview'
+  // Use lazy initializer to only read from URL once on mount
+  const [activeTab, setActiveTab] = useState<TabValue>(() => {
+    const urlTab = searchParams.get('tab') as TabValue | null;
+    if (urlTab && ['overview', 'profile', 'notes', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
+      return urlTab;
+    }
+    return 'overview';
+  });
 
   // Fetch client and timeline on mount
   useEffect(() => {
@@ -140,23 +154,29 @@ export const ClientDetailPage = () => {
       fetchClientById(parseInt(id, 10));
       fetchTimeline(parseInt(id, 10));
       markSectionLoaded('overview');
-    }
-    return () => {
+      
+      // Mark the initial tab section as loaded if it's not overview
+      // Read from URL directly to avoid dependency on activeTab state
+      const urlTab = searchParams.get('tab') as TabValue | null;
+      if (urlTab && urlTab !== 'overview' && ['overview', 'profile', 'notes', 'documents', 'applications', 'visa-applications', 'tasks', 'reminders'].includes(urlTab)) {
+        // Map visa-applications to applications for the store (they share the same loaded section)
+        const sectionKey = urlTab === 'visa-applications' ? 'applications' : urlTab;
+        markSectionLoaded(sectionKey as keyof typeof loadedSections);
+        setCurrentTab(urlTab); }}return () => {
       cancelFetchClientById();
       cancelFetchTimeline();
       clearError();
       resetStore();
     };
-  }, [id, fetchClientById, cancelFetchClientById, clearError, markSectionLoaded, resetStore, fetchTimeline, cancelFetchTimeline]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]); // Only run when id changes
 
   // Handle refresh timeline after note is added
   const handleNoteAdded = () => {
     if (id) {
       fetchTimeline(parseInt(id, 10), {
         activity_type: activeFilter || undefined,
-      });
-    }
-  };
+      }); }};
 
   // Handle filter change
   const handleFilterChange = (activityType: string | null) => {
@@ -165,33 +185,50 @@ export const ClientDetailPage = () => {
       fetchTimeline(parseInt(id, 10), {
         activity_type: activityType || undefined,
         page: 1,
-      });
-    }
-  };
+      }); }};
 
   // Handle load more
   const handleLoadMore = () => {
     if (id) {
-      loadMore(parseInt(id, 10));
-    }
-  };
+      loadMore(parseInt(id, 10)); }};
 
   const handleBack = () => {
     navigate(fromPath);
   };
 
   const handleEdit = () => {
-    navigate(fromPath, { state: { editClientId: id } });
+    navigate(fromPath, { state: { editClientId: id }});
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: TabValue) => {
     setActiveTab(newValue);
     setCurrentTab(newValue);
-    
+
     // Mark section as loaded when tab is clicked (lazy loading)
     if (newValue !== 'overview') {
-      markSectionLoaded(newValue as keyof typeof loadedSections);
+      // Map visa-applications to applications for the store (they share the same loaded section)
+      const sectionKey = newValue === 'visa-applications' ? 'applications' : newValue;
+      markSectionLoaded(sectionKey as keyof typeof loadedSections);
     }
+
+    // Update URL params to preserve tab selection
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('tab', newValue);
+
+    // Clear application IDs based on which tab is active
+    if (newValue === 'applications') {
+      // Keep collegeApplicationId, remove visaApplicationId
+      newSearchParams.delete('visaApplicationId');
+    } else if (newValue === 'visa-applications') {
+      // Keep visaApplicationId, remove collegeApplicationId
+      newSearchParams.delete('collegeApplicationId');
+    } else {
+      // Remove both if not on application tabs
+      newSearchParams.delete('visaApplicationId');
+      newSearchParams.delete('collegeApplicationId');
+    }
+
+    setSearchParams(newSearchParams, { replace: true });
   };
 
   // Loading state
@@ -286,6 +323,7 @@ export const ClientDetailPage = () => {
           <Tab label="Notes" value="notes" id="client-tab-notes" />
           <Tab label="Documents" value="documents" id="client-tab-documents" />
           <Tab label="Applications" value="applications" id="client-tab-applications" />
+          <Tab label="Visa Applications" value="visa-applications" id="client-tab-visa-applications" />
           <Tab label="Tasks" value="tasks" id="client-tab-tasks" />
           <Tab label="Reminders" value="reminders" id="client-tab-reminders" />
         </Tabs>
@@ -296,7 +334,7 @@ export const ClientDetailPage = () => {
       <TabPanel value="overview" currentValue={activeTab}>
         <Grid container spacing={3}>
           {/* Left Side: Client Basic Details */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
               {/* Profile Picture */}
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
@@ -321,7 +359,7 @@ export const ClientDetailPage = () => {
                 </Box>
               </Box>
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }}/>
 
               {/* Personal Information */}
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -333,7 +371,7 @@ export const ClientDetailPage = () => {
               <DetailRow label="Date of Birth" value={formatDate(client.dob)} />
               <DetailRow label="Country" value={getCountryName(client.country)} />
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }}/>
 
               {/* Contact Information */}
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -342,7 +380,7 @@ export const ClientDetailPage = () => {
               <DetailRow label="Email" value={client.email} />
               <DetailRow label="Phone Number" value={client.phone_number} />
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }}/>
 
               {/* Assignment & Status */}
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -370,7 +408,7 @@ export const ClientDetailPage = () => {
           </Grid>
 
           {/* Right Side: Timeline */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
                 Timeline
@@ -426,17 +464,45 @@ export const ClientDetailPage = () => {
         )}
       </TabPanel>
 
-      {/* Applications Tab */}
+      {/* College Applications Tab */}
       <TabPanel value="applications" currentValue={activeTab}>
         {loadedSections.applications ? (
-          <Box>
-            <ClientVisaApplications clientId={client.id} />
-            <Box sx={{ mt: 3 }}>
-              <ClientCollegeApplications clientId={client.id} />
-            </Box>
-          </Box>
+          <ClientCollegeApplications
+            clientId={client.id}
+            selectedApplicationId={collegeApplicationIdParam ? parseInt(collegeApplicationIdParam, 10) : undefined}
+            onCardClick={(applicationId) => {
+              // Update URL when a card is clicked
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.set('tab', 'applications');
+              newSearchParams.set('collegeApplicationId', applicationId.toString());
+              setSearchParams(newSearchParams, { replace: true }); }}onDetailClose={() => {
+              // Remove collegeApplicationId from URL when detail is closed
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.delete('collegeApplicationId');
+              setSearchParams(newSearchParams, { replace: true }); }}/>
         ) : (
           <Alert severity="info">Click on Applications tab to load applications</Alert>
+        )}
+      </TabPanel>
+
+      {/* Visa Applications Tab */}
+      <TabPanel value="visa-applications" currentValue={activeTab}>
+        {loadedSections.applications ? (
+          <ClientVisaApplications
+            clientId={client.id}
+            selectedApplicationId={visaApplicationIdParam ? parseInt(visaApplicationIdParam, 10) : undefined}
+            onCardClick={(applicationId) => {
+              // Update URL when a card is clicked
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.set('tab', 'visa-applications');
+              newSearchParams.set('visaApplicationId', applicationId.toString());
+              setSearchParams(newSearchParams, { replace: true }); }}onDetailClose={() => {
+              // Remove visaApplicationId from URL when detail is closed
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.delete('visaApplicationId');
+              setSearchParams(newSearchParams, { replace: true }); }}/>
+        ) : (
+          <Alert severity="info">Click on Visa Applications tab to load applications</Alert>
         )}
       </TabPanel>
 

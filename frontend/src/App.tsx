@@ -16,9 +16,20 @@ import { VisaDashboard } from './pages/VisaManager/VisaDashboard';
 import { VisaTracker } from './pages/VisaManager/VisaTracker';
 import { VisaTypePage } from './pages/VisaManager/VisaTypePage';
 import { VisaApplicationsManagementPage } from './pages/VisaManager/VisaApplicationsManagementPage';
+import { ApplicationDashboard } from './pages/ApplicationManager/ApplicationDashboard';
+import { ApplicationTracker } from './pages/ApplicationManager/ApplicationTracker';
+import { ApplicationsList } from './pages/ApplicationManager/ApplicationsList';
+import { ApplicationTypePage } from './pages/ApplicationManager/ApplicationTypePage';
 import { UsersPage } from './pages/Users/UsersPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { GroupsPage } from './pages/Groups/GroupsPage';
+import { BranchesPage } from './pages/Branches/BranchesPage';
+import { BranchDetailPage } from './pages/Branches/BranchDetailPage';
+import { RegionsPage } from './pages/Regions/RegionsPage';
+import { RegionDetailPage } from './pages/Regions/RegionDetailPage';
+import { TasksPage } from './pages/Tasks/TasksPage';
+import { CalendarPage } from './pages/Calendar/CalendarPage';
+import { NotificationsPage } from './pages/Notifications/NotificationsPage';
 
 /**
  * Protected Route Component
@@ -58,6 +69,9 @@ function App() {
             <Route path="clients" element={<ClientsPage />} />
             <Route path="clients/add" element={<ClientsPage />} />
             <Route path="clients/:id" element={<ClientDetailPage />} />
+            <Route path="tasks" element={<TasksPage />} />
+            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="leads" element={<LeadsPage />} />
             
             {/* Visa Manager Routes */}
@@ -65,14 +79,27 @@ function App() {
             <Route path="visa-manager/tracker" element={<VisaTracker />} />
             <Route path="visa-manager/applications" element={<VisaApplicationsManagementPage />} />
             <Route path="visa-manager/types" element={<VisaTypePage />} />
-            
+
             {/* Legacy route - redirect to Visa Dashboard */}
             <Route path="visa-applications" element={<Navigate to="/visa-manager/dashboard" replace />} />
-            
+
+            {/* Application Manager Routes */}
+            <Route path="application-manager/dashboard" element={<ApplicationDashboard />} />
+            <Route path="application-manager/tracker" element={<ApplicationTracker />} />
+            <Route path="application-manager/applications" element={<ApplicationsList />} />
+            <Route path="application-manager/types" element={<ApplicationTypePage />} />
+
             <Route path="institute" element={<InstitutePage />} />
             <Route path="institute/:id" element={<InstituteDetailPage />} />
             <Route path="agent" element={<AgentPage />} />
             <Route path="agent/:id" element={<AgentDetailPage />} />
+            {/* Org Management Routes */}
+            <Route path="org-management/regions" element={<RegionsPage />} />
+            <Route path="org-management/regions/add" element={<RegionsPage />} />
+            <Route path="org-management/regions/:id" element={<RegionDetailPage />} />
+            <Route path="org-management/branches" element={<BranchesPage />} />
+            <Route path="org-management/branches/add" element={<BranchesPage />} />
+            <Route path="org-management/branches/:id" element={<BranchDetailPage />} />
             
             {/* User Management Routes */}
             <Route path="user-management/users" element={<UsersPage />} />

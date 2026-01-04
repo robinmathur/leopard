@@ -4,11 +4,17 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SchoolIcon from '@mui/icons-material/School';
 import BadgeIcon from '@mui/icons-material/Badge';
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import CategoryIcon from '@mui/icons-material/Category';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import GroupIcon from '@mui/icons-material/Group';
+import BusinessIcon from '@mui/icons-material/Business';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import DomainIcon from '@mui/icons-material/Domain';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import TaskIcon from '@mui/icons-material/Task';
 import { Permission } from '@/auth/types';
 
 /**
@@ -50,10 +56,47 @@ export const navigationConfig: NavItem[] = [
     permission: 'view_client'
   },
   {
+    id: 'application-manager',
+    label: 'Application Manager',
+    path: '/application-manager',
+    icon: LocalLibraryIcon,
+    permission: 'view_collegeapplication',
+    children: [
+      {
+        id: 'application-dashboard',
+        label: 'Application Dashboard',
+        path: '/application-manager/dashboard',
+        icon: AssignmentIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'application-tracker',
+        label: 'Application Tracker',
+        path: '/application-manager/tracker',
+        icon: TimelineIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'applications',
+        label: 'Applications',
+        path: '/application-manager/applications',
+        icon: DescriptionIcon,
+        permission: 'view_collegeapplication',
+      },
+      {
+        id: 'application-types',
+        label: 'Application Type',
+        path: '/application-manager/types',
+        icon: CategoryIcon,
+        permission: 'view_applicationtype',
+      },
+    ],
+  },
+  {
     id: 'visa-manager',
     label: 'Visa Manager',
     path: '/visa-manager',
-    icon: DescriptionIcon,
+    icon: FlightTakeoffIcon,
     permission: 'view_visaapplication',
     children: [
       {
@@ -87,6 +130,13 @@ export const navigationConfig: NavItem[] = [
     ],
   },
   {
+    id: 'task-manager',
+    label: 'Task Manager',
+    path: '/tasks',
+    icon: TaskIcon,
+    permission: 'view_dashboard', // Tasks are accessible to users with dashboard access
+  },
+  {
     id: 'institute',
     label: 'Institute',
     path: '/institute',
@@ -99,6 +149,29 @@ export const navigationConfig: NavItem[] = [
     path: '/agent',
     icon: BadgeIcon,
     permission: 'view_agent',
+  },
+  {
+    id: 'region-branch-management',
+    label: 'Org Management',
+    path: '/org-management',
+    icon: DomainIcon,
+    permission: 'view_region',
+    children: [
+      {
+        id: 'regions',
+        label: 'Regions',
+        path: '/org-management/regions',
+        icon: LocationOnIcon,
+        permission: 'view_region',
+      },
+      {
+        id: 'branches',
+        label: 'Branches',
+        path: '/org-management/branches',
+        icon: BusinessIcon,
+        permission: 'view_branch',
+      },
+    ],
   },
   {
     id: 'user-management',

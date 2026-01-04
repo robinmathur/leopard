@@ -23,20 +23,43 @@ class TaskOutputSerializer(serializers.ModelSerializer):
 
     assigned_to_name = serializers.CharField(
         source='assigned_to.username',
-        read_only=True
+        read_only=True,
+        allow_null=True
     )
     
     # Computed field for full name
     assigned_to_full_name = serializers.SerializerMethodField()
     
+    # Branch assignment fields
+    branch_id = serializers.IntegerField(
+        source='branch.id',
+        read_only=True,
+        allow_null=True
+    )
+    branch_name = serializers.CharField(
+        source='branch.name',
+        read_only=True,
+        allow_null=True
+    )
+    assigned_to_branch = serializers.SerializerMethodField()
+    
     # Assigned by fields
     assigned_by_name = serializers.SerializerMethodField()
     assigned_by_full_name = serializers.SerializerMethodField()
+
+    # Created by fields (for delete permissions)
+    created_by_name = serializers.SerializerMethodField()
+    created_by_full_name = serializers.SerializerMethodField()
+
+    # Updated by fields (for completed/cancelled tasks)
+    updated_by_name = serializers.SerializerMethodField()
+    updated_by_full_name = serializers.SerializerMethodField()
     
     # Linked entity fields
     linked_entity_type = serializers.SerializerMethodField()
     linked_entity_id = serializers.IntegerField(source='object_id', read_only=True)
-    
+    linked_entity_name = serializers.SerializerMethodField()
+
     # Status and priority display
     priority_display = serializers.CharField(
         source='get_priority_display',
@@ -61,17 +84,25 @@ class TaskOutputSerializer(serializers.ModelSerializer):
             'assigned_to',
             'assigned_to_name',
             'assigned_to_full_name',
+            'branch_id',
+            'branch_name',
+            'assigned_to_branch',
             'assigned_by',
             'assigned_by_name',
             'assigned_by_full_name',
+            'created_by',
+            'created_by_name',
+            'created_by_full_name',
+            'updated_by',
+            'updated_by_name',
+            'updated_by_full_name',
             'tags',
             'comments',
             'content_type',
             'object_id',
             'linked_entity_type',
             'linked_entity_id',
-            'client_id',
-            'visa_application_id',
+            'linked_entity_name',
             'completed_at',
             'created_at',
             'updated_at',
@@ -103,12 +134,64 @@ class TaskOutputSerializer(serializers.ModelSerializer):
         if obj.assigned_by:
             return f"{obj.assigned_by.first_name} {obj.assigned_by.last_name}".strip()
         return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, obj):
+        """Get created_by user's username if exists."""
+        if obj.created_by:
+            return obj.created_by.username
+        return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_full_name(self, obj):
+        """Get created_by user's full name if exists."""
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
+        return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_updated_by_name(self, obj):
+        """Get updated_by user's username if exists."""
+        if obj.updated_by:
+            return obj.updated_by.username
+        return None
+    
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_updated_by_full_name(self, obj):
+        """Get updated_by user's full name if exists."""
+        if obj.updated_by:
+            return f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip()
+        return None
+    
+    @extend_schema_field(serializers.BooleanField())
+    def get_assigned_to_branch(self, obj):
+        """Check if task is assigned to a branch."""
+        return obj.branch is not None
     
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_linked_entity_type(self, obj):
         """Get the type of linked entity (e.g., 'client', 'visaapplication')."""
         if obj.content_type:
             return obj.content_type.model
+        return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_linked_entity_name(self, obj):
+        """Get the name of the linked entity."""
+        if not obj.linked_entity:
+            return None
+
+        entity_type = obj.content_type.model if obj.content_type else None
+
+        if entity_type == 'client':
+            # For clients, return full name
+            return f"{obj.linked_entity.first_name} {obj.linked_entity.last_name}".strip()
+        elif entity_type == 'visaapplication':
+            # For visa applications, return application number or client name
+            if hasattr(obj.linked_entity, 'application_number'):
+                return f"Application #{obj.linked_entity.application_number}"
+            return "Visa Application"
+
         return None
 
 
@@ -140,7 +223,15 @@ class TaskCreateSerializer(serializers.Serializer):
     )
     
     assigned_to = serializers.IntegerField(
-        help_text="User ID this task is assigned to"
+        required=False,
+        allow_null=True,
+        help_text="User ID this task is assigned to (optional, mutually exclusive with branch_id)"
+    )
+    
+    branch_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Branch ID this task is assigned to (optional, mutually exclusive with assigned_to)"
     )
     
     tags = serializers.ListField(
@@ -149,37 +240,34 @@ class TaskCreateSerializer(serializers.Serializer):
         default=list,
         help_text="Tags for categorization"
     )
-    
-    # Generic entity linking
-    content_type = serializers.IntegerField(
+
+    # Generic entity linking (multi-tenant safe - uses model names)
+    linked_entity_type = serializers.CharField(
         required=False,
         allow_null=True,
-        help_text="ContentType ID of the linked entity"
+        help_text="Model name of the linked entity (e.g., 'client', 'visaapplication')"
     )
-    object_id = serializers.IntegerField(
+    linked_entity_id = serializers.IntegerField(
         required=False,
         allow_null=True,
         help_text="ID of the linked entity"
     )
-    
+
     assigned_by = serializers.IntegerField(
         required=False,
         allow_null=True,
         help_text="User ID who assigned this task"
     )
     
-    # Legacy fields (for backward compatibility)
-    client_id = serializers.IntegerField(
-        required=False,
-        allow_null=True,
-        help_text="Related client ID (deprecated - use content_type/object_id)"
-    )
-    
-    visa_application_id = serializers.IntegerField(
-        required=False,
-        allow_null=True,
-        help_text="Related visa application ID (deprecated - use content_type/object_id)"
-    )
+    def validate(self, data):
+        """Validate that assigned_to and branch_id are not both provided."""
+        assigned_to = data.get('assigned_to')
+        branch_id = data.get('branch_id')
+        
+        if assigned_to is not None and branch_id is not None:
+            raise serializers.ValidationError("Task cannot be assigned to both a user and a branch.")
+        
+        return data
 
 
 class TaskUpdateSerializer(serializers.Serializer):
@@ -222,17 +310,29 @@ class TaskUpdateSerializer(serializers.Serializer):
         required=False,
         help_text="Tags for categorization"
     )
-    
-    # Generic entity linking
-    content_type = serializers.IntegerField(
+
+    # Generic entity linking (multi-tenant safe - uses model names)
+    linked_entity_type = serializers.CharField(
         required=False,
         allow_null=True,
-        help_text="ContentType ID of the linked entity"
+        help_text="Model name of the linked entity (e.g., 'client', 'visaapplication')"
     )
-    object_id = serializers.IntegerField(
+    linked_entity_id = serializers.IntegerField(
         required=False,
         allow_null=True,
         help_text="ID of the linked entity"
+    )
+
+    assigned_to = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="User ID this task is assigned to (optional, null to unassign, mutually exclusive with branch_id)"
+    )
+    
+    branch_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Branch ID this task is assigned to (optional, null to unassign, mutually exclusive with assigned_to)"
     )
     
     assigned_by = serializers.IntegerField(
@@ -240,3 +340,13 @@ class TaskUpdateSerializer(serializers.Serializer):
         allow_null=True,
         help_text="User ID who assigned this task"
     )
+    
+    def validate(self, data):
+        """Validate that assigned_to and branch_id are not both provided."""
+        assigned_to = data.get('assigned_to')
+        branch_id = data.get('branch_id')
+        
+        if assigned_to is not None and branch_id is not None:
+            raise serializers.ValidationError("Task cannot be assigned to both a user and a branch.")
+        
+        return data

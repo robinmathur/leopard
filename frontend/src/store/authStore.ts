@@ -70,7 +70,8 @@ function isValidPermission(value: string): value is Permission {
     'delete_visaapplication', 'submit_visaapplication',
     'view_agent', 'add_agent', 'change_agent', 'delete_agent', 'manage_permissions',
     'view_finance', 'change_finance', 'approve_payments',
-    'view_branch_data', 'manage_branch', 'view_all_branches',
+    'view_region', 'add_region', 'change_region', 'delete_region',
+    'view_branch', 'add_branch', 'change_branch', 'delete_branch',
     'view_dashboard', 'view_analytics', 'export_data',
     'add_courselevel', 'change_courselevel', 'delete_courselevel', 'view_courselevel',
     'add_narrowfield', 'change_narrowfield', 'delete_narrowfield', 'view_narrowfield',
@@ -84,6 +85,11 @@ function isValidPermission(value: string): value is Permission {
     'view_user', 'add_user', 'change_user', 'delete_user',
     'view_group', 'add_group', 'change_group', 'delete_group',
     'view_permission', 'add_permission', 'change_permission', 'delete_permission',
+    'add_stage', 'change_stage', 'delete_stage', 'view_stage',
+    'view_applicationtype', 'add_applicationtype', 'change_applicationtype', 'delete_applicationtype',
+    'view_collegeapplication', 'add_collegeapplication', 'change_collegeapplication', 'delete_collegeapplication',
+    'add_calendarevent', 'change_calendarevent', 'delete_calendarevent', 'view_calendarevent', 'view_team_events', 'assign_calendarevent_to_others'
+
   ];
   return validPermissions.includes(value as Permission);
 }
@@ -154,6 +160,11 @@ async function loginWithApi(
     isLoading: false,
     error: null,
   });
+
+  // Connect SSE for notifications (lazy import to avoid circular dependency)
+  import('@/store/notificationStore').then(({ useNotificationStore }) => {
+    useNotificationStore.getState().connectSSE();
+  });
 }
 
 /**
@@ -189,6 +200,11 @@ async function loginWithMock(
     isAuthenticated: true,
     isLoading: false,
     error: null,
+  });
+
+  // Connect SSE for notifications (lazy import to avoid circular dependency)
+  import('@/store/notificationStore').then(({ useNotificationStore }) => {
+    useNotificationStore.getState().connectSSE();
   });
 }
 
@@ -313,6 +329,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * Logout - clear all auth state and localStorage
    */
   logout: () => {
+    // Disconnect SSE (lazy import to avoid circular dependency)
+    import('@/store/notificationStore')
+      .then(({ useNotificationStore }) => {
+        useNotificationStore.getState().disconnectSSE();
+      })
+      .catch(() => {
+        // Ignore if notification store not available
+      });
+
     // Clear localStorage
     localStorage.removeItem(STORAGE_KEYS.TOKENS);
     localStorage.removeItem(STORAGE_KEYS.USER);

@@ -11,7 +11,8 @@ from typing import List, Dict, Any
 from django.utils import timezone
 from django_tenants.utils import schema_context
 
-from immigration.events.models import Event, EventStatus, EventProcessingControl
+from immigration.events.models import Event, EventStatus
+from tenants.models import EventProcessingControl
 from immigration.events.config import EVENT_HANDLERS, ADMIN_ALERT_CONFIG, PROCESSING_CONFIG
 from immigration.events.conditions import evaluate_condition
 from immigration.events.handlers.base import HandlerResult, HandlerStatus
@@ -33,20 +34,26 @@ def get_handler(handler_name: str):
     return HANDLER_REGISTRY.get(handler_name)
 
 
-def process_event_async(event_id: int):
+def process_event_async(event_id: int, tenant_schema: str):
     """
     Process an event asynchronously in a separate thread.
     
-    This function is called from dispatcher after event is created.
+    Multi-tenant: Requires tenant_schema to fetch event from correct schema.
+    
+    Args:
+        event_id: ID of the event to process
+        tenant_schema: Schema name where the event is stored (e.g., 'tenant_main')
     """
     def process():
         try:
-            event = Event.objects.get(id=event_id)
-            process_event(event)
+            # CRITICAL: Switch to tenant schema before fetching event
+            with schema_context(tenant_schema):
+                event = Event.objects.get(id=event_id)
+                process_event(event)
         except Event.DoesNotExist:
-            logger.error(f"Event {event_id} not found")
+            logger.error(f"Event {event_id} not found in schema {tenant_schema}")
         except Exception as e:
-            logger.error(f"Error processing event {event_id}: {e}", exc_info=True)
+            logger.error(f"Error processing event {event_id} in schema {tenant_schema}: {e}", exc_info=True)
     
     thread = threading.Thread(target=process, daemon=True)
     thread.start()
@@ -103,7 +110,7 @@ def process_event(event: Event):
                     # Retry after a short delay
                     import time
                     time.sleep(1)
-                    process_event_async(event.id)
+                    process_event_async(event.id, tenant_schema)
                 else:
                     # Retries exhausted
                     event.status = EventStatus.FAILED
@@ -133,7 +140,8 @@ def process_event(event: Event):
                 # Retry
                 import time
                 time.sleep(1)
-                process_event_async(event.id)
+                # tenant_schema is already in scope from line 75
+                process_event_async(event.id, tenant_schema)
             else:
                 # Retries exhausted
                 event.status = EventStatus.FAILED
@@ -263,7 +271,10 @@ def process_pending_events(batch_size: int = None):
     logger.info(f"Processing {pending_events.count()} pending events...")
 
     for event in pending_events:
-        process_event_async(event.id)
+        # NOTE: This function assumes it's already in the correct schema context
+        # For multi-tenant, use process_pending_events_multi_tenant() instead
+        tenant_schema = event.tenant_schema or 'public'
+        process_event_async(event.id, tenant_schema)
 
 
 def process_pending_events_multi_tenant():
@@ -301,7 +312,8 @@ def process_pending_events_multi_tenant():
                 )
 
                 for event in pending_events:
-                    process_event_async(event.id)
+                    # Pass schema_name since we're already in the correct context
+                    process_event_async(event.id, schema_name)
         except Exception as e:
             logger.error(
                 f"Error processing events for tenant {tenant.name}: {e}",

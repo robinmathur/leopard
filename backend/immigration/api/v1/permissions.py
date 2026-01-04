@@ -64,3 +64,35 @@ class CanManageAgents(RoleBasedPermission):
     Requires 'view_agent' permission.
     """
     required_permission = 'immigration.view_agent'
+
+
+class CanManageBranches(RoleBasedPermission):
+    """
+    Permission for branch management operations.
+    Requires 'view_branch' permission.
+    """
+    required_permission = 'immigration.view_branch'
+
+
+class CanManageRegions(RoleBasedPermission):
+    """
+    Permission for region management operations.
+    Requires 'view_region' permission.
+    """
+    required_permission = 'immigration.view_region'
+
+
+class CanManageApplicationTypes(RoleBasedPermission):
+    """
+    Permission for application type and stage management.
+    Requires 'view_applicationtype' permission.
+    """
+    required_permission = 'immigration.view_applicationtype'
+
+
+class CanManageCollegeApplications(RoleBasedPermission):
+    """
+    Permission for college application management.
+    Requires 'view_collegeapplication' permission.
+    """
+    required_permission = 'immigration.view_collegeapplication'

@@ -24,7 +24,19 @@ export type Permission =
   | 'change_visaapplication'
   | 'delete_visaapplication'
   | 'submit_visaapplication'
-  
+
+  // College Application permissions
+  | 'view_collegeapplication'
+  | 'add_collegeapplication'
+  | 'change_collegeapplication'
+  | 'delete_collegeapplication'
+
+  // Application Type permissions
+  | 'view_applicationtype'
+  | 'add_applicationtype'
+  | 'change_applicationtype'
+  | 'delete_applicationtype'
+
   // Institute permissions
   | 'view_institute'
   | 'add_institute'
@@ -44,9 +56,16 @@ export type Permission =
   | 'approve_payments'
   
   // Branch permissions
-  | 'view_branch_data'
-  | 'manage_branch'
-  | 'view_all_branches'
+  | 'view_branch'
+  | 'add_branch'
+  | 'change_branch'
+  | 'delete_branch'
+  
+  // Region permissions
+  | 'view_region'
+  | 'add_region'
+  | 'change_region'
+  | 'delete_region'
   
   // Dashboard permissions
   | 'view_dashboard'
@@ -123,7 +142,28 @@ export type Permission =
   | 'view_permission'
   | 'add_permission'
   | 'change_permission'
-  | 'delete_permission';
+  | 'delete_permission'
+
+  // Reminder permissions
+  | 'view_reminder'
+  | 'add_reminder'
+  | 'change_reminder'
+  | 'delete_reminder'
+
+  // Calendar Event permissions
+  | 'view_calendarevent'
+  | 'add_calendarevent'
+  | 'change_calendarevent'
+  | 'delete_calendarevent'
+  | 'view_team_events'
+  | 'assign_calendarevent_to_others'
+
+  // Application Stage permission
+  | 'add_stage'
+  | 'change_stage'
+  | 'delete_stage'
+  | 'view_stage'
+
 
 /**
  * JWT Token pair for authentication

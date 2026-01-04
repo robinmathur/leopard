@@ -65,6 +65,9 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
         except Exception:
             pass
     
+    # Use event.created_at to preserve the original event time
+    # This ensures the activity timestamp reflects when the action occurred,
+    # not when the event was processed asynchronously
     activity = ClientActivity.objects.create(
         client=client,
         activity_type=activity_type,
@@ -72,6 +75,11 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
         description=description,
         metadata=metadata,
     )
+    # Override created_at with event's created_at to preserve original time
+    # Use update() to bypass the save() override that prevents updates
+    ClientActivity.objects.filter(id=activity.id).update(created_at=event.created_at)
+    # Refresh from DB to get updated created_at
+    activity.refresh_from_db()
     
     # Check if notification is configured
     notify_config = handler_config.get('notify', {})
@@ -103,6 +111,15 @@ def get_linked_client(event: Event) -> Optional[Client]:
         except (VisaApplication.DoesNotExist, AttributeError):
             pass
     
+    # For Application (CollegeApplication), get client directly from the model
+    if event.entity_type == 'CollegeApplication':
+        try:
+            from immigration.models import CollegeApplication
+            application = CollegeApplication.objects.get(id=event.entity_id)
+            return application.client
+        except (CollegeApplication.DoesNotExist, AttributeError):
+            pass
+    
     # For other entities, check for client FK in current_state
     client_id = event.current_state.get('client')
     if client_id:
@@ -126,8 +143,6 @@ def get_linked_client(event: Event) -> Optional[Client]:
             pass
     
     return None
-
-
 def create_notification_from_config(event: Event, notify_config: dict, context: dict):
     """
     Create notification based on config.
@@ -156,3 +171,5 @@ def create_notification_from_config(event: Event, notify_config: dict, context: 
             },
             created_by=event.performed_by,
         )
+
+

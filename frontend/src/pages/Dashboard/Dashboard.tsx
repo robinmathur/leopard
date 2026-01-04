@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -5,12 +6,25 @@ import {
   CardContent,
   Typography,
   Paper,
+  Button,
+  ToggleButton,
+  ToggleButtonGroup,
+  Chip,
+  Stack,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DescriptionIcon from '@mui/icons-material/Description';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AddIcon from '@mui/icons-material/Add';
+import { useNavigate } from 'react-router-dom';
 import { Protect } from '@/components/protected/Protect';
+import { Task, getTasks, TaskListParams, TaskStatus } from '@/services/api/taskApi';
+import { EntityTag } from '@/components/shared/TaskList/EntityTag';
+import { STATUS_COLORS } from '@/components/shared/TaskList/types';
+import { TodaysEventsWidget } from '@/components/dashboard/TodaysEventsWidget';
 
 interface StatCardProps {
   title: string;
@@ -40,15 +54,157 @@ const StatCard = ({ title, value, icon, color }: StatCardProps) => (
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: `${color}15`,
-            color: color,
-          }}
-        >
+            color: color, }}>
           {icon}
         </Box>
       </Box>
     </CardContent>
   </Card>
 );
+
+/**
+ * Tasks Section Component for Dashboard
+ */
+const TasksSection = () => {
+  const navigate = useNavigate();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [taskView, setTaskView] = useState<'my_tasks' | 'all_tasks'>('my_tasks');
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+
+  useEffect(() => {
+    fetchTasks();
+  }, [taskView, statusFilter]);
+
+  const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params: TaskListParams = {
+        assigned_to_me: taskView === 'my_tasks',
+        all_tasks: taskView === 'all_tasks',
+        page_size: 5, // Show only 5 tasks on dashboard
+      };
+
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+
+      const response = await getTasks(params);
+      setTasks(response.results);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tasks');
+    } finally {
+      setLoading(false); }};
+
+  const handleTaskClick = (task: Task) => {
+    // Preserve the filter (My Tasks/All Tasks) when navigating
+    const filterParam = taskView === 'my_tasks' ? 'my_tasks' : 'all_tasks';
+    navigate(`/tasks?taskId=${task.id}&view=${filterParam}`);
+  };
+
+  const handleAddTask = () => {
+    navigate('/tasks?create=true');
+  };
+
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return dateString; }};
+
+  return (
+    <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">Tasks</Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAddTask}
+        >
+          Add Task
+        </Button>
+      </Box>
+
+      {/* Filters */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <ToggleButtonGroup
+          value={taskView}
+          exclusive
+          onChange={(_, newValue) => newValue && setTaskView(newValue)}
+          size="small"
+        >
+          <ToggleButton value="my_tasks">My Tasks</ToggleButton>
+          <ToggleButton value="all_tasks">All Tasks</ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress size={24} />
+        </Box>
+      ) : tasks.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+          No tasks found
+        </Typography>
+      ) : (
+        <Stack spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
+          {tasks.map((task) => (
+            <Paper
+              key={task.id}
+              variant="outlined"
+              sx={{
+                p: 1.5,
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                }, }}onClick={() => handleTaskClick(task)}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ flex: 1 }}>
+                  {task.title}
+                </Typography>
+                <Chip
+                  label={task.status_display}
+                  size="small"
+                  color={STATUS_COLORS[task.status]}
+                  sx={{ ml: 1 }}/>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Due: {formatDate(task.due_date)}
+                </Typography>
+                {task.linked_entity_type && <EntityTag task={task} />}
+              </Box>
+            </Paper>
+          ))}
+          {tasks.length >= 5 && (
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => navigate('/tasks')}
+              sx={{ mt: 1 }}>
+              View All Tasks →
+            </Button>
+          )}
+        </Stack>
+      )}
+    </Paper>
+  );
+};
 
 export const Dashboard = () => {
   return (
@@ -62,7 +218,7 @@ export const Dashboard = () => {
 
       <Grid container spacing={2}>
         {/* Statistics Cards */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Protect permission="view_client">
             <StatCard
               title="Total Clients"
@@ -73,7 +229,7 @@ export const Dashboard = () => {
           </Protect>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Protect permission="view_client">
             <StatCard
               title="Active Leads"
@@ -84,7 +240,7 @@ export const Dashboard = () => {
           </Protect>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Protect permission="view_visaapplication">
             <StatCard
               title="Applications"
@@ -95,7 +251,7 @@ export const Dashboard = () => {
           </Protect>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           {/*<Protect permission="view_analytic">*/}
             <StatCard
               title="Conversion Rate"
@@ -107,7 +263,7 @@ export const Dashboard = () => {
         </Grid>
 
         {/* Recent Activity */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2, height: '400px' }}>
             <Typography variant="h6" gutterBottom>
               Recent Activity
@@ -118,15 +274,18 @@ export const Dashboard = () => {
           </Paper>
         </Grid>
 
-        {/* Quick Actions */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2, height: '400px' }}>
+        {/* Tasks Section */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <TasksSection />
+        </Grid>
+
+        {/* Today's Events */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 2, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
-              Quick Actions
+              Today's Events
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Quick action buttons will be displayed here
-            </Typography>
+            <TodaysEventsWidget />
           </Paper>
         </Grid>
       </Grid>

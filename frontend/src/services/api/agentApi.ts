@@ -3,12 +3,12 @@
  * API functions for agent CRUD operations
  */
 import { httpClient } from './httpClient';
+import type { PaginatedResponse } from '@/types/common';
 import {
   Agent,
   AgentCreateRequest,
   AgentUpdateRequest,
   AgentListParams,
-  PaginatedResponse,
 } from '@/types/agent';
 
 /**

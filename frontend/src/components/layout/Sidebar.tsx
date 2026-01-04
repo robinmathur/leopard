@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Drawer,
@@ -10,6 +10,8 @@ import {
   Box,
   Typography,
   Divider,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -28,9 +30,23 @@ export const Sidebar = ({ open }: SidebarProps) => {
   const location = useLocation();
   const { hasPermission } = usePermission();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [submenuAnchor, setSubmenuAnchor] = useState<{
+    element: HTMLElement;
+    item: NavItem;
+  } | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter navigation items based on user permissions
   const filteredNav = filterNavByPermissions(navigationConfig, hasPermission);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleToggleExpand = (itemId: string) => {
     setExpandedItems((prev) => {
@@ -46,10 +62,52 @@ export const Sidebar = ({ open }: SidebarProps) => {
 
   const handleNavigate = (path: string) => {
     navigate(path);
+    // Clear any pending close timeout
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setSubmenuAnchor(null); // Close submenu when navigating
   };
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleSubmenuOpen = (event: React.MouseEvent<HTMLElement>, item: NavItem) => {
+    // Cancel any pending close
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+
+    if (!open && item.children && item.children.length > 0) {
+      // Immediately update submenu when hovering over a new item
+      setSubmenuAnchor({ element: event.currentTarget, item });
+    } else if (!open && (!item.children || item.children.length === 0)) {
+      // Close submenu when hovering over items without children
+      scheduleSubmenuClose();
+    }
+  };
+
+  const scheduleSubmenuClose = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    closeTimeoutRef.current = setTimeout(() => {
+      setSubmenuAnchor(null);
+    }, 150); // 150ms delay
+  };
+
+  const handleSubmenuClose = () => {
+    scheduleSubmenuClose();
+  };
+
+  const cancelSubmenuClose = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
   };
 
   const renderNavItem = (item: NavItem, depth = 0) => {
@@ -63,10 +121,17 @@ export const Sidebar = ({ open }: SidebarProps) => {
           selected={active}
           onClick={() => {
             if (hasChildren) {
-              handleToggleExpand(item.id);
+              if (open) {
+                handleToggleExpand(item.id);
+              }
+              // In collapsed state, menu opens on hover, not click
             } else {
               handleNavigate(item.path);
             }
+          }}
+          onMouseEnter={(e) => handleSubmenuOpen(e, item)}
+          onMouseLeave={() => {
+            // Don't close immediately, let menu handle its own hover state
           }}
           sx={{
             pl: 2 + depth * 2,
@@ -154,9 +219,79 @@ export const Sidebar = ({ open }: SidebarProps) => {
       <Divider />
 
       {/* Navigation */}
-      <List sx={{ pt: 1 }}>
+      <List
+        sx={{ pt: 1 }}
+        onMouseLeave={() => {
+          // Schedule close when mouse leaves the navigation area
+          if (!open) {
+            scheduleSubmenuClose();
+          }
+        }}
+      >
         {filteredNav.map((item) => renderNavItem(item))}
       </List>
+
+      {/* Submenu popover for collapsed state */}
+      <Menu
+        anchorEl={submenuAnchor?.element}
+        open={Boolean(submenuAnchor)}
+        onClose={handleSubmenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        sx={{
+          ml: 1,
+          pointerEvents: 'none', // Don't block mouse events to items below
+          '& .MuiPaper-root': {
+            minWidth: 180,
+            pointerEvents: 'auto', // Re-enable pointer events on the menu itself
+          },
+        }}
+        MenuListProps={{
+          sx: { py: 0.5 },
+          onMouseEnter: cancelSubmenuClose, // Cancel close when entering menu
+          onMouseLeave: scheduleSubmenuClose, // Schedule close when leaving menu
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              ml: 1, // Additional offset to create space
+            },
+          },
+        }}
+      >
+        {submenuAnchor?.item.children?.map((child) => {
+          const childActive = isActive(child.path);
+          return (
+            <MenuItem
+              key={child.id}
+              onClick={() => handleNavigate(child.path)}
+              selected={childActive}
+              sx={{
+                fontSize: '0.8125rem',
+                py: 0.75,
+                px: 2,
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <child.icon sx={{ fontSize: '1rem' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={child.label}
+                primaryTypographyProps={{
+                  fontSize: '0.8125rem',
+                  fontWeight: childActive ? 600 : 500,
+                }}
+              />
+            </MenuItem>
+          );
+        })}
+      </Menu>
     </Drawer>
   );
 };

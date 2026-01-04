@@ -12,6 +12,39 @@ from immigration.constants import ALL_GROUPS
 User = get_user_model()
 
 
+class AssignableUserSerializer(serializers.ModelSerializer):
+    """
+    Minimal serializer for user assignment dropdowns.
+
+    Returns only essential fields needed for assignment UI:
+    - id, full_name, email, primary_group
+
+    This serializer is used by the /users/assignable/ endpoint
+    which is accessible to all authenticated users without special permissions.
+    """
+
+    full_name = serializers.SerializerMethodField(read_only=True)
+    primary_group = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'email', 'primary_group', 'username']
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.CharField())
+    def get_full_name(self, obj):
+        """Get user's full name."""
+        if obj.first_name and obj.last_name:
+            return f"{obj.first_name} {obj.last_name}"
+        return obj.username
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_primary_group(self, obj):
+        """Get the user's primary group (role)."""
+        primary = obj.get_primary_group()
+        return primary.name if primary else None
+
+
 class UserOutputSerializer(serializers.ModelSerializer):
     """
     Serializer for user output (GET requests).

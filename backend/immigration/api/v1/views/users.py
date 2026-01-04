@@ -20,7 +20,8 @@ from immigration.constants import ALL_GROUPS
 from immigration.api.v1.serializers.users import (
     UserOutputSerializer,
     UserCreateSerializer,
-    UserUpdateSerializer
+    UserUpdateSerializer,
+    AssignableUserSerializer,
 )
 from immigration.api.v1.serializers.groups import UserPermissionAssignmentSerializer
 from immigration.selectors.users import user_list, user_get
@@ -185,10 +186,10 @@ class UserViewSet(ViewSet):
     
     def get_permissions(self):
         """
-        Override to allow all authenticated users to access profile endpoint.
+        Override to allow all authenticated users to access certain endpoints.
         """
-        if self.action == 'profile':
-            # Allow any authenticated user to view their own profile and permissions
+        if self.action in ['profile', 'assignable']:
+            # Allow any authenticated user to access these endpoints
             return [IsAuthenticated()]
         # For all other actions, use the default CanCreateUsers permission
         return super().get_permissions()
@@ -435,9 +436,73 @@ class UserViewSet(ViewSet):
         
         # Add permissions to user data
         user_data['permissions'] = permissions_data
-        
+
         return Response(user_data)
-    
+
+    @extend_schema(
+        summary="Get assignable users",
+        description="""
+        Get a list of users from the same branch/team for assignment dropdowns.
+
+        This endpoint is accessible to all authenticated users without special permissions.
+        Returns only essential user information needed for assignment UI (id, name, email, role).
+
+        Users are automatically filtered based on the requesting user's role:
+        - CONSULTANT/BRANCH_ADMIN: Users in their assigned branches
+        - REGION_MANAGER: Users in branches within their regions
+        - SUPER_ADMIN: All users in tenant
+
+        This endpoint does NOT require view_user permission - it's designed specifically
+        for assignment dropdowns and returns minimal user information.
+        """,
+        parameters=[
+            OpenApiParameter(
+                name='search',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description='Search by name, email, or username',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='is_active',
+                type=bool,
+                location=OpenApiParameter.QUERY,
+                description='Filter by active status (default: true)',
+                required=False,
+            ),
+        ],
+        responses={
+            200: AssignableUserSerializer(many=True),
+            401: {'description': 'Unauthorized'},
+        },
+        tags=['users'],
+    )
+    @action(detail=False, methods=['get'], url_path='assignable')
+    def assignable(self, request):
+        """
+        Get users for assignment dropdowns.
+
+        GET /api/v1/users/assignable/
+
+        Returns minimal user info (id, name, email, role) filtered by branch/team.
+        Accessible to all authenticated users without special permissions.
+        """
+        # Get filtered users using selector (same filtering as user_list)
+        search = request.query_params.get('search')
+        users = user_list(user=request.user, search=search)
+
+        # Filter by active status (default to true)
+        is_active = request.query_params.get('is_active', 'true')
+        if is_active is not None:
+            users = users.filter(is_active=is_active.lower() == 'true')
+
+        # Apply pagination
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(users, request)
+        serializer = AssignableUserSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
     @extend_schema(
         summary="Assign permissions to user",
         description="Assign permissions directly to a user. Replaces existing direct permissions.",

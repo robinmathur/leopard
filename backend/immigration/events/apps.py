@@ -38,7 +38,7 @@ class EventsConfig(AppConfig):
         # Process pending events on startup (if not paused)
         try:
             from immigration.events.processor import process_pending_events
-            from immigration.events.models import EventProcessingControl
+            from tenants.models import EventProcessingControl
             
             if not EventProcessingControl.is_processing_paused():
                 process_pending_events()

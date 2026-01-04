@@ -7,7 +7,6 @@ import {
   Box,
   Paper,
   Typography,
-  Grid,
   Chip,
   Alert,
   Skeleton,
@@ -19,6 +18,7 @@ import {
   TextField,
   MenuItem,
   IconButton,
+  Grid,
 } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
 import AddIcon from '@mui/icons-material/Add';
@@ -48,9 +48,7 @@ const formatDate = (dateString?: string): string => {
   try {
     return new Date(dateString).toLocaleDateString();
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Check if passport expires within 6 months
@@ -66,9 +64,7 @@ const isExpiringWithin6Months = (expiryDate?: string): boolean => {
 
     return expiry <= sixMonthsFromNow && expiry >= now;
   } catch {
-    return false;
-  }
-};
+    return false; }};
 
 /**
  * Check if passport is expired
@@ -81,9 +77,7 @@ const isExpired = (expiryDate?: string): boolean => {
     const now = new Date();
     return expiry < now;
   } catch {
-    return false;
-  }
-};
+    return false; }};
 
 /**
  * Detail row component
@@ -104,7 +98,7 @@ const PassportSkeleton = () => (
   <Box>
     <Grid container spacing={2}>
       {[...Array(6)].map((_, index) => (
-        <Grid item xs={12} sm={6} key={index}>
+        <Grid key={index} size={{ xs: 12, sm: 6 }}>
           <Skeleton variant="text" width={80} height={20} />
           <Skeleton variant="text" width="100%" height={28} />
         </Grid>
@@ -210,9 +204,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
     } catch (err) {
       setError((err as Error).message || 'Failed to save passport');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Handle delete
   const handleDelete = async () => {
@@ -226,9 +218,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
     } catch (err) {
       setError((err as Error).message || 'Failed to delete passport');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Loading state
   if (isLoading) {
@@ -270,9 +260,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
           sx={{
             py: 4,
             textAlign: 'center',
-            color: 'text.secondary',
-          }}
-        >
+            color: 'text.secondary', }}>
           <Typography variant="body1" gutterBottom>
             No passport information available
           </Typography>
@@ -348,7 +336,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
                   value={formData.date_of_issue}
                   onChange={(e) => setFormData({ ...formData, date_of_issue: e.target.value })}
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
 
                 <TextField
@@ -357,7 +345,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
                   value={formData.date_of_expiry}
                   onChange={(e) => setFormData({ ...formData, date_of_expiry: e.target.value })}
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
 
                 <TextField
@@ -427,28 +415,28 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
 
       {/* Passport Details */}
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <DetailRow label="Passport Number" value={passport.passport_no} />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <DetailRow
             label="Passport Country"
             value={getCountryName(passport.passport_country)}
           />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <DetailRow label="Nationality" value={getCountryName(passport.nationality)} />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <DetailRow
             label="Country of Birth"
             value={getCountryName(passport.country_of_birth)}
           />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <DetailRow label="Date of Issue" value={formatDate(passport.date_of_issue)} />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <DetailRow
             label="Date of Expiry"
             value={
@@ -465,7 +453,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
           />
         </Grid>
         {passport.place_of_issue && (
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <DetailRow label="Place of Issue" value={passport.place_of_issue} />
           </Grid>
         )}
@@ -538,7 +526,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
                 value={formData.date_of_issue}
                 onChange={(e) => setFormData({ ...formData, date_of_issue: e.target.value })}
                 fullWidth
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
 
               <TextField
@@ -547,7 +535,7 @@ export const ClientPassport = ({ clientId }: ClientPassportProps) => {
                 value={formData.date_of_expiry}
                 onChange={(e) => setFormData({ ...formData, date_of_expiry: e.target.value })}
                 fullWidth
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
 
               <TextField

@@ -8,12 +8,6 @@ import {
   Box,
   Typography,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Button,
   Chip,
   Alert,
@@ -24,9 +18,13 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  TablePagination,
-  CircularProgress,
+  Link,
 } from '@mui/material';
+import {
+  DataGrid,
+  GridColDef,
+  GridPaginationModel,
+} from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
@@ -55,6 +53,12 @@ export const AgentPage = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
+  // Pagination
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
+  });
+
   // Agent store
   const {
     agents,
@@ -69,13 +73,13 @@ export const AgentPage = () => {
 
   // Fetch agents on mount and cleanup on unmount
   useEffect(() => {
-    fetchAgents();
+    fetchAgents({ page: paginationModel.page + 1, page_size: paginationModel.pageSize });
 
     // Cancel any in-flight requests on unmount to prevent memory leaks
     return () => {
       cancelFetchAgents();
     };
-  }, [fetchAgents]);
+  }, [paginationModel.page, paginationModel.pageSize, fetchAgents]);
 
   // Show error in snackbar
   useEffect(() => {
@@ -99,24 +103,22 @@ export const AgentPage = () => {
     prevSearchTerm.current = searchTerm;
 
     const timer = setTimeout(() => {
-      fetchAgents({ page: 1, search: searchTerm.trim() || undefined });
+      setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
+      fetchAgents({ 
+        page: 1, 
+        page_size: paginationModel.pageSize,
+        search: searchTerm.trim() || undefined 
+      });
     }, 500);
 
     return () => clearTimeout(timer);
   }, [searchTerm, fetchAgents]);
 
-  const handlePageChange = (_event: unknown, newPage: number) => {
+  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
+    setPaginationModel(newModel);
     fetchAgents({ 
-      page: newPage + 1, 
-      search: searchTerm.trim() || undefined 
-    });
-  };
-
-  const handlePageSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newPageSize = parseInt(event.target.value, 10);
-    fetchAgents({ 
-      page: 1, 
-      page_size: newPageSize,
+      page: newModel.page + 1, 
+      page_size: newModel.pageSize,
       search: searchTerm.trim() || undefined 
     });
   };
@@ -217,12 +219,14 @@ export const AgentPage = () => {
           placeholder="Search agents by name, email, or phone number..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            },
           }}
         />
       </Paper>

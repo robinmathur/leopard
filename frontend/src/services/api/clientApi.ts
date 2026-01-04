@@ -3,12 +3,12 @@
  * API functions for client CRUD operations
  */
 import { httpClient } from './httpClient';
+import type { PaginatedResponse } from '@/types/common';
 import {
   Client,
   ClientCreateRequest,
   ClientUpdateRequest,
   ClientListParams,
-  PaginatedResponse,
   StageCounts,
   NEXT_STAGE,
 } from '@/types/client';

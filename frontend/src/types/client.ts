@@ -76,18 +76,11 @@ export interface ClientUpdateRequest {
   postcode?: string;
   stage?: ClientStage;
   visa_category_id?: number;
-  assigned_to_id?: number;
+  assigned_to_id?: number | null;
   agent_id?: number;
   description?: string;
   referred_by?: string;
   active?: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
 }
 
 export interface ClientListParams {
@@ -99,6 +92,7 @@ export interface ClientListParams {
   first_name?: string;
   last_name?: string;
   search?: string;
+  visa_category?: number;
 }
 
 export interface StageCounts {

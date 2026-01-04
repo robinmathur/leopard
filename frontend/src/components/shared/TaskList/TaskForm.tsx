@@ -12,8 +12,16 @@ import {
   Autocomplete,
   Stack,
   Typography,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
 } from '@mui/material';
 import { Task, TaskPriority, TaskCreateRequest, TaskUpdateRequest } from '@/services/api/taskApi';
+import { TaskAssignmentSelector } from './TaskAssignmentSelector';
+import { User } from '@/types/user';
+import { Branch } from '@/types/branch';
+import { Client } from '@/types/client';
+import { ClientAutocomplete } from '@/components/common/ClientAutocomplete';
 
 export interface TaskFormProps {
   /** Initial task data for editing (optional) */
@@ -28,7 +36,7 @@ export interface TaskFormProps {
   onSubmit: (data: TaskCreateRequest | TaskUpdateRequest) => void;
   /** Callback when form is cancelled */
   onCancel: () => void;
-  /** Client ID for linking task to client */
+  /** Client ID for linking task to client (auto-link from client detail page) */
   clientId?: number;
 }
 
@@ -51,8 +59,6 @@ const formatDateForInput = (date: Date | null): string => {
  */
 export const TaskForm = ({
   initialData,
-  currentUserId,
-  availableUsers = [],
   isSubmitting = false,
   onSubmit,
   onCancel,
@@ -65,42 +71,89 @@ export const TaskForm = ({
     initialData?.due_date ? formatDateForInput(new Date(initialData.due_date)) : ''
   );
   
-  // Find the assigned user object from availableUsers
-  const getSelectedUser = () => {
-    if (initialData?.assigned_to && availableUsers.length > 0) {
-      return availableUsers.find(u => u.id === initialData.assigned_to) || null;
-    }
-    if (currentUserId && availableUsers.length > 0) {
-      return availableUsers.find(u => u.id === currentUserId) || availableUsers[0];
-    }
-    return availableUsers.length > 0 ? availableUsers[0] : null;
-  };
-  
-  const [selectedUser, setSelectedUser] = useState<typeof availableUsers[0] | null>(getSelectedUser());
+  // Assignment state
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Reset form when initialData or availableUsers changes
+  // Entity linking state (only shown when clientId is not provided)
+  type EntityType = 'none' | 'client' | 'visaapplication';
+  const [entityType, setEntityType] = useState<EntityType>('none');
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedVisaApplication, setSelectedVisaApplication] = useState<any | null>(null);
+
+  // Reset form when initialData changes
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title || '');
       setDetail(initialData.detail || '');
       setPriority(initialData.priority || 'MEDIUM');
       setDueDateInput(initialData.due_date ? formatDateForInput(new Date(initialData.due_date)) : '');
-      setSelectedUser(getSelectedUser());
+
+      // Set user or branch from existing task data (no API calls needed)
+      if (initialData.assigned_to_branch && initialData.branch_id && initialData.branch_name) {
+        setSelectedBranch({
+          id: initialData.branch_id,
+          name: initialData.branch_name,
+        } as Branch);
+        setSelectedUser(null);
+      } else if (initialData.assigned_to) {
+        // Set user even if name is missing - use ID at minimum
+        setSelectedUser({
+          id: initialData.assigned_to,
+          username: initialData.assigned_to_name || `User ${initialData.assigned_to}`,
+          email: '', // Not available in task data
+          first_name: initialData.assigned_to_full_name?.split(' ')[0] || '',
+          last_name: initialData.assigned_to_full_name?.split(' ').slice(1).join(' ') || '',
+        } as User);
+        setSelectedBranch(null);
+      } else {
+        setSelectedUser(null);
+        setSelectedBranch(null);
+      }
+
       setTags(initialData.tags || []);
       setErrors({});
+
+      // Initialize entity linking from task data (no API fetch needed)
+      if (initialData.linked_entity_type === 'client' && initialData.linked_entity_id) {
+        setEntityType('client');
+        // Construct Client object from task data
+        if (initialData.linked_entity_name) {
+          const nameParts = initialData.linked_entity_name.split(' ');
+          setSelectedClient({
+            id: initialData.linked_entity_id,
+            first_name: nameParts[0] || '',
+            last_name: nameParts.slice(1).join(' ') || '',
+            email: '', // Not included in task response - will be fetched if needed
+          } as Client);
+        }
+        setSelectedVisaApplication(null);
+      } else if (initialData.linked_entity_type === 'visaapplication' && initialData.linked_entity_id) {
+        setEntityType('visaapplication');
+        setSelectedVisaApplication({ id: initialData.linked_entity_id });
+        setSelectedClient(null);
+      } else {
+        setEntityType('none');
+        setSelectedClient(null);
+        setSelectedVisaApplication(null);
+      }
     } else {
       // Reset form for create mode
       setTitle('');
       setDetail('');
       setPriority('MEDIUM');
       setDueDateInput('');
-      setSelectedUser(getSelectedUser());
+      setSelectedUser(null);
+      setSelectedBranch(null);
       setTags([]);
       setErrors({});
+      setEntityType('none');
+      setSelectedClient(null);
+      setSelectedVisaApplication(null);
     }
-  }, [initialData, currentUserId, availableUsers]);
+  }, [initialData]);
 
   // Validate form
   const validate = (): boolean => {
@@ -128,9 +181,7 @@ export const TaskForm = ({
       }
     }
 
-    if (!selectedUser) {
-      newErrors.assignedTo = 'Assignee is required';
-    }
+    // assigned_to is optional - no validation needed
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -146,19 +197,50 @@ export const TaskForm = ({
 
     // Convert datetime-local string to ISO string
     const dueDate = new Date(dueDateInput);
-    
+
+    // Determine entity linking (prioritize clientId prop for auto-link)
+    // Use model names instead of ContentType IDs (multi-tenant safe)
+    let entityData: { linked_entity_type?: string; linked_entity_id?: number } = {};
+    if (clientId) {
+      // Auto-link to client when clientId prop is provided
+      entityData = {
+        linked_entity_type: 'client',
+        linked_entity_id: clientId,
+      };
+    } else if (entityType === 'client' && selectedClient) {
+      entityData = {
+        linked_entity_type: 'client',
+        linked_entity_id: selectedClient.id,
+      };
+    } else if (entityType === 'visaapplication' && selectedVisaApplication) {
+      entityData = {
+        linked_entity_type: 'visaapplication',
+        linked_entity_id: selectedVisaApplication.id,
+      };
+    }
+
     const formData: TaskCreateRequest | TaskUpdateRequest = {
       title: title.trim(),
       detail: detail.trim(),
       priority,
       due_date: dueDate.toISOString(),
-      assigned_to: selectedUser!.id,
+      ...(selectedUser && { assigned_to: selectedUser.id }),
+      ...(selectedBranch && { branch_id: selectedBranch.id }),
+      ...(!selectedUser && !selectedBranch && { assigned_to: null, branch_id: null }),
       tags: tags.length > 0 ? tags : undefined,
-      ...(clientId && {
-        content_type: 10, // CLIENT_CONTENT_TYPE_ID
-        object_id: clientId,
-      }),
+      ...entityData,
     };
+
+    // Debug: Log entity data being submitted
+    if (entityData.linked_entity_type) {
+      console.log('TaskForm: Submitting with entity data:', {
+        linked_entity_type: entityData.linked_entity_type,
+        linked_entity_id: entityData.linked_entity_id,
+        entityType,
+        selectedClient: selectedClient?.id,
+        clientId,
+      });
+    }
 
     onSubmit(formData);
   };
@@ -222,40 +304,77 @@ export const TaskForm = ({
             error={!!errors.dueDate}
             helperText={errors.dueDate}
             disabled={isSubmitting}
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
         </Box>
 
         {/* Assignment */}
-        <Autocomplete
-          value={selectedUser}
-          onChange={(_, newValue) => setSelectedUser(newValue)}
-          options={availableUsers}
-          getOptionLabel={(option) => option.full_name}
-          renderOption={(props, option) => (
-            <li {...props} key={option.id}>
-              <Box>
-                <Typography variant="body2">{option.full_name}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {option.email}
-                </Typography>
+        <Box>
+          <TaskAssignmentSelector
+            selectedUser={selectedUser}
+            selectedBranch={selectedBranch}
+            onUserChange={setSelectedUser}
+            onBranchChange={setSelectedBranch}
+            disabled={isSubmitting}
+            error={errors.assignedTo ? { assignmentType: errors.assignedTo } : undefined}
+          />
+        </Box>
+
+        {/* Entity Linking (only shown when NOT auto-linking from client page) */}
+        {!clientId && (
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              Link to Entity (Optional)
+            </Typography>
+            <RadioGroup
+              row
+              value={entityType}
+              onChange={(e) => {
+                const newType = e.target.value as EntityType;
+                setEntityType(newType);
+                // Clear selections when changing type
+                if (newType !== 'client') setSelectedClient(null);
+                if (newType !== 'visaapplication') setSelectedVisaApplication(null);
+              }}
+            >
+              <FormControlLabel value="none" control={<Radio />} label="None" disabled={isSubmitting} />
+              <FormControlLabel value="client" control={<Radio />} label="Client" disabled={isSubmitting} />
+              <FormControlLabel value="visaapplication" control={<Radio />} label="Visa Application" disabled={isSubmitting} />
+            </RadioGroup>
+
+            {/* Client Autocomplete */}
+            {entityType === 'client' && (
+              <Box sx={{ mt: 2 }}>
+                <ClientAutocomplete
+                  value={selectedClient}
+                  onChange={setSelectedClient}
+                  label="Select Client"
+                  placeholder="Search by name or email"
+                  disabled={isSubmitting}
+                />
               </Box>
-            </li>
-          )}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Assign To"
-              placeholder="Search by name or email"
-              required
-              error={!!errors.assignedTo}
-              helperText={errors.assignedTo}
-            />
-          )}
-          disabled={isSubmitting || availableUsers.length === 0}
-          noOptionsText={availableUsers.length === 0 ? "Loading users..." : "No users found"}
-          fullWidth
-        />
+            )}
+
+            {/* Visa Application Autocomplete */}
+            {entityType === 'visaapplication' && (
+              <Box sx={{ mt: 2 }}>
+                <TextField
+                  label="Visa Application ID"
+                  type="number"
+                  value={selectedVisaApplication?.id || ''}
+                  onChange={(e) => {
+                    const id = parseInt(e.target.value);
+                    setSelectedVisaApplication(id ? { id } : null);
+                  }}
+                  disabled={isSubmitting}
+                  fullWidth
+                  placeholder="Enter visa application ID"
+                  helperText="Note: Full visa application autocomplete coming soon"
+                />
+              </Box>
+            )}
+          </Box>
+        )}
 
         {/* Tags */}
         <Autocomplete
@@ -293,7 +412,7 @@ export const TaskForm = ({
           <Button
             type="submit"
             variant="contained"
-            disabled={isSubmitting || !title.trim() || !detail.trim() || !dueDateInput || !selectedUser}
+            disabled={isSubmitting || !title.trim() || !detail.trim() || !dueDateInput}
           >
             {isSubmitting ? 'Saving...' : initialData ? 'Update Task' : 'Create Task'}
           </Button>

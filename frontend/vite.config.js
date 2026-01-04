@@ -9,4 +9,15 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./src', import.meta.url)),
         },
     },
+    server: {
+        host: '0.0.0.0', // Listen on all network interfaces
+        port: 5173,
+        strictPort: false,
+        // Allow all subdomains (any tenant can be added dynamically)
+        allowedHosts: [
+            '.localhost', // Matches *.localhost and localhost
+            '.immigrate.localhost', // Matches *.immigrate.localhost
+            'leopard.logiclucent.in',
+        ],
+    }
 });

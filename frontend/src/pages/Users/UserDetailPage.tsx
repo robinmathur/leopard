@@ -11,7 +11,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Grid,
   Chip,
   Divider,
   Dialog,
@@ -19,6 +18,7 @@ import {
   DialogContent,
   DialogActions,
   Snackbar,
+  Grid,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -42,9 +42,7 @@ const formatDate = (dateString?: string | null): string => {
       minute: '2-digit',
     });
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 export const UserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,9 +75,7 @@ export const UserDetailPage = () => {
         const apiError = err as ApiError;
         setError(apiError.message || 'Failed to load user');
       } finally {
-        setLoading(false);
-      }
-    };
+        setLoading(false); }};
 
     fetchUser();
   }, [id]);
@@ -98,8 +94,7 @@ export const UserDetailPage = () => {
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate('/user-management/users')}
-          sx={{ mb: 2 }}
-        >
+          sx={{ mb: 2 }}>
           Back to Users
         </Button>
         <Alert severity="error">{error || 'User not found'}</Alert>
@@ -143,14 +138,14 @@ export const UserDetailPage = () => {
       <Paper sx={{ p: 3 }}>
         <Grid container spacing={3}>
           {/* Basic Information */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Basic Information
             </Typography>
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 2 }}/>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Username
             </Typography>
@@ -159,7 +154,7 @@ export const UserDetailPage = () => {
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Full Name
             </Typography>
@@ -168,7 +163,7 @@ export const UserDetailPage = () => {
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Email
             </Typography>
@@ -177,7 +172,7 @@ export const UserDetailPage = () => {
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Status
             </Typography>
@@ -189,14 +184,14 @@ export const UserDetailPage = () => {
           </Grid>
 
           {/* Group Information */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          <Grid sx={{ mt: 2 }} size={{ xs: 12 }}>
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Group & Permissions
             </Typography>
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 2 }}/>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Primary Group
             </Typography>
@@ -209,7 +204,7 @@ export const UserDetailPage = () => {
             )}
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               All Groups
             </Typography>
@@ -227,14 +222,14 @@ export const UserDetailPage = () => {
           </Grid>
 
           {/* Organization Information */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          <Grid sx={{ mt: 2 }} size={{ xs: 12 }}>
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Organization
             </Typography>
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 2 }}/>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Tenant
             </Typography>
@@ -243,7 +238,7 @@ export const UserDetailPage = () => {
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Branches
             </Typography>
@@ -260,7 +255,7 @@ export const UserDetailPage = () => {
             </Box>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Regions
             </Typography>
@@ -278,14 +273,14 @@ export const UserDetailPage = () => {
           </Grid>
 
           {/* Account Information */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
+          <Grid sx={{ mt: 2 }} size={{ xs: 12 }}>
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Account Information
             </Typography>
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 2 }}/>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Date Joined
             </Typography>
@@ -294,7 +289,7 @@ export const UserDetailPage = () => {
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Last Login
             </Typography>
@@ -303,7 +298,7 @@ export const UserDetailPage = () => {
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Staff Status
             </Typography>
@@ -314,7 +309,7 @@ export const UserDetailPage = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Superuser Status
             </Typography>
@@ -364,9 +359,7 @@ export const UserDetailPage = () => {
                   message: apiError.message || 'Failed to delete user',
                   severity: 'error',
                 });
-                setDeleting(false);
-              }
-            }}
+                setDeleting(false); }}}
             color="error"
             variant="contained"
             disabled={deleting}
@@ -382,14 +375,12 @@ export const UserDetailPage = () => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ width: '100%' }}
-        >
+          sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

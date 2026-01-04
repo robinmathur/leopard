@@ -36,6 +36,8 @@ interface AgentFormProps {
 interface FormData {
   agent_name: string;
   agent_type: AgentType;
+  company_name: string;
+  designation: string;
   phone_number: string;
   email: string;
   website: string;
@@ -51,6 +53,8 @@ interface FormData {
 const initialFormData: FormData = {
   agent_name: '',
   agent_type: 'SUB_AGENT',
+  company_name: '',
+  designation: '',
   phone_number: '',
   email: '',
   website: '',
@@ -80,6 +84,8 @@ export const AgentForm = ({
       setFormData({
         agent_name: initialData.agent_name || '',
         agent_type: initialData.agent_type || 'SUB_AGENT',
+        company_name: initialData.company_name || '',
+        designation: initialData.designation || '',
         phone_number: initialData.phone_number || '',
         email: initialData.email || '',
         website: initialData.website || '',
@@ -153,6 +159,8 @@ export const AgentForm = ({
     };
 
     // Add optional fields if they have values
+    if (formData.company_name.trim()) data.company_name = formData.company_name.trim();
+    if (formData.designation.trim()) data.designation = formData.designation.trim();
     if (formData.phone_number.trim()) data.phone_number = formData.phone_number.trim();
     if (formData.email.trim()) data.email = formData.email.trim();
     if (formData.website.trim()) data.website = formData.website.trim();
@@ -179,7 +187,7 @@ export const AgentForm = ({
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Grid container spacing={2}>
         {/* Agent Name */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             required
             fullWidth
@@ -195,7 +203,7 @@ export const AgentForm = ({
         </Grid>
 
         {/* Agent Type */}
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth required size="small" error={!!getFieldError('agent_type')}>
             <InputLabel>Agent Type</InputLabel>
             <Select
@@ -216,8 +224,38 @@ export const AgentForm = ({
           </FormControl>
         </Grid>
 
+        {/* Company Name */}
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            fullWidth
+            label="Company Name"
+            value={formData.company_name}
+            onChange={handleChange('company_name')}
+            error={!!getFieldError('company_name')}
+            helperText={getFieldError('company_name')}
+            size="small"
+            disabled={loading}
+            placeholder="Enter company name"
+          />
+        </Grid>
+
+        {/* Designation */}
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            fullWidth
+            label="Designation"
+            value={formData.designation}
+            onChange={handleChange('designation')}
+            error={!!getFieldError('designation')}
+            helperText={getFieldError('designation')}
+            size="small"
+            disabled={loading}
+            placeholder="Enter designation"
+          />
+        </Grid>
+
         {/* Contact Information */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ mb: 1 }}>
             <FormHelperText sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
               Contact Information
@@ -225,7 +263,7 @@ export const AgentForm = ({
           </Box>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Phone Number"
@@ -239,7 +277,7 @@ export const AgentForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Email"
@@ -254,7 +292,7 @@ export const AgentForm = ({
           />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Website"
@@ -269,7 +307,7 @@ export const AgentForm = ({
         </Grid>
 
         {/* Address Information */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ mb: 1, mt: 1 }}>
             <FormHelperText sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
               Address Information
@@ -277,7 +315,7 @@ export const AgentForm = ({
           </Box>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Street Address"
@@ -291,7 +329,7 @@ export const AgentForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Suburb"
@@ -305,7 +343,7 @@ export const AgentForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="State/Province"
@@ -319,7 +357,7 @@ export const AgentForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Postcode"
@@ -333,7 +371,7 @@ export const AgentForm = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth size="small" error={!!getFieldError('country')}>
             <InputLabel>Country</InputLabel>
             <Select
@@ -358,7 +396,7 @@ export const AgentForm = ({
         </Grid>
 
         {/* Invoice Information */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Invoice To"
@@ -373,7 +411,7 @@ export const AgentForm = ({
         </Grid>
 
         {/* Description */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Description"
@@ -390,7 +428,7 @@ export const AgentForm = ({
         </Grid>
 
         {/* Action Buttons */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
             <Button
               variant="outlined"

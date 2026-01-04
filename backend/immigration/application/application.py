@@ -11,7 +11,7 @@ from immigration.application.application_type import ApplicationType
 from immigration.client.client import Client
 from django.contrib.auth import get_user_model
 
-from immigration.institute import Institute, Course, InstituteLocation, InstituteIntake
+from immigration.models import Institute, Course, InstituteLocation, InstituteIntake
 from immigration.models import LifeCycleModel
 from immigration.serializer import ForeignKeySerializer, LifeCycleAwareSerializer, HumanReadableIdAwareSerializer
 from immigration.views import LifeCycleViewSet

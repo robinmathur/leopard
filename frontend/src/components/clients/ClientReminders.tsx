@@ -467,7 +467,7 @@ export const ClientReminders = ({ clientId }: ClientRemindersProps) => {
               onChange={(e) => setReminderDate(e.target.value)}
               fullWidth
               disabled={isSubmitting}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
             <TextField
               label="Time (Optional)"
@@ -476,7 +476,7 @@ export const ClientReminders = ({ clientId }: ClientRemindersProps) => {
               onChange={(e) => setReminderTime(e.target.value)}
               fullWidth
               disabled={isSubmitting}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
         </DialogContent>

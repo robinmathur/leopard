@@ -7,7 +7,6 @@ import {
   Box,
   Paper,
   Typography,
-  Grid,
   Alert,
   Skeleton,
   Button,
@@ -20,6 +19,7 @@ import {
   TextField,
   MenuItem,
   IconButton,
+  Grid,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -48,9 +48,7 @@ const formatDate = (dateString?: string): string => {
   try {
     return new Date(dateString).toLocaleDateString();
   } catch {
-    return dateString;
-  }
-};
+    return dateString; }};
 
 /**
  * Format score for display
@@ -83,7 +81,7 @@ const ProficiencySkeleton = () => (
   <Box>
     {[...Array(2)].map((_, index) => (
       <Box key={index} sx={{ mb: 2 }}>
-        <Skeleton variant="rectangular" height={150} sx={{ borderRadius: 1 }} />
+        <Skeleton variant="rectangular" height={150} sx={{ borderRadius: 1 }}/>
       </Box>
     ))}
   </Box>
@@ -107,9 +105,7 @@ const ProficiencyCard = ({ proficiency, onEdit, onDelete }: ProficiencyCardProps
         mb: 2,
         '&:hover': {
           boxShadow: 1,
-        },
-      }}
-    >
+        }, }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
         <Box>
           <Typography variant="subtitle1" fontWeight={600}>
@@ -125,8 +121,7 @@ const ProficiencyCard = ({ proficiency, onEdit, onDelete }: ProficiencyCardProps
               label={`Overall: ${formatScore(proficiency.overall_score)}`}
               color="primary"
               size="small"
-              sx={{ mr: 1 }}
-            />
+              sx={{ mr: 1 }}/>
           )}
           <IconButton size="small" onClick={onEdit} color="primary">
             <EditIcon fontSize="small" />
@@ -137,22 +132,22 @@ const ProficiencyCard = ({ proficiency, onEdit, onDelete }: ProficiencyCardProps
         </Box>
       </Box>
 
-      <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 2 }}/>
 
       <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
         Component Scores
       </Typography>
       <Grid container spacing={2}>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <DetailRow label="Reading" value={formatScore(proficiency.reading_score)} />
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <DetailRow label="Writing" value={formatScore(proficiency.writing_score)} />
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <DetailRow label="Speaking" value={formatScore(proficiency.speaking_score)} />
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <DetailRow label="Listening" value={formatScore(proficiency.listening_score)} />
         </Grid>
       </Grid>
@@ -205,19 +200,14 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
           return new Date(b.test_date).getTime() - new Date(a.test_date).getTime();
         });
         setProficiencies(sorted);
-        setLanguageExams(examsData);
-      }
-    } catch (err) {
+        setLanguageExams(examsData); }}catch (err) {
       if ((err as Error).name === 'CanceledError' || signal?.aborted) {
         return;
       }
       setError((err as Error).message || 'Failed to load language proficiency data');
     } finally {
       if (!signal?.aborted) {
-        setIsLoading(false);
-      }
-    }
-  };
+        setIsLoading(false); }}};
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -284,9 +274,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
     } catch (err) {
       setError((err as Error).message || 'Failed to save proficiency test');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Handle delete
   const handleDeleteClick = (proficiencyId: number) => {
@@ -308,9 +296,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
     } catch (err) {
       setError((err as Error).message || 'Failed to delete proficiency test');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
+      setIsSubmitting(false); }};
 
   // Loading state
   if (isLoading) {
@@ -356,9 +342,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
           sx={{
             py: 4,
             textAlign: 'center',
-            color: 'text.secondary',
-          }}
-        >
+            color: 'text.secondary', }}>
           <Typography variant="body1" gutterBottom>
             No language proficiency tests recorded
           </Typography>
@@ -418,7 +402,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                 onChange={(e) => setFormData({ ...formData, test_date: e.target.value })}
                 required
                 fullWidth
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
 
               <TextField
@@ -428,11 +412,10 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                 onChange={(e) => setFormData({ ...formData, overall_score: e.target.value ? parseFloat(e.target.value) : undefined })}
                 required
                 fullWidth
-                inputProps={{ step: 0.5, min: 0, max: 100 }}
-              />
+                inputProps={{ step: 0.5, min: 0, max: 100 }}/>
 
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Reading Score"
                     type="number"
@@ -440,10 +423,9 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     onChange={(e) => setFormData({ ...formData, reading_score: e.target.value ? parseFloat(e.target.value) : undefined })}
                     required
                     fullWidth
-                    inputProps={{ step: 0.5, min: 0, max: 100 }}
-                  />
+                    inputProps={{ step: 0.5, min: 0, max: 100 }}/>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Writing Score"
                     type="number"
@@ -451,10 +433,9 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     onChange={(e) => setFormData({ ...formData, writing_score: e.target.value ? parseFloat(e.target.value) : undefined })}
                     required
                     fullWidth
-                    inputProps={{ step: 0.5, min: 0, max: 100 }}
-                  />
+                    inputProps={{ step: 0.5, min: 0, max: 100 }}/>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Speaking Score"
                     type="number"
@@ -462,10 +443,9 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     onChange={(e) => setFormData({ ...formData, speaking_score: e.target.value ? parseFloat(e.target.value) : undefined })}
                     required
                     fullWidth
-                    inputProps={{ step: 0.5, min: 0, max: 100 }}
-                  />
+                    inputProps={{ step: 0.5, min: 0, max: 100 }}/>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Listening Score"
                     type="number"
@@ -473,8 +453,7 @@ export const ClientProficiency = ({ clientId }: ClientProficiencyProps) => {
                     onChange={(e) => setFormData({ ...formData, listening_score: e.target.value ? parseFloat(e.target.value) : undefined })}
                     required
                     fullWidth
-                    inputProps={{ step: 0.5, min: 0, max: 100 }}
-                  />
+                    inputProps={{ step: 0.5, min: 0, max: 100 }}/>
                 </Grid>
               </Grid>
             </Box>

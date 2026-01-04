@@ -3,20 +3,13 @@
  * Comprehensive page for managing visa applications with CRUD operations
  * Features simple and advanced search functionality
  */
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
   Paper,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   IconButton,
   Tooltip,
   Chip,
@@ -26,7 +19,6 @@ import {
   MenuItem,
   Alert,
   Snackbar,
-  CircularProgress,
   InputAdornment,
   Dialog,
   DialogTitle,
@@ -34,15 +26,19 @@ import {
   Link,
 } from '@mui/material';
 import {
-  Add,
-  Edit,
-  Delete,
+  DataGrid,
+  GridColDef,
+  GridPaginationModel,
+} from '@mui/x-data-grid';
+import {
   Visibility,
   Search,
   ExpandMore,
   ExpandLess,
   FilterList,
   Clear,
+  PersonAdd as PersonAddIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import {
   listVisaApplications,
@@ -58,6 +54,9 @@ import { VISA_STATUS_LABELS, VisaType } from '@/types/visaType';
 import { VisaApplicationForm } from '@/components/visa/VisaApplicationForm';
 import { VisaApplicationDeleteDialog } from '@/components/visa/VisaApplicationDeleteDialog';
 import { UserAutocomplete } from '@/components/common/UserAutocomplete';
+import { AssignVisaApplicationDialog } from '@/components/visa/AssignVisaApplicationDialog';
+import { ChangeVisaStatusDialog } from '@/components/visa/ChangeVisaStatusDialog';
+import { useAuthStore } from '@/store/authStore';
 
 /**
  * Search Filters Interface
@@ -77,7 +76,8 @@ interface SearchFilters {
  */
 export const VisaApplicationsManagementPage = () => {
   const navigate = useNavigate();
-  
+  const { hasPermission } = useAuthStore();
+
   // Data state
   const [applications, setApplications] = useState<VisaApplication[]>([]);
   const [visaTypes, setVisaTypes] = useState<VisaType[]>([]);
@@ -95,9 +95,19 @@ export const VisaApplicationsManagementPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Assign dialog state
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedApplicationForAssign, setSelectedApplicationForAssign] = useState<VisaApplication | null>(null);
+
+  // Status change dialog state
+  const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
+  const [selectedApplicationForStatus, setSelectedApplicationForStatus] = useState<VisaApplication | null>(null);
+
   // Pagination
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(25);
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
+  });
   const [totalCount, setTotalCount] = useState(0);
 
   // Search state
@@ -140,16 +150,12 @@ export const VisaApplicationsManagementPage = () => {
       try {
         const typesResponse = await getVisaTypes({ page_size: 1000 }, abortController.signal);
         if (!abortController.signal.aborted) {
-          setVisaTypes(typesResponse.results);
-        }
-      } catch (err: any) {
+          setVisaTypes(typesResponse.results); }}catch (err: any) {
         // Ignore abort errors
         if (err.name === 'CanceledError' || abortController.signal.aborted) {
           return;
         }
-        console.error('Failed to fetch dropdown data:', err);
-      }
-    };
+        console.error('Failed to fetch dropdown data:', err); }};
 
     fetchDropdownData();
 
@@ -165,8 +171,8 @@ export const VisaApplicationsManagementPage = () => {
       setError(null);
 
       const params: any = {
-        page: page + 1,
-        page_size: pageSize,
+        page: paginationModel.page + 1, // API uses 1-indexed pages
+        page_size: paginationModel.pageSize,
       };
 
       // Add search filters - only add client_name if it's empty or has 2+ characters
@@ -183,9 +189,7 @@ export const VisaApplicationsManagementPage = () => {
       const response = await listVisaApplications(params, signal);
       if (!signal?.aborted) {
         setApplications(response.results);
-        setTotalCount(response.count);
-      }
-    } catch (err: any) {
+        setTotalCount(response.count); }}catch (err: any) {
       // Ignore abort errors
       if (err.name === 'CanceledError' || signal?.aborted) {
         return;
@@ -196,7 +200,7 @@ export const VisaApplicationsManagementPage = () => {
         setLoading(false);
       }
     }
-  }, [page, pageSize, searchFilters]);
+  }, [paginationModel, searchFilters]);
 
   // AbortController ref for cancelling in-flight requests
   const fetchAbortControllerRef = useRef<AbortController | null>(null);
@@ -222,9 +226,7 @@ export const VisaApplicationsManagementPage = () => {
       return () => {
         clearTimeout(debounceTimer);
         fetchAbortControllerRef.current?.abort();
-      };
-    }
-  }, [searchFilters.client_name, page, pageSize, fetchApplications]);
+      }; }}, [searchFilters.client_name, fetchApplications]);
 
   // Reset advanced filters applied flag when filters are cleared manually
   useEffect(() => {
@@ -237,9 +239,7 @@ export const VisaApplicationsManagementPage = () => {
       searchFilters.date_applied_to !== '';
     
     if (!hasAdvancedFilters) {
-      setAdvancedFiltersApplied(false);
-    }
-  }, [searchFilters]);
+      setAdvancedFiltersApplied(false); }}, [searchFilters]);
 
   // Search handlers
   const handleSimpleSearchChange = (value: string) => {
@@ -263,7 +263,7 @@ export const VisaApplicationsManagementPage = () => {
       ...prev,
       ...draftAdvancedFilters,
     }));
-    setPage(0);
+    setPaginationModel({ ...paginationModel, page: 0 });
     setAdvancedFiltersApplied(true);
     // fetchApplications will be triggered by useEffect when searchFilters change
   };
@@ -289,7 +289,7 @@ export const VisaApplicationsManagementPage = () => {
     setAssignedToUser(null);
     setCreatedByUser(null);
     setAdvancedFiltersApplied(false);
-    setPage(0);
+    setPaginationModel({ ...paginationModel, page: 0 });
   };
 
   const toggleAdvancedSearch = () => {
@@ -337,7 +337,7 @@ export const VisaApplicationsManagementPage = () => {
         setAssignedToUser(null);
         setCreatedByUser(null);
         setAdvancedFiltersApplied(false);
-        setPage(0);
+        setPaginationModel({ ...paginationModel, page: 0 });
         // fetchApplications will be triggered by useEffect when searchFilters change
       } else {
         // User just opened and closed without applying - no changes needed
@@ -348,34 +348,11 @@ export const VisaApplicationsManagementPage = () => {
     }
   };
 
-  // Table handlers
-  const handlePageChange = (_: any, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handlePageSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPageSize(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
+  // View handler
   const handleView = (application: VisaApplication) => {
-    // TODO: Navigate to detail page or open view modal
-    console.log('View application:', application);
-    setSnackbar({
-      open: true,
-      message: 'View functionality coming soon',
-      severity: 'info',
-    });
-  };
-
-  const handleEdit = (application: VisaApplication) => {
-    setSelectedApplication(application);
-    setDialogMode('edit');
-  };
-
-  const handleDelete = (application: VisaApplication) => {
-    setSelectedApplication(application);
-    setDeleteDialogOpen(true);
+    // Navigate to client detail page with visa applications tab and visa application ID
+    navigate(`/clients/${application.client}?tab=visa-applications&visaApplicationId=${application.id}`, {
+      state: { from: '/visa-manager/applications' }});
   };
 
   const handleConfirmDelete = async () => {
@@ -399,13 +376,75 @@ export const VisaApplicationsManagementPage = () => {
         severity: 'error',
       });
     } finally {
-      setDeleteLoading(false);
-    }
-  };
+      setDeleteLoading(false); }};
 
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false);
     setSelectedApplication(null);
+  };
+
+  // Status transition function (from Visa Tracker)
+  const getStatusTransitions = (status: VisaApplicationStatus): { label: string; value: VisaApplicationStatus }[] => {
+    if (status === 'TO_BE_APPLIED') {
+      return [
+        { label: 'Move to Visa Applied', value: 'VISA_APPLIED' },
+        { label: 'Move to Withdrawn', value: 'WITHDRAWN' },
+      ];
+    } else if (status === 'VISA_APPLIED') {
+      return [
+        { label: 'Move to Case Opened', value: 'CASE_OPENED' },
+        { label: 'Move to Granted', value: 'GRANTED' },
+        { label: 'Move to Rejected', value: 'REJECTED' },
+      ];
+    } else if (status === 'CASE_OPENED') {
+      return [
+        { label: 'Move to Granted', value: 'GRANTED' },
+        { label: 'Move to Rejected', value: 'REJECTED' },
+      ];
+    }
+    return []; // Terminal states: GRANTED, REJECTED, WITHDRAWN
+  };
+
+  // Assign handlers
+  const handleAssignClick = (app: VisaApplication) => {
+    setSelectedApplicationForAssign(app);
+    setAssignDialogOpen(true);
+  };
+
+  const handleAssignClose = () => {
+    setAssignDialogOpen(false);
+    setSelectedApplicationForAssign(null);
+  };
+
+  const handleAssignSuccess = () => {
+    fetchApplications(); // Refresh the list
+    setSnackbar({
+      open: true,
+      message: 'Application assigned successfully',
+      severity: 'success',
+    });
+    handleAssignClose();
+  };
+
+  // Status change handlers
+  const handleStatusChangeClick = (app: VisaApplication) => {
+    setSelectedApplicationForStatus(app);
+    setChangeStatusDialogOpen(true);
+  };
+
+  const handleStatusDialogClose = () => {
+    setChangeStatusDialogOpen(false);
+    setSelectedApplicationForStatus(null);
+  };
+
+  const handleStatusChangeSuccess = () => {
+    fetchApplications(); // Refresh the list
+    setSnackbar({
+      open: true,
+      message: 'Status updated successfully',
+      severity: 'success',
+    });
+    handleStatusDialogClose();
   };
 
   const handleAddApplication = () => {
@@ -447,9 +486,7 @@ export const VisaApplicationsManagementPage = () => {
         severity: 'error',
       });
     } finally {
-      setFormLoading(false);
-    }
-  };
+      setFormLoading(false); }};
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -458,8 +495,7 @@ export const VisaApplicationsManagementPage = () => {
   const handleClientClick = (clientId: number) => {
     // Navigate to client detail page with state for back navigation
     navigate(`/clients/${clientId}`, { 
-      state: { from: '/visa-manager/applications' } 
-    });
+      state: { from: '/visa-manager/applications' }});
   };
 
   const getStatusColor = (status: string): 'default' | 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success' => {
@@ -487,6 +523,149 @@ export const VisaApplicationsManagementPage = () => {
     }).format(value);
   };
 
+  // DataGrid column definitions
+  const columns: GridColDef<VisaApplication>[] = [
+    {
+      field: 'client_name',
+      headerName: 'Client',
+      width: 180,
+      sortable: false,
+      renderCell: (params) => (
+        <Link
+          component="button"
+          variant="body2"
+          fontWeight={500}
+          onClick={() => handleClientClick(params.row.client)}
+          sx={{
+            textDecoration: 'none',
+            color: 'primary.main',
+            '&:hover': { textDecoration: 'underline' },
+          }}
+        >
+          {params.value}
+        </Link>
+      ),
+    },
+    {
+      field: 'visa_type_name',
+      headerName: 'Visa Type',
+      width: 180,
+      sortable: false,
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="body2">{params.value}</Typography>
+          {params.row.visa_category_name && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              {params.row.visa_category_name}
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 150,
+      sortable: false,
+      renderCell: (params) => (
+        <Chip
+          label={VISA_STATUS_LABELS[params.value]}
+          size="small"
+          color={getStatusColor(params.value)}
+        />
+      ),
+    },
+    {
+      field: 'immigration_fee',
+      headerName: 'Immigration Fee',
+      width: 140,
+      sortable: false,
+      valueFormatter: (value, row) => formatCurrency(value, row.immigration_fee_currency),
+    },
+    {
+      field: 'service_fee',
+      headerName: 'Service Fee',
+      width: 130,
+      sortable: false,
+      valueFormatter: (value, row) => formatCurrency(value, row.service_fee_currency),
+    },
+    {
+      field: 'date_applied',
+      headerName: 'Date Applied',
+      width: 120,
+      sortable: false,
+      valueFormatter: (value) => formatDate(value),
+    },
+    {
+      field: 'assigned_to_name',
+      headerName: 'Assigned To',
+      width: 150,
+      sortable: false,
+      renderCell: (params) => params.value || (
+        <Typography variant="caption" color="text.secondary">
+          Unassigned
+        </Typography>
+      ),
+    },
+    {
+      field: 'created_by_name',
+      headerName: 'Applied By',
+      width: 150,
+      sortable: false,
+      renderCell: (params) => params.value || (
+        <Typography variant="caption" color="text.secondary">
+          -
+        </Typography>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 120,
+      align: 'right',
+      headerAlign: 'right',
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+          <Tooltip title="View Details">
+            <IconButton
+              size="small"
+              onClick={() => handleView(params.row)}
+              color="primary"
+            >
+              <Visibility fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {/* Assign is non-protected - available to all users */}
+          <Tooltip title="Assign">
+            <IconButton
+              size="small"
+              onClick={() => handleAssignClick(params.row)}
+              color="primary"
+            >
+              <PersonAddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {/* Change Status requires permission and transitions must be available */}
+          {hasPermission('change_visaapplication') && (
+            <Tooltip title={getStatusTransitions(params.row.status).length > 0 ? "Change Status" : "No transitions available"}>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => handleStatusChangeClick(params.row)}
+                  color="info"
+                  disabled={getStatusTransitions(params.row.status).length === 0}
+                >
+                  <ArrowForwardIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+        </Box>
+      ),
+    },
+  ];
+
   return (
     <Box>
       {/* Header */}
@@ -499,18 +678,10 @@ export const VisaApplicationsManagementPage = () => {
             Manage all visa applications with advanced search and filtering
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleAddApplication}
-          size="small"
-        >
-          Add Application
-        </Button>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 2 }}onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
@@ -530,12 +701,14 @@ export const VisaApplicationsManagementPage = () => {
                 ? 'Type at least 2 characters to search'
                 : ''
             }
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search fontSize="small" />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
           <Button
@@ -543,8 +716,7 @@ export const VisaApplicationsManagementPage = () => {
             startIcon={<FilterList />}
             endIcon={showAdvancedSearch ? <ExpandLess /> : <ExpandMore />}
             onClick={toggleAdvancedSearch}
-            sx={{ minWidth: 180 }}
-          >
+            sx={{ minWidth: 180 }}>
             Advanced Search
           </Button>
           <IconButton
@@ -564,7 +736,7 @@ export const VisaApplicationsManagementPage = () => {
               Advanced Filters
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   select
                   label="Status"
@@ -582,7 +754,7 @@ export const VisaApplicationsManagementPage = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   select
                   label="Visa Type"
@@ -600,7 +772,7 @@ export const VisaApplicationsManagementPage = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <UserAutocomplete
                   value={assignedToUser}
                   onChange={(user) => {
@@ -613,7 +785,7 @@ export const VisaApplicationsManagementPage = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <UserAutocomplete
                   value={createdByUser}
                   onChange={(user) => {
@@ -626,7 +798,7 @@ export const VisaApplicationsManagementPage = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   type="date"
                   label="Date Applied From"
@@ -634,11 +806,11 @@ export const VisaApplicationsManagementPage = () => {
                   onChange={(e) => handleAdvancedFilterChange('date_applied_from', e.target.value)}
                   size="small"
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   type="date"
                   label="Date Applied To"
@@ -646,7 +818,7 @@ export const VisaApplicationsManagementPage = () => {
                   onChange={(e) => handleAdvancedFilterChange('date_applied_to', e.target.value)}
                   size="small"
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               </Grid>
             </Grid>
@@ -671,130 +843,58 @@ export const VisaApplicationsManagementPage = () => {
         </Collapse>
       </Paper>
 
-      {/* Results Table */}
-      <Paper sx={{ p: 2 }}>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Client</TableCell>
-                <TableCell>Visa Type</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Immigration Fee</TableCell>
-                <TableCell>Service Fee</TableCell>
-                <TableCell>Date Applied</TableCell>
-                <TableCell>Assigned To</TableCell>
-                <TableCell>Applied By</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                    <CircularProgress size={32} />
-                  </TableCell>
-                </TableRow>
-              ) : applications.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No applications found
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                applications.map((app) => (
-                  <TableRow key={app.id} hover>
-                    <TableCell>
-                      <Link
-                        component="button"
-                        variant="body2"
-                        fontWeight={500}
-                        onClick={() => handleClientClick(app.client)}
-                        sx={{
-                          cursor: 'pointer',
-                          textDecoration: 'none',
-                          color: 'primary.main',
-                          '&:hover': {
-                            textDecoration: 'underline',
-                          },
-                        }}
-                      >
-                        {app.client_name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{app.visa_type_name}</Typography>
-                      {app.visa_category_name && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {app.visa_category_name}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={VISA_STATUS_LABELS[app.status]}
-                        size="small"
-                        color={getStatusColor(app.status)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(app.immigration_fee, app.immigration_fee_currency)}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(app.service_fee, app.service_fee_currency)}
-                    </TableCell>
-                    <TableCell>{formatDate(app.date_applied)}</TableCell>
-                    <TableCell>
-                      {app.assigned_to_name || (
-                        <Typography variant="caption" color="text.secondary">
-                          Unassigned
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {app.created_by_name || (
-                        <Typography variant="caption" color="text.secondary">
-                          -
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="View Details">
-                        <IconButton size="small" onClick={() => handleView(app)} color="primary">
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => handleEdit(app)} color="default">
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" onClick={() => handleDelete(app)} color="error">
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {!loading && applications.length > 0 && (
-          <TablePagination
-            component="div"
-            count={totalCount}
-            page={page}
-            onPageChange={handlePageChange}
-            rowsPerPage={pageSize}
-            onRowsPerPageChange={handlePageSizeChange}
-            rowsPerPageOptions={[10, 25, 50, 100]}
-          />
-        )}
+      {/* Results DataGrid */}
+      <Paper sx={{ p: 2, height: 600, display: 'flex', flexDirection: 'column' }}>
+        <DataGrid
+          rows={applications}
+          columns={columns}
+          loading={loading}
+          rowCount={totalCount}
+          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          pageSizeOptions={[10, 25, 50, 100]}
+          disableRowSelectionOnClick
+          disableColumnMenu
+          columnHeaderHeight={35}
+          sx={{
+            flex: 1,
+            border: 'none',
+            // 1. Header Styling: Light background and specific font weight
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#f8f9fa', // Light gray background
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 600, // Matching the bold headers
+              fontSize: '0.875rem',
+              color: 'text.primary',
+            },
+            // 2. Cell Styling: Remove vertical lines and adjust font
+            '& .MuiDataGrid-cell': {
+              fontSize: '0.875rem',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+            },
+            // 3. Row Hover Effect
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.04)', // Standard MUI hover
+            },
+            // 4. Clean up focuses
+            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+              outline: 'none',
+            },
+            '& .MuiDataGrid-cell:focus': {
+              outline: 'none',
+            },
+            // 5. Footer matching the standard TablePagination
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: 'none',
+            },
+          }}
+        />
       </Paper>
 
       {/* Add/Edit Dialog */}
@@ -827,19 +927,33 @@ export const VisaApplicationsManagementPage = () => {
         loading={deleteLoading}
       />
 
+      {/* Change Status Dialog */}
+      <ChangeVisaStatusDialog
+        open={changeStatusDialogOpen}
+        onClose={handleStatusDialogClose}
+        application={selectedApplicationForStatus}
+        onSuccess={handleStatusChangeSuccess}
+      />
+
+      {/* Assign Dialog */}
+      <AssignVisaApplicationDialog
+        open={assignDialogOpen}
+        onClose={handleAssignClose}
+        application={selectedApplicationForAssign}
+        onSuccess={handleAssignSuccess}
+      />
+
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ width: '100%' }}
-        >
+          sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

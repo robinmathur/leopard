@@ -17,6 +17,8 @@ class AgentCreateInput(BaseModel):
 
     agent_name: str = Field(..., min_length=1, max_length=100)
     agent_type: str = Field(..., pattern="^(SUPER_AGENT|SUB_AGENT)$")
+    company_name: Optional[str] = Field(None, max_length=100)
+    designation: Optional[str] = Field(None, max_length=100)
     phone_number: Optional[str] = Field(None, max_length=15)
     email: Optional[EmailStr] = None
     website: Optional[str] = Field(None, max_length=100)
@@ -37,6 +39,8 @@ class AgentUpdateInput(BaseModel):
 
     agent_name: Optional[str] = Field(None, min_length=1, max_length=100)
     agent_type: Optional[str] = Field(None, pattern="^(SUPER_AGENT|SUB_AGENT)$")
+    company_name: Optional[str] = Field(None, max_length=100)
+    designation: Optional[str] = Field(None, max_length=100)
     phone_number: Optional[str] = Field(None, max_length=15)
     email: Optional[EmailStr] = None
     website: Optional[str] = Field(None, max_length=100)
@@ -79,6 +83,8 @@ def agent_create(*, data: AgentCreateInput, user) -> Agent:
     agent = Agent.objects.create(
         agent_name=data.agent_name,
         agent_type=data.agent_type,
+        company_name=data.company_name or '',
+        designation=data.designation or '',
         phone_number=data.phone_number or '',
         email=data.email,
         website=data.website or '',
@@ -129,6 +135,14 @@ def agent_update(*, agent: Agent, data: AgentUpdateInput, user) -> Agent:
     if data.agent_type is not None:
         agent.agent_type = data.agent_type
         update_fields.append('agent_type')
+
+    if data.company_name is not None:
+        agent.company_name = data.company_name
+        update_fields.append('company_name')
+
+    if data.designation is not None:
+        agent.designation = data.designation
+        update_fields.append('designation')
 
     if data.phone_number is not None:
         agent.phone_number = data.phone_number

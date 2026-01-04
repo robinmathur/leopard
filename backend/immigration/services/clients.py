@@ -172,7 +172,7 @@ def client_create(*, data: ClientCreateInput, user) -> Client:
 
 
 @transaction.atomic
-def client_update(*, client: Client, data: ClientUpdateInput, user) -> Client:
+def client_update(*, client: Client, data: ClientUpdateInput, user, provided_fields: set = None) -> Client:
     """
     Update an existing client with scope validation.
     
@@ -251,7 +251,53 @@ def client_update(*, client: Client, data: ClientUpdateInput, user) -> Client:
         client.agent_id = data.agent_id
         update_fields.append('agent_id')
     
-    if data.assigned_to_id is not None:
+    # Check if assigned_to_id was explicitly provided (even if None, to allow unassigning)
+    if provided_fields and 'assigned_to_id' in provided_fields:
+        # If explicitly set to None, unassign the client
+        if data.assigned_to_id is None:
+            client.assigned_to_id = None
+            update_fields.append('assigned_to_id')
+        else:
+            # Validate scope for assigned_to change
+            if data.assigned_to_id != client.assigned_to_id:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                
+                try:
+                    assigned_user = User.objects.get(id=data.assigned_to_id)
+                except User.DoesNotExist:
+                    raise ValueError(f"Assigned user with id={data.assigned_to_id} does not exist")
+                
+                # Apply same scope rules as create (group-based)
+                if user.is_in_group(GROUP_BRANCH_ADMIN):
+                    # Check if assigned user shares any branches with the updater
+                    user_branch_ids = set(user.branches.values_list('id', flat=True))
+                    assigned_branch_ids = set(assigned_user.branches.values_list('id', flat=True))
+                    if not user_branch_ids.intersection(assigned_branch_ids):
+                        raise PermissionError(
+                            "Branch Admin cannot assign clients to users outside their branches"
+                        )
+                elif user.is_in_group(GROUP_REGION_MANAGER):
+                    # Check if assigned user shares any regions with the updater
+                    user_region_ids = set(user.regions.values_list('id', flat=True))
+                    assigned_region_ids = set(assigned_user.regions.values_list('id', flat=True))
+                    if not user_region_ids.intersection(assigned_region_ids):
+                        raise PermissionError(
+                            "Region Manager cannot assign clients to users outside their regions"
+                        )
+                # REMOVED: SUPER_ADMIN tenant check (schema provides isolation)
+                # elif user.is_in_group(GROUP_SUPER_ADMIN):
+                #     if assigned_user.tenant_id != user.tenant_id:
+                #         raise PermissionError(
+                #             "Cannot assign clients to users outside your tenant"
+                #         )
+                
+                # SUPER_ADMIN can assign to any user in current tenant schema (automatic isolation)
+            
+            client.assigned_to_id = data.assigned_to_id
+            update_fields.append('assigned_to_id')
+    elif data.assigned_to_id is not None:
+        # Backward compatibility: if provided_fields not provided, use old logic
         # Validate scope for assigned_to change
         if data.assigned_to_id != client.assigned_to_id:
             from django.contrib.auth import get_user_model
@@ -279,17 +325,9 @@ def client_update(*, client: Client, data: ClientUpdateInput, user) -> Client:
                     raise PermissionError(
                         "Region Manager cannot assign clients to users outside their regions"
                     )
-            # REMOVED: SUPER_ADMIN tenant check (schema provides isolation)
-            # elif user.is_in_group(GROUP_SUPER_ADMIN):
-            #     if assigned_user.tenant_id != user.tenant_id:
-            #         raise PermissionError(
-            #             "Cannot assign clients to users outside your tenant"
-            #         )
             
-            # SUPER_ADMIN can assign to any user in current tenant schema (automatic isolation)
-        
-        client.assigned_to_id = data.assigned_to_id
-        update_fields.append('assigned_to_id')
+            client.assigned_to_id = data.assigned_to_id
+            update_fields.append('assigned_to_id')
     
     if data.stage is not None:
         client.stage = data.stage

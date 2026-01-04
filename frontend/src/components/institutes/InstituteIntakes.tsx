@@ -248,7 +248,7 @@ export const InstituteIntakes = ({ instituteId }: InstituteIntakesProps) => {
               onChange={(e) => setFormData({ ...formData, intake_date: e.target.value })}
               required
               fullWidth
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
               disabled={saving}
             />
             <TextField

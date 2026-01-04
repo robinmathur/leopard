@@ -52,28 +52,37 @@ def visa_application_list(
     ).filter(client__deleted_at__isnull=True).all()
     
     # Group-based scoping
-    # Filter based on the client's assigned_to user's branch/tenant
-    
+    # Filter based on the client's branch (same as college applications)
+
     if user.is_in_group(GROUP_CONSULTANT) or user.is_in_group(GROUP_BRANCH_ADMIN):
-        # Filter to applications for clients assigned to users in the same branches
+        # Filter to applications for clients in the same branches as the user
         user_branches = user.branches.all()
         if user_branches.exists():
-            qs = qs.filter(client__assigned_to__branches__in=user_branches)
-    
+            qs = qs.filter(client__branch__in=user_branches)
+        else:
+            # If user has no branches assigned, they see no applications
+            qs = qs.none()
+
     elif user.is_in_group(GROUP_REGION_MANAGER):
-        # Filter to applications for clients in the same regions
+        # Filter to applications for clients in branches within the user's regions
         user_regions = user.regions.all()
         if user_regions.exists():
-            qs = qs.filter(client__assigned_to__regions__in=user_regions)
-    
-    # REMOVED: SUPER_ADMIN tenant filtering (schema provides isolation)
-    # elif user.is_in_group(GROUP_SUPER_ADMIN):
-    #     if user.tenant:
-    #         qs = qs.filter(client__assigned_to__tenant=user.tenant)
-    
-    # SUPER_ADMIN sees all in current tenant schema (automatic)
-    
-    # SUPER_SUPER_ADMIN sees everything (no additional filter)
+            from immigration.models import Branch
+            branch_ids = Branch.objects.filter(region__in=user_regions).values_list('id', flat=True)
+            qs = qs.filter(client__branch_id__in=branch_ids)
+        else:
+            # If user has no regions assigned, they see no applications
+            qs = qs.none()
+
+    elif user.is_in_group(GROUP_SUPER_ADMIN):
+        # SUPER_ADMIN sees all visa applications in current tenant schema
+        # Schema isolation provides automatic tenant scoping
+        pass
+
+    elif user.is_in_group(GROUP_SUPER_SUPER_ADMIN):
+        # SUPER_SUPER_ADMIN is only for creating tenants, not accessing tenant data
+        # They should not see any visa application data
+        qs = qs.none()
     
     # Apply additional filters
     if 'status' in filters and filters['status']:

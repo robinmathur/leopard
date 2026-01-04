@@ -1,20 +1,20 @@
 import { createTheme, ThemeOptions } from '@mui/material/styles';
 
 /**
- * Corporate theme optimized for high data density (compact mode)
- * Designed for Immigration CRM SaaS application
+ * High-Density Corporate Theme for Immigration CRM
+ * Explicitly synchronized for 32px height across all form controls.
  */
 const themeOptions: ThemeOptions = {
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2', // Professional blue
+      main: '#1976d2',
       light: '#42a5f5',
       dark: '#1565c0',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#424242', // Dark gray
+      main: '#424242',
       light: '#6d6d6d',
       dark: '#1b1b1b',
       contrastText: '#ffffff',
@@ -28,18 +28,10 @@ const themeOptions: ThemeOptions = {
       secondary: '#757575',
     },
     divider: '#e0e0e0',
-    error: {
-      main: '#d32f2f',
-    },
-    warning: {
-      main: '#f57c00',
-    },
-    success: {
-      main: '#388e3c',
-    },
-    info: {
-      main: '#1976d2',
-    },
+    error: { main: '#d32f2f' },
+    warning: { main: '#f57c00' },
+    success: { main: '#388e3c' },
+    info: { main: '#1976d2' },
   },
   typography: {
     fontFamily: [
@@ -51,52 +43,20 @@ const themeOptions: ThemeOptions = {
       'Arial',
       'sans-serif',
     ].join(','),
-    fontSize: 13, // Reduced from default 14 for compact mode
-    h1: {
-      fontSize: '1.75rem',
-      fontWeight: 600,
-      lineHeight: 1.2,
-    },
-    h2: {
-      fontSize: '1.5rem',
-      fontWeight: 600,
-      lineHeight: 1.2,
-    },
-    h3: {
-      fontSize: '1.25rem',
-      fontWeight: 600,
-      lineHeight: 1.3,
-    },
-    h4: {
-      fontSize: '1.1rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    h5: {
-      fontSize: '1rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    h6: {
-      fontSize: '0.875rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    body1: {
-      fontSize: '0.8125rem', // 13px
-      lineHeight: 1.5,
-    },
-    body2: {
-      fontSize: '0.75rem', // 12px
-      lineHeight: 1.5,
-    },
+    fontSize: 13,
+    h1: { fontSize: '1.75rem', fontWeight: 600, lineHeight: 1.2 },
+    h2: { fontSize: '1.5rem', fontWeight: 600, lineHeight: 1.2 },
+    h3: { fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3 },
+    h4: { fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.4 },
+    body1: { fontSize: '0.8125rem', lineHeight: 1.5 },
+    body2: { fontSize: '0.75rem', lineHeight: 1.5 },
     button: {
       fontSize: '0.8125rem',
       fontWeight: 500,
-      textTransform: 'none', // More modern, less shouty
+      textTransform: 'none',
     },
   },
-  spacing: 8, // Default, but we'll reduce it in component overrides
+  spacing: 8,
   shape: {
     borderRadius: 4,
   },
@@ -108,13 +68,14 @@ const themeOptions: ThemeOptions = {
       },
       styleOverrides: {
         root: {
-          padding: '4px 12px',
-          minHeight: '28px',
+          minHeight: '32px',
+          height: '32px',
         },
         sizeSmall: {
-          padding: '2px 8px',
+          minHeight: '32px',
+          height: '32px',
+          padding: '0px 12px',
           fontSize: '0.75rem',
-          minHeight: '24px',
         },
       },
     },
@@ -124,177 +85,74 @@ const themeOptions: ThemeOptions = {
         variant: 'outlined',
       },
     },
-    MuiOutlinedInput: {
-      styleOverrides: {
-        root: {
-          fontSize: '0.8125rem',
-        },
-        input: {
-          padding: '6px 10px',
-        },
-        inputSizeSmall: {
-          padding: '4px 8px',
-        },
-      },
-    },
     MuiInputLabel: {
       styleOverrides: {
         root: {
           fontSize: '0.8125rem',
+          // Perfectly centers label vertically inside 32px height
+          transform: 'translate(14px, 7px) scale(1)',
+        },
+        shrink: {
+          // Positions label on the top border correctly when focused
+          transform: 'translate(14px, -8px) scale(0.75) !important',
         },
         sizeSmall: {
-          fontSize: '0.75rem',
+          transform: 'translate(14px, 7px) scale(1)',
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.8125rem',
+          backgroundColor: '#ffffff',
+          height: '32px', // Forces container to match buttons
+        },
+        inputSizeSmall: {
+          padding: '0px 12px',
+          height: '32px',
+          lineHeight: '32px',
+          boxSizing: 'border-box',
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        select: {
+          // Ensures text in Select aligns with TextField and Buttons
+          paddingTop: '0px !important',
+          paddingBottom: '0px !important',
+          height: '32px !important',
+          lineHeight: '32px !important',
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: '32px !important',
+        },
+      },
+    },
+    MuiInputBase: {
+      styleOverrides: {
+        multiline: {
+          // Fixes padding for Description/Textarea fields
+          padding: '0px !important',
+          height: 'auto !important', // Let multiline grow vertically
+          '& textarea': {
+            padding: '8px 12px',
+          },
         },
       },
     },
     MuiTableCell: {
       styleOverrides: {
         root: {
-          padding: '6px 12px',
+          padding: '8px 12px',
           fontSize: '0.8125rem',
         },
         head: {
           fontWeight: 600,
           backgroundColor: '#fafafa',
-          padding: '8px 12px',
+          color: '#555',
         },
-        sizeSmall: {
-          padding: '4px 8px',
-        },
-      },
-    },
-    MuiChip: {
-      defaultProps: {
-        size: 'small',
-      },
-      styleOverrides: {
-        root: {
-          height: '22px',
-          fontSize: '0.75rem',
-        },
-        sizeSmall: {
-          height: '18px',
-          fontSize: '0.6875rem',
-        },
-      },
-    },
-    MuiIconButton: {
-      defaultProps: {
-        size: 'small',
-      },
-      styleOverrides: {
-        root: {
-          padding: '6px',
-        },
-        sizeSmall: {
-          padding: '4px',
-        },
-      },
-    },
-    MuiCard: {
-      defaultProps: {
-        elevation: 1,
-      },
-      styleOverrides: {
-        root: {
-          borderRadius: 4,
-        },
-      },
-    },
-    MuiCardContent: {
-      styleOverrides: {
-        root: {
-          padding: '12px',
-          '&:last-child': {
-            paddingBottom: '12px',
-          },
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-        },
-      },
-    },
-    MuiDrawer: {
-      styleOverrides: {
-        paper: {
-          borderRight: '1px solid #e0e0e0',
-        },
-      },
-    },
-    MuiListItem: {
-      styleOverrides: {
-        root: {
-          paddingTop: '4px',
-          paddingBottom: '4px',
-        },
-      },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: {
-          paddingTop: '6px',
-          paddingBottom: '6px',
-          borderRadius: '4px',
-          marginBottom: '2px',
-          '&.Mui-selected': {
-            backgroundColor: 'rgba(25, 118, 210, 0.08)',
-            '&:hover': {
-              backgroundColor: 'rgba(25, 118, 210, 0.12)',
-            },
-          },
-        },
-      },
-    },
-    MuiListItemText: {
-      styleOverrides: {
-        primary: {
-          fontSize: '0.8125rem',
-          fontWeight: 500,
-        },
-        secondary: {
-          fontSize: '0.75rem',
-        },
-      },
-    },
-    MuiListItemIcon: {
-      styleOverrides: {
-        root: {
-          minWidth: '36px',
-        },
-      },
-    },
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: {
-          fontSize: '0.75rem',
-          padding: '4px 8px',
-        },
-      },
-    },
-    MuiBreadcrumbs: {
-      styleOverrides: {
-        root: {
-          fontSize: '0.8125rem',
-        },
-      },
-    },
-    MuiTab: {
-      styleOverrides: {
-        root: {
-          fontSize: '0.8125rem',
-          minHeight: '42px',
-          padding: '6px 12px',
-          textTransform: 'none',
-        },
-      },
-    },
-    MuiDialog: {
-      defaultProps: {
-        maxWidth: 'md',
       },
     },
     MuiDialogTitle: {
@@ -309,7 +167,7 @@ const themeOptions: ThemeOptions = {
     MuiDialogContent: {
       styleOverrides: {
         root: {
-          padding: '16px',
+          padding: '16px 20px',
         },
       },
     },
@@ -320,8 +178,14 @@ const themeOptions: ThemeOptions = {
         },
       },
     },
+    MuiCheckbox: {
+      styleOverrides: {
+        root: {
+          padding: '4px', // Tighter spacing for checklists
+        },
+      },
+    },
   },
 };
 
 export const theme = createTheme(themeOptions);
-

@@ -1,3 +1,0 @@
-"""
-Immigration app signal handlers.
-"""
