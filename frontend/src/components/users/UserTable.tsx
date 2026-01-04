@@ -15,8 +15,9 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  Link,
 } from '@mui/material';
-import { Edit, Security, Visibility } from '@mui/icons-material';
+import { Security } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Protect } from '@/components/protected/Protect';
 import type { User } from '@/types/user';
@@ -31,7 +32,6 @@ interface UserTableProps {
   };
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  onEdit: (user: User) => void;
   onAssignPermissions: (user: User) => void;
 }
 
@@ -58,7 +58,6 @@ export const UserTable = ({
   pagination,
   onPageChange,
   onPageSizeChange,
-  onEdit,
   onAssignPermissions,
 }: UserTableProps) => {
   const navigate = useNavigate();
@@ -72,7 +71,7 @@ export const UserTable = ({
   };
 
   const handleViewUser = (userId: number) => {
-    navigate(`/user-management/users/${userId}`);
+    navigate(`/user-management/users/${userId}`, { state: { from: '/user-management/users' } });
   };
 
   return (
@@ -80,7 +79,6 @@ export const UserTable = ({
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell>ID</TableCell>
             <TableCell>Username</TableCell>
             <TableCell>Full Name</TableCell>
             <TableCell>Email</TableCell>
@@ -94,13 +92,13 @@ export const UserTable = ({
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+              <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                 <CircularProgress size={32} />
               </TableCell>
             </TableRow>
           ) : users.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+              <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                 <Typography variant="body2" color="text.secondary">
                   No users found
                 </Typography>
@@ -109,11 +107,20 @@ export const UserTable = ({
           ) : (
             users.map((user) => (
               <TableRow key={user.id} hover>
-                <TableCell>{user.id}</TableCell>
                 <TableCell>
-                  <Typography variant="body2" fontWeight={500}>
+                  <Link
+                    component="button"
+                    variant="body2"
+                    onClick={() => handleViewUser(user.id)}
+                    sx={{
+                      textDecoration: 'none',
+                      color: 'primary.main',
+                      fontWeight: 500,
+                      '&:hover': { textDecoration: 'underline' },
+                    }}
+                  >
                     {user.username}
-                  </Typography>
+                  </Link>
                 </TableCell>
                 <TableCell>{user.full_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
@@ -138,18 +145,6 @@ export const UserTable = ({
                 </TableCell>
                 <TableCell>{formatDate(user.date_joined)}</TableCell>
                 <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                  <Tooltip title="View">
-                    <IconButton size="small" onClick={() => handleViewUser(user.id)}>
-                      <Visibility fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Protect permission="change_user">
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => onEdit(user)}>
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Protect>
                   <Protect permission="change_user">
                     <Tooltip title="Assign Permissions">
                       <IconButton size="small" onClick={() => onAssignPermissions(user)} color="primary">

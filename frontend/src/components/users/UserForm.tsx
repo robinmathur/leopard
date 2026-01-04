@@ -20,8 +20,9 @@ import {
   Chip,
 } from '@mui/material';
 import { GROUP_OPTIONS } from '@/constants/groups';
+import { branchApi } from '@/services/api/branchApi';
 import type { User, UserCreateRequest, UserUpdateRequest } from '@/types/user';
-import type { BranchData } from '@/auth/types';
+import type { Branch } from '@/types/branch';
 
 interface UserFormProps {
   mode: 'add' | 'edit';
@@ -40,7 +41,6 @@ interface FormData {
   first_name: string;
   last_name: string;
   group_name: string;
-  tenant_id: string;
   branch_ids: number[];
   is_active: boolean;
 }
@@ -53,7 +53,6 @@ const initialFormData: FormData = {
   first_name: '',
   last_name: '',
   group_name: 'CONSULTANT',
-  tenant_id: '',
   branch_ids: [],
   is_active: true,
 };
@@ -68,7 +67,7 @@ export const UserForm = ({
 }: UserFormProps) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
-  const [branches, setBranches] = useState<BranchData[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
 
   // Fetch branches
@@ -76,15 +75,15 @@ export const UserForm = ({
     const fetchBranches = async () => {
       setLoadingBranches(true);
       try {
-        // Get branches from current user's profile or fetch from API
-        // For now, we'll use the branches from the current user's auth store
-        // In a real scenario, you'd have a branches API endpoint
-        const currentUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
-        if (currentUser.branches) {
-          setBranches(currentUser.branches); }}catch (error) {
+        const response = await branchApi.list({ page_size: 100 });
+        setBranches(response.results);
+      } catch (error) {
         console.error('Failed to fetch branches:', error);
+        setBranches([]);
       } finally {
-        setLoadingBranches(false); }};
+        setLoadingBranches(false);
+      }
+    };
     fetchBranches();
   }, []);
 
@@ -99,10 +98,11 @@ export const UserForm = ({
         first_name: initialData.first_name || '',
         last_name: initialData.last_name || '',
         group_name: initialData.primary_group || 'CONSULTANT',
-        tenant_id: initialData.tenant ? String(initialData.tenant) : '',
         branch_ids: initialData.branches_data?.map(b => b.id) || [],
         is_active: initialData.is_active,
-      }); }}, [mode, initialData]);
+      });
+    }
+  }, [mode, initialData]);
 
   const handleChange = (field: keyof FormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown }}) => {
@@ -175,10 +175,6 @@ export const UserForm = ({
       (submitData as UserCreateRequest).password = formData.password;
     } else if (formData.password) {
       (submitData as UserUpdateRequest).password = formData.password;
-    }
-
-    if (formData.tenant_id) {
-      submitData.tenant_id = parseInt(formData.tenant_id, 10);
     }
 
     if (formData.branch_ids.length > 0) {
@@ -316,21 +312,6 @@ export const UserForm = ({
               <FormHelperText>{getFieldError('group_name')}</FormHelperText>
             )}
           </FormControl>
-        </Grid>
-
-        {/* Tenant ID */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField
-            fullWidth
-            label="Tenant ID"
-            type="number"
-            value={formData.tenant_id}
-            onChange={handleChange('tenant_id')}
-            error={!!getFieldError('tenant_id')}
-            helperText={getFieldError('tenant_id')}
-            size="small"
-            disabled={loading}
-          />
         </Grid>
 
         {/* Branches */}
