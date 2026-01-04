@@ -12,7 +12,6 @@ from immigration.constants import (
     GROUP_BRANCH_ADMIN,
     GROUP_REGION_MANAGER,
     GROUP_SUPER_ADMIN,
-    GROUP_SUPER_SUPER_ADMIN,
 )
 
 
@@ -67,10 +66,6 @@ def user_list(*, user: User, search: Optional[str] = None) -> QuerySet[User]:
             qs = User.objects.filter(
                 branches__in=user_branches
             ).distinct()
-
-    elif user.is_in_group(GROUP_SUPER_SUPER_ADMIN):
-        # SUPER_SUPER_ADMIN is only for creating tenants, not accessing tenant data
-        qs = User.objects.none()
 
     else:
         # Unknown role - no access

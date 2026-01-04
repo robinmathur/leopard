@@ -131,16 +131,13 @@ uv run python manage.py migrate_schemas --shared
 # Create your first tenant
 uv run python manage.py register_tenant \
   --name "Main Agency" \
-  --subdomain "main" \
-  --admin-email "admin@main.com" \
-  --admin-password "admin123"
+  --tenant "main"
 ```
 
 This command creates:
 - Tenant record in public schema
 - PostgreSQL schema (`tenant_main`)
 - Domain mapping (`main-immigrate.localhost`)
-- Admin user in tenant schema
 
 Continue:
 
@@ -189,9 +186,7 @@ Access frontend at: `http://localhost:5173`
 # Register a new tenant
 uv run python manage.py register_tenant \
   --name "Demo Company" \
-  --subdomain "demo" \
-  --admin-email "admin@demo.com" \
-  --admin-password "demo123"
+  --tenant "demo"
 
 # Don't forget to add to /etc/hosts:
 # 127.0.0.1 demo-immigrate.localhost
