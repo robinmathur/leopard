@@ -20,6 +20,7 @@ from immigration.api.v1.serializers.groups import (
     GroupUpdateSerializer,
     PermissionSerializer,
     UserPermissionAssignmentSerializer,
+    should_exclude_permission,
 )
 
 User = get_user_model()
@@ -322,6 +323,20 @@ class PermissionViewSet(ViewSet):
         permissions = Permission.objects.select_related('content_type').exclude(
             content_type__app_label__in=excluded_apps
         )
+        
+        # Filter out system permissions (Group, Permission, EventProcessingControl, Event)
+        # Build Q objects to exclude these content types
+        from django.db.models import Q
+        excluded_content_types = [
+            Q(content_type__app_label='auth', content_type__model='group'),
+            Q(content_type__app_label='auth', content_type__model='permission'),
+            Q(content_type__app_label='immigration', content_type__model='eventprocessingcontrol'),
+            Q(content_type__app_label='immigration', content_type__model='event'),
+        ]
+        exclude_q = excluded_content_types[0]
+        for q in excluded_content_types[1:]:
+            exclude_q |= q
+        permissions = permissions.exclude(exclude_q)
         
         # Apply pagination
         paginator = self.pagination_class()

@@ -16,7 +16,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { Edit, Delete, Security } from '@mui/icons-material';
+import { Security } from '@mui/icons-material';
 import { Protect } from '@/components/protected/Protect';
 import type { Group } from '@/types/user';
 
@@ -30,8 +30,6 @@ interface GroupTableProps {
   };
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  onEdit: (group: Group) => void;
-  onDelete: (group: Group) => void;
   onAssignPermissions: (group: Group) => void;
 }
 
@@ -42,8 +40,6 @@ export const GroupTable = ({
   pagination,
   onPageChange,
   onPageSizeChange,
-  onEdit,
-  onDelete,
   onAssignPermissions,
 }: GroupTableProps) => {
   const handleChangePage = (_event: unknown, newPage: number) => {
@@ -59,7 +55,6 @@ export const GroupTable = ({
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell>ID</TableCell>
             <TableCell>Name</TableCell>
             <TableCell>Permissions</TableCell>
             <TableCell>Users</TableCell>
@@ -69,13 +64,13 @@ export const GroupTable = ({
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+              <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                 <CircularProgress size={32} />
               </TableCell>
             </TableRow>
           ) : groups.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+              <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                 <Typography variant="body2" color="text.secondary">
                   No groups found
                 </Typography>
@@ -84,7 +79,6 @@ export const GroupTable = ({
           ) : (
             groups.map((group) => (
               <TableRow key={group.id} hover>
-                <TableCell>{group.id}</TableCell>
                 <TableCell>
                   <Typography variant="body2" fontWeight={500}>
                     {group.name}
@@ -106,23 +100,9 @@ export const GroupTable = ({
                 </TableCell>
                 <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                   <Protect permission="change_user">
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => onEdit(group)}>
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Protect>
-                  <Protect permission="change_user">
                     <Tooltip title="Assign Permissions">
                       <IconButton size="small" onClick={() => onAssignPermissions(group)} color="primary">
                         <Security fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Protect>
-                  <Protect permission="delete_user">
-                    <Tooltip title="Delete">
-                      <IconButton size="small" onClick={() => onDelete(group)} color="error">
-                        <Delete fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </Protect>

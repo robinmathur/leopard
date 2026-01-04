@@ -177,6 +177,15 @@ GROUP_DISPLAY_NAMES = {
     GROUP_CONSULTANT: 'Consultant',
 }
 
+# Permission content types to exclude from permission lists in API responses
+# These are system-level permissions that should not be assignable to users/groups
+EXCLUDED_PERMISSION_CONTENT_TYPES = [
+    'auth.group',
+    'auth.permission',
+    'immigration.eventprocessingcontrol',
+    'immigration.event',
+]
+
 CURRENCY_CHOICES = [
     ('USD', 'US Dollar'),
     ('EUR', 'Euro'),

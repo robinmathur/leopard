@@ -20,13 +20,12 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Protect } from '@/components/protected/Protect';
 import { GroupTable } from '@/components/groups/GroupTable';
 import { GroupForm } from '@/components/groups/GroupForm';
-import { DeleteConfirmDialog } from '@/components/groups/DeleteConfirmDialog';
 import { PermissionAssignmentDialog } from '@/components/groups/PermissionAssignmentDialog';
 import { groupApi } from '@/services/api/groupApi';
-import type { Group, GroupCreateRequest, GroupUpdateRequest } from '@/types/user';
+import type { Group, GroupCreateRequest } from '@/types/user';
 import type { ApiError } from '@/services/api/httpClient';
 
-type DialogMode = 'add' | 'edit' | null;
+type DialogMode = 'add' | null;
 
 export const GroupsPage = () => {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -45,7 +44,6 @@ export const GroupsPage = () => {
   // Dialog states
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -95,50 +93,6 @@ export const GroupsPage = () => {
     setFieldErrors({});
   };
 
-  // --- Edit Group ---
-  const handleEdit = (group: Group) => {
-    setDialogMode('edit');
-    setSelectedGroup(group);
-    setFieldErrors({});
-  };
-
-  // --- Delete Group ---
-  const handleDelete = (group: Group) => {
-    setSelectedGroup(group);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedGroup) return;
-
-    setFormLoading(true);
-    try {
-      await groupApi.delete(selectedGroup.id);
-      setDeleteDialogOpen(false);
-      setSelectedGroup(null);
-      setSnackbar({
-        open: true,
-        message: `Group "${selectedGroup.name}" deleted successfully`,
-        severity: 'success',
-      });
-      fetchGroups(pagination.page, pagination.pageSize);
-    } catch (error) {
-      const apiError = error as ApiError;
-      setSnackbar({
-        open: true,
-        message: apiError.message || 'Failed to delete group',
-        severity: 'error',
-      });
-    } finally {
-      setFormLoading(false);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setSelectedGroup(null);
-  };
-
   // --- Assign Permissions ---
   const handleAssignPermissions = (group: Group) => {
     setSelectedGroup(group);
@@ -184,30 +138,19 @@ export const GroupsPage = () => {
   };
 
   const handleSaveGroup = useCallback(
-    async (data: GroupCreateRequest | GroupUpdateRequest) => {
+    async (data: GroupCreateRequest) => {
       setFormLoading(true);
       setFieldErrors({});
 
       try {
-        if (dialogMode === 'add') {
-          const result = await groupApi.create(data as GroupCreateRequest);
-          handleCloseDialog();
-          setSnackbar({
-            open: true,
-            message: `Group "${result.name}" added successfully`,
-            severity: 'success',
-          });
-          fetchGroups(pagination.page, pagination.pageSize);
-        } else if (dialogMode === 'edit' && selectedGroup) {
-          const result = await groupApi.update(selectedGroup.id, data as GroupUpdateRequest);
-          handleCloseDialog();
-          setSnackbar({
-            open: true,
-            message: `Group "${result.name}" updated successfully`,
-            severity: 'success',
-          });
-          fetchGroups(pagination.page, pagination.pageSize);
-        }
+        const result = await groupApi.create(data);
+        handleCloseDialog();
+        setSnackbar({
+          open: true,
+          message: `Group "${result.name}" added successfully`,
+          severity: 'success',
+        });
+        fetchGroups(pagination.page, pagination.pageSize);
       } catch (err) {
         const apiError = err as ApiError;
         if (apiError.fieldErrors) {
@@ -223,7 +166,7 @@ export const GroupsPage = () => {
         setFormLoading(false);
       }
     },
-    [dialogMode, selectedGroup, fetchGroups, pagination]
+    [fetchGroups, pagination]
   );
 
   const handleCloseSnackbar = () => {
@@ -260,13 +203,11 @@ export const GroupsPage = () => {
           pagination={pagination}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
           onAssignPermissions={handleAssignPermissions}
         />
       </Paper>
 
-      {/* Add/Edit Group Dialog */}
+      {/* Add Group Dialog */}
       <Dialog
         open={dialogMode !== null}
         onClose={formLoading ? undefined : handleCloseDialog}
@@ -274,7 +215,7 @@ export const GroupsPage = () => {
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {dialogMode === 'add' ? 'Add New Group' : 'Edit Group'}
+          Add New Group
           <IconButton
             onClick={handleCloseDialog}
             disabled={formLoading}
@@ -285,8 +226,7 @@ export const GroupsPage = () => {
         </DialogTitle>
         <DialogContent dividers>
           <GroupForm
-            mode={dialogMode || 'add'}
-            initialData={selectedGroup || undefined}
+            mode="add"
             onSave={handleSaveGroup}
             onCancel={handleCloseDialog}
             loading={formLoading}
@@ -294,15 +234,6 @@ export const GroupsPage = () => {
           />
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        open={deleteDialogOpen}
-        group={selectedGroup}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        loading={formLoading}
-      />
 
       {/* Permission Assignment Dialog */}
       <PermissionAssignmentDialog

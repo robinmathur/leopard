@@ -5,6 +5,29 @@ Group serializers for Django Groups management.
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from django.contrib.auth.models import Group, Permission
+from immigration.constants import EXCLUDED_PERMISSION_CONTENT_TYPES
+
+
+def should_exclude_permission(permission):
+    """
+    Check if a permission should be excluded from permission lists.
+    
+    Args:
+        permission: Permission instance or dict with 'content_type' key
+        
+    Returns:
+        bool: True if permission should be excluded, False otherwise
+    """
+    if hasattr(permission, 'content_type'):
+        # Permission instance
+        content_type_str = f"{permission.content_type.app_label}.{permission.content_type.model}"
+    elif isinstance(permission, dict) and 'content_type' in permission:
+        # Dict with content_type string
+        content_type_str = permission['content_type']
+    else:
+        return False
+    
+    return content_type_str in EXCLUDED_PERMISSION_CONTENT_TYPES
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -21,11 +44,10 @@ class PermissionSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'name',
-            'codename',
             'content_type',
             'content_type_display',
         ]
-        read_only_fields = ['id', 'name', 'codename']
+        read_only_fields = ['id', 'name']
     
     @extend_schema_field(serializers.CharField())
     def get_content_type(self, obj):
@@ -61,22 +83,23 @@ class GroupOutputSerializer(serializers.ModelSerializer):
     
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_permissions_list(self, obj):
-        """Get all permissions for this group."""
+        """Get all permissions for this group, excluding system permissions."""
         permissions = obj.permissions.all().select_related('content_type')
         return [
             {
                 'id': perm.id,
                 'name': perm.name,
-                'codename': perm.codename,
                 'content_type': f"{perm.content_type.app_label}.{perm.content_type.model}",
             }
             for perm in permissions
+            if not should_exclude_permission(perm)
         ]
     
     @extend_schema_field(serializers.IntegerField())
     def get_permissions_count(self, obj):
-        """Get count of permissions."""
-        return obj.permissions.count()
+        """Get count of permissions (excluding system permissions)."""
+        permissions = obj.permissions.all().select_related('content_type')
+        return sum(1 for perm in permissions if not should_exclude_permission(perm))
     
     @extend_schema_field(serializers.IntegerField())
     def get_users_count(self, obj):
