@@ -100,7 +100,6 @@ function isValidPermission(value: string): value is Permission {
 function mapRoleToUserRole(backendRole: string): User['role'] {
   const roleMap: Record<string, User['role']> = {
     'SUPER_ADMIN': 'super_admin',
-    'SUPER_SUPER_ADMIN': 'super_admin',
     'BRANCH_ADMIN': 'branch_manager',
     'BRANCH_MANAGER': 'branch_manager',
     'REGION_MANAGER': 'branch_manager',

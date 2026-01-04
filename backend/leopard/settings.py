@@ -305,9 +305,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     # Frontend (all tenant subdomains)
     "http://localhost:5173",
-    "http://main.immigrate.localhost:5173",
-    "http://demo.immigrate.localhost:5173",
-    "http://acme.immigrate.localhost:5173",
     # Add more as needed, or disable CSRF for API endpoints (recommended for JWT)
     "http://192.168.0.196:62718",
 ]

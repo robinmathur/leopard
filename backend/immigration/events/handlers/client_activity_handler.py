@@ -64,6 +64,19 @@ def handle(event: Event, handler_config: dict) -> HandlerResult:
                 metadata['visa_type_name'] = str(visa_app.visa_type)
         except Exception:
             pass
+
+    if event.entity_type == 'CollegeApplication':
+        metadata['application_id'] = event.entity_id
+        # Get institute and course names if available
+        try:
+            from immigration.models import CollegeApplication
+            college_app = CollegeApplication.objects.get(id=event.entity_id)
+            if college_app.institute:
+                metadata['institute_name'] = str(college_app.institute.name)
+            if college_app.course:
+                metadata['course_name'] = str(college_app.course.name)
+        except Exception:
+            pass
     
     # Use event.created_at to preserve the original event time
     # This ensures the activity timestamp reflects when the action occurred,

@@ -135,7 +135,7 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
             'enabled': True,
             'config': {
                 'activity_type': 'NOTE_ADDED',
-                'description_template': '{performed_by_name} added a note',
+                'description_template': 'Note added',
             },
         },
     ],
@@ -146,8 +146,17 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
     # =========================================================================
     # VISA APPLICATION EVENTS - All optional
     # =========================================================================
-    
-    'VisaApplication.CREATE': [],  # Configure if needed
+
+    'VisaApplication.CREATE': [
+        {
+            'handler': 'client_activity',
+            'enabled': True,
+            'config': {
+                'activity_type': 'VISA_APPLICATION_CREATED',
+                'description_template': 'Visa Application created for {visa_type_name}',
+            },
+        },
+    ],
     'VisaApplication.status.UPDATE': [],  # Configure if needed
     'VisaApplication.assigned_to.UPDATE': [
         {
@@ -155,7 +164,7 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
             'enabled': True,
             'config': {
                 'activity_type': 'ASSIGNED',
-                'description_template': 'Visa Application is assigned to {assigned_to_name} by {performed_by_name}',
+                'description_template': 'Visa Application assigned to {assigned_to_name}',
             },
         },
         {
@@ -175,15 +184,24 @@ EVENT_HANDLERS: Dict[str, List[Dict[str, Any]]] = {
     # =========================================================================
     # COLLEGE APPLICATION EVENTS - All optional
     # =========================================================================
-    
-    'CollegeApplication.CREATE': [],  # Configure if needed
+
+    'CollegeApplication.CREATE': [
+        {
+            'handler': 'client_activity',
+            'enabled': True,
+            'config': {
+                'activity_type': 'COLLEGE_APPLICATION_CREATED',
+                'description_template': 'College Application created for {institute_name} - {course_name}',
+            },
+        },
+    ],
     'CollegeApplication.assigned_to.UPDATE': [
         {
             'handler': 'client_activity',
             'enabled': True,
             'config': {
                 'activity_type': 'ASSIGNED',
-                'description_template': 'Application is assigned to {assigned_to_name} by {performed_by_name}',
+                'description_template': 'College Application assigned to {assigned_to_name}',
             },
         },
         {

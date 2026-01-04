@@ -118,27 +118,73 @@ export const AgentForm = ({
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
 
-    // Required fields
+    // Required fields (mandatory from backend)
     if (!formData.agent_name.trim()) {
       errors.agent_name = 'Agent name is required';
+    } else if (formData.agent_name.trim().length > 100) {
+      errors.agent_name = 'Agent name must be 100 characters or less';
     }
+
     if (!formData.agent_type) {
       errors.agent_type = 'Agent type is required';
     }
 
+    // Optional fields with validation (similar to email - optional but validated if provided)
+    
     // Email validation (optional but must be valid if provided)
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format';
+    if (formData.email.trim()) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        errors.email = 'Invalid email format';
+      }
     }
 
     // Website validation (optional but must be valid URL if provided)
-    if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
-      errors.website = 'Website must be a valid URL (e.g., https://example.com)';
+    if (formData.website.trim()) {
+      if (!/^https?:\/\/.+/.test(formData.website.trim())) {
+        errors.website = 'Website must be a valid URL (e.g., https://example.com)';
+      } else if (formData.website.trim().length > 100) {
+        errors.website = 'Website URL must be 100 characters or less';
+      }
     }
 
     // Phone validation (optional but should be reasonable if provided)
-    if (formData.phone_number && formData.phone_number.length < 8) {
-      errors.phone_number = 'Phone number is too short';
+    if (formData.phone_number.trim()) {
+      if (formData.phone_number.trim().length < 8) {
+        errors.phone_number = 'Phone number is too short (minimum 8 characters)';
+      } else if (formData.phone_number.trim().length > 15) {
+        errors.phone_number = 'Phone number must be 15 characters or less';
+      }
+    }
+
+    // Company name validation (optional but validated if provided)
+    if (formData.company_name.trim() && formData.company_name.trim().length > 100) {
+      errors.company_name = 'Company name must be 100 characters or less';
+    }
+
+    // Designation validation (optional but validated if provided)
+    if (formData.designation.trim() && formData.designation.trim().length > 100) {
+      errors.designation = 'Designation must be 100 characters or less';
+    }
+
+    // Address field validations (optional but validated if provided)
+    if (formData.street.trim() && formData.street.trim().length > 100) {
+      errors.street = 'Street address must be 100 characters or less';
+    }
+
+    if (formData.suburb.trim() && formData.suburb.trim().length > 100) {
+      errors.suburb = 'Suburb must be 100 characters or less';
+    }
+
+    if (formData.state.trim() && formData.state.trim().length > 100) {
+      errors.state = 'State must be 100 characters or less';
+    }
+
+    if (formData.postcode.trim() && formData.postcode.trim().length > 20) {
+      errors.postcode = 'Postcode must be 20 characters or less';
+    }
+
+    if (formData.invoice_to.trim() && formData.invoice_to.trim().length > 100) {
+      errors.invoice_to = 'Invoice to must be 100 characters or less';
     }
 
     setLocalErrors(errors);
@@ -186,7 +232,7 @@ export const AgentForm = ({
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Grid container spacing={2}>
-        {/* Agent Name */}
+        {/* Agent Name - Required */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             required
@@ -195,14 +241,14 @@ export const AgentForm = ({
             value={formData.agent_name}
             onChange={handleChange('agent_name')}
             error={!!getFieldError('agent_name')}
-            helperText={getFieldError('agent_name')}
+            helperText={getFieldError('agent_name') || 'Required field'}
             size="small"
             disabled={loading}
             placeholder="Enter agent name"
           />
         </Grid>
 
-        {/* Agent Type */}
+        {/* Agent Type - Required */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth required size="small" error={!!getFieldError('agent_type')}>
             <InputLabel>Agent Type</InputLabel>
@@ -218,8 +264,10 @@ export const AgentForm = ({
                 </MenuItem>
               ))}
             </Select>
-            {getFieldError('agent_type') && (
+            {getFieldError('agent_type') ? (
               <FormHelperText>{getFieldError('agent_type')}</FormHelperText>
+            ) : (
+              <FormHelperText>Required field</FormHelperText>
             )}
           </FormControl>
         </Grid>

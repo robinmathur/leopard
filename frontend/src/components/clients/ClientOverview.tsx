@@ -3,12 +3,13 @@
  * Displays comprehensive client overview with essential information
  */
 import { Box,  Typography, Chip, Paper, Divider, Skeleton , Grid} from '@mui/material';
-import { Client, STAGE_LABELS, STAGE_COLORS, GENDER_LABELS, COUNTRIES } from '@/types/client';
-import { ProfilePictureUpload } from './ProfilePictureUpload';
+import { Client, GENDER_LABELS, COUNTRIES, STAGE_LABELS, STAGE_COLORS } from '@/types/client';
 
 interface ClientOverviewProps {
   client: Client;
   loading?: boolean;
+  /** Optional header actions (e.g., Edit button) */
+  headerActions?: React.ReactNode;
 }
 
 /**
@@ -70,46 +71,24 @@ export const ClientOverviewSkeleton = () => (
 /**
  * ClientOverview component
  */
-export const ClientOverview = ({ client, loading = false }: ClientOverviewProps) => {
+export const ClientOverview = ({ client, loading = false, headerActions }: ClientOverviewProps) => {
   if (loading) {
     return <ClientOverviewSkeleton />;
   }
 
-  const fullName = [client.first_name, client.middle_name, client.last_name]
-    .filter(Boolean)
-    .join(' ');
-
   return (
     <Paper sx={{ p: 3 }}>
-      <Grid container spacing={3}>
-        {/* Profile Picture Section */}
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {/* Profile Picture Upload with validation */}
-            <ProfilePictureUpload
-              clientId={client.id}
-              clientName={fullName}
-              size={120}
-              editable={true}
-            />
-            <Typography variant="h6" sx={{ mt: 2, textAlign: 'center' }}>
-              {fullName}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
-              <Chip
-                label={STAGE_LABELS[client.stage]}
-                color={STAGE_COLORS[client.stage]}
-                size="small"
-              />
-              {!client.active && (
-                <Chip label="Archived" color="default" size="small" variant="outlined" />
-              )}
-            </Box>
-          </Box>
-        </Grid>
+      {/* Header with optional actions */}
+      {headerActions && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Client Profile</Typography>
+          {headerActions}
+        </Box>
+      )}
 
+      <Grid container spacing={3}>
         {/* Client Details Section */}
-        <Grid size={{ xs: 12, md: 9 }}>
+        <Grid size={{ xs: 12 }}>
           {/* Personal Information */}
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Personal Information

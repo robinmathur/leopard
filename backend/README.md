@@ -158,16 +158,13 @@ Use the `register_tenant` command to create a tenant with its domain and admin u
 ```bash
 uv run python manage.py register_tenant \
   --name "Main Agency" \
-  --subdomain "main" \
-  --admin-email "admin@main.com" \
-  --admin-password "admin123"
+  --tenant "main"
 ```
 
 This command:
 - Creates the tenant record in the public schema
 - Creates the PostgreSQL schema (`tenant_main`)
 - Creates the domain mapping (`main-immigrate.localhost` for development)
-- Creates an admin user in the tenant's schema
 
 **Access URL**: `http://main-immigrate.localhost:8000`
 

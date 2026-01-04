@@ -28,7 +28,7 @@ class Agent(LifeCycleModel, SoftDeletionModel):
     company_name = models.CharField(max_length=100, blank=True)
     designation = models.CharField(max_length=100, blank=True)
     phone_number = models.CharField(max_length=15, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, null=True)
     website = models.URLField(max_length=100, blank=True)
     invoice_to = models.CharField(max_length=100, blank=True)
     street = models.CharField(max_length=100, blank=True)

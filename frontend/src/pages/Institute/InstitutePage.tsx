@@ -10,7 +10,6 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions,
   Button,
   Snackbar,
   Alert,
@@ -23,15 +22,11 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Protect } from '@/components/protected/Protect';
 import { useInstituteStore } from '@/store/instituteStore';
 import {
   Institute,
   InstituteCreateRequest,
-  InstituteUpdateRequest,
 } from '@/types/institute';
 import { ApiError } from '@/services/api/httpClient';
 
@@ -45,9 +40,8 @@ export const InstitutePage = () => {
     severity: 'success' | 'error' | 'info';
   }>({ open: false, message: '', severity: 'info' });
 
-  // Dialog states
+  // Dialog states (only for Add now)
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
-  const [selectedInstitute, setSelectedInstitute] = useState<Institute | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState<InstituteCreateRequest>({
     name: '',
@@ -64,8 +58,6 @@ export const InstitutePage = () => {
     error,
     fetchInstitutes,
     addInstitute,
-    updateInstitute,
-    deleteInstitute,
     clearError,
     cancelFetchInstitutes,
   } = useInstituteStore();
@@ -92,7 +84,6 @@ export const InstitutePage = () => {
   // --- Add Institute ---
   const handleAdd = () => {
     setDialogMode('add');
-    setSelectedInstitute(null);
     setFormData({
       name: '',
       short_name: '',
@@ -102,50 +93,14 @@ export const InstitutePage = () => {
     setFormErrors({});
   };
 
-  // --- Edit Institute ---
-  const handleEdit = (institute: Institute) => {
-    setDialogMode('edit');
-    setSelectedInstitute(institute);
-    setFormData({
-      name: institute.name,
-      short_name: institute.short_name,
-      phone: institute.phone || '',
-      website: institute.website || '',
-    });
-  };
-
-  // --- Delete Institute ---
-  const handleDelete = async (institute: Institute) => {
-    if (!window.confirm(`Are you sure you want to delete "${institute.name}"?`)) {
-      return;
-    }
-
-    setFormLoading(true);
-    const success = await deleteInstitute(institute.id);
-    setFormLoading(false);
-
-    if (success) {
-      setSnackbar({
-        open: true,
-        message: `Institute "${institute.name}" deleted successfully`,
-        severity: 'success',
-      });
-    } else {
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete institute',
-        severity: 'error',
-      }); }};
-
   // --- View Institute ---
   const handleView = (institute: Institute) => {
-    navigate(`/institute/${institute.id}`);
+    navigate(`/institute/${institute.id}`, { state: { from: '/institute' } });
   };
 
   // --- Form Dialog Actions ---
   const handleCloseDialog = () => {
     setDialogMode(null);
-    setSelectedInstitute(null);
     setFormData({
       name: '',
       short_name: '',
@@ -199,21 +154,10 @@ export const InstitutePage = () => {
             message: `Institute "${result.name}" added successfully`,
             severity: 'success',
           });
-          fetchInstitutes(); }}else if (dialogMode === 'edit' && selectedInstitute) {
-        const updateData: InstituteUpdateRequest = {
-          name: formData.name.trim(),
-          short_name: formData.short_name.trim(),
-          phone: formData.phone?.trim() || undefined,
-          website: formData.website?.trim() || undefined,
-        };
-        const result = await updateInstitute(selectedInstitute.id, updateData);
-        if (result) {
-          handleCloseDialog();
-          setSnackbar({
-            open: true,
-            message: `Institute "${result.name}" updated successfully`,
-            severity: 'success',
-          }); }}} catch (err) {
+          fetchInstitutes();
+        }
+      }
+    } catch (err) {
       const apiError = err as ApiError;
       // Handle field-specific errors from backend
       if (apiError.fieldErrors) {
@@ -228,8 +172,12 @@ export const InstitutePage = () => {
           open: true,
           message: apiError.message || 'Failed to save institute',
           severity: 'error',
-        }); }}finally {
-      setFormLoading(false); }}, [dialogMode, selectedInstitute, formData, addInstitute, updateInstitute, fetchInstitutes]);
+        });
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  }, [dialogMode, formData, addInstitute, fetchInstitutes]);
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -278,8 +226,18 @@ export const InstitutePage = () => {
       ) : (
         <Grid container spacing={2}>
           {institutes.map((institute) => (
-            <Grid key={institute.id}size={{ xs: 12, sm: 6, md: 4 }}>
-              <Card>
+            <Grid key={institute.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Card
+                sx={{
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    boxShadow: 4,
+                    transform: 'translateY(-2px)',
+                  },
+                }}
+                onClick={() => handleView(institute)}
+              >
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     {institute.name}
@@ -298,45 +256,21 @@ export const InstitutePage = () => {
                     </Typography>
                   )}
                 </CardContent>
-                <CardActions sx={{ px: 2, pb: 2 }}>
-                  <Button size="small" startIcon={<VisibilityIcon />} onClick={() => handleView(institute)}>
-                    View
-                  </Button>
-                  <Protect permission="change_institute">
-                    <Button
-                      size="small"
-                      startIcon={<EditIcon />}
-                      onClick={() => handleEdit(institute)}
-                    >
-                      Edit
-                    </Button>
-                  </Protect>
-                  <Protect permission="delete_institute">
-                    <Button
-                      size="small"
-                      startIcon={<DeleteIcon />}
-                      onClick={() => handleDelete(institute)}
-                      color="error"
-                    >
-                      Delete
-                    </Button>
-                  </Protect>
-                </CardActions>
               </Card>
             </Grid>
           ))}
         </Grid>
       )}
 
-      {/* Add/Edit Institute Dialog */}
+      {/* Add Institute Dialog */}
       <Dialog
-        open={dialogMode !== null}
+        open={dialogMode === 'add'}
         onClose={formLoading ? undefined : handleCloseDialog}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {dialogMode === 'add' ? 'Add New Institute' : 'Edit Institute'}
+          Add New Institute
           <IconButton onClick={handleCloseDialog} disabled={formLoading} size="small">
             <CloseIcon />
           </IconButton>

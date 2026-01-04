@@ -31,24 +31,18 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--name", required=True, help="Company/Organization name")
         parser.add_argument(
-            "--subdomain", required=True, help="Tenant subdomain (e.g., acme)"
-        )
-        parser.add_argument("--admin-email", required=True, help="Tenant admin email")
-        parser.add_argument(
-            "--admin-password", required=True, help="Tenant admin password"
+            "--tenant", required=True, help="Tenant subdomain (e.g., acme)"
         )
 
     def handle(self, *args, **options):
         name = options["name"]
-        subdomain = options["subdomain"]
-        admin_email = options["admin_email"]
-        admin_password = options["admin_password"]
+        tenant_domain_name = options["tenant"]
 
         # Get configuration from settings
         app_subdomain = getattr(settings, "APP_SUBDOMAIN", "app")
         base_domain = getattr(settings, "BASE_DOMAIN", "localhost")
 
-        schema_name = f"tenant_{subdomain}"
+        schema_name = f"tenant_{tenant_domain_name}"
 
         self.stdout.write(f'Creating tenant "{name}"...')
 
@@ -72,7 +66,7 @@ class Command(BaseCommand):
         try:
             # FLATTENED subdomain: acme-immigrate.logiclucent.in
             # (instead of acme.immigrate.logiclucent.in)
-            domain_name = f"{subdomain}-{app_subdomain}.{base_domain}"
+            domain_name = f"{tenant_domain_name}-{app_subdomain}.{base_domain}"
 
             domain = Domain(domain=domain_name, tenant=tenant, is_primary=True)
             domain.save()
@@ -83,26 +77,10 @@ class Command(BaseCommand):
             tenant.delete()
             return
 
-        # Create tenant admin in tenant schema
-        try:
-            with schema_context(schema_name):
-                admin = User.objects.create_superuser(
-                    username=admin_email, email=admin_email, password=admin_password
-                )
-                self.stdout.write(
-                    self.style.SUCCESS(f"✓ Tenant admin created: {admin_email}")
-                )
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"✗ Error creating tenant admin: {e}"))
-            # Rollback
-            domain.delete()
-            tenant.delete()
-            return
-
         # Success summary
-        access_url = f"https://{subdomain}-{app_subdomain}.{base_domain}"
+        access_url = f"https://{tenant_domain_name}-{app_subdomain}.{base_domain}"
         if base_domain == 'localhost':
-            access_url = f"http://{subdomain}-{app_subdomain}.{base_domain}:8000"
+            access_url = f"http://{tenant_domain_name}-{app_subdomain}.{base_domain}:8000"
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -113,7 +91,6 @@ class Command(BaseCommand):
                 f'  Company: {name}\n'
                 f'  Schema: {schema_name}\n'
                 f'  Domain Pattern: {domain_name} (FLATTENED)\n'
-                f'  Admin: {admin_email}\n'
                 f'  Status: {tenant.subscription_status}\n'
                 f'\n'
                 f'  Access URL: {access_url}\n'
@@ -128,6 +105,6 @@ class Command(BaseCommand):
                     f'\n⚠  Development Setup Required:\n'
                     f'   Add this line to /etc/hosts (macOS/Linux) or\n'
                     f'   C:\\Windows\\System32\\drivers\\etc\\hosts (Windows):\n\n'
-                    f'   127.0.0.1 {subdomain}-{app_subdomain}.{base_domain}\n'
+                    f'   127.0.0.1 {tenant_domain_name}-{app_subdomain}.{base_domain}\n'
                 )
             )

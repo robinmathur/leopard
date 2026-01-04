@@ -14,7 +14,6 @@ from immigration.constants import (
     GROUP_BRANCH_ADMIN,
     GROUP_REGION_MANAGER,
     GROUP_SUPER_ADMIN,
-    GROUP_SUPER_SUPER_ADMIN,
 )
 
 
@@ -79,11 +78,6 @@ def client_list(*, user, filters: Optional[Dict[str, Any]] = None, include_delet
         # SUPER_ADMIN sees all clients in current tenant schema
         # Schema isolation provides automatic tenant scoping
         pass
-
-    elif user.is_in_group(GROUP_SUPER_SUPER_ADMIN):
-        # SUPER_SUPER_ADMIN is only for creating tenants, not accessing tenant data
-        # They should not see any client data
-        qs = qs.none()
     
     # Apply additional filters
     

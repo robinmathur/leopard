@@ -522,8 +522,8 @@ const TimelineItemWithTimestamp = ({
           sx={{
             bgcolor: config.color,
             color: 'white',
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -531,7 +531,7 @@ const TimelineItemWithTimestamp = ({
             border: 'none',
           }}
         >
-          <IconComponent sx={{ fontSize: '1rem', color: 'white' }} />
+          <IconComponent sx={{ fontSize: '0.85rem', color: 'white' }} />
         </TimelineDot>
         {!isLast && (
           <TimelineConnector 

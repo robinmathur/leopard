@@ -78,7 +78,9 @@ def get_template_context(event, config: dict) -> Dict[str, Any]:
             if application.application_type:
                 context['application_type_name'] = str(application.application_type)
             if application.institute:
-                context['institute_name'] = str(application.institute)
+                context['institute_name'] = str(application.institute.name)
+            if application.course:
+                context['course_name'] = str(application.course.name)
         except Exception:
             pass
     
