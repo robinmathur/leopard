@@ -1,6 +1,6 @@
 /**
  * ClientCollegeApplications Component
- * Displays college applications for a client
+ * Displays college applications for a client with expandable cards
  */
 import { useEffect, useState } from 'react';
 import {
@@ -24,7 +24,6 @@ import {
 } from '@/services/api/collegeApplicationApi';
 import { Protect } from '@/components/protected/Protect';
 import { CollegeApplicationCard } from '@/components/college/CollegeApplicationCard';
-import { CollegeApplicationDetail } from '@/components/college/CollegeApplicationDetail';
 import { CollegeApplicationForm } from '@/components/college/CollegeApplicationForm';
 
 export interface ClientCollegeApplicationsProps {
@@ -66,7 +65,7 @@ export const ClientCollegeApplications = ({
   const [applications, setApplications] = useState<CollegeApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedApplicationId, setSelectedApplicationId] = useState<number | undefined>(initialSelectedId);
+  const [expandedApplicationId, setExpandedApplicationId] = useState<number | undefined>(initialSelectedId);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
@@ -113,22 +112,23 @@ export const ClientCollegeApplications = ({
     };
   }, [clientId]);
 
-  // Update selected application when prop changes (from URL params)
+  // Update expanded application when prop changes (from URL params)
   useEffect(() => {
     if (initialSelectedId !== undefined) {
-      setSelectedApplicationId(initialSelectedId);
+      setExpandedApplicationId(initialSelectedId);
     }
   }, [initialSelectedId]);
 
-  const handleCardClick = (applicationId: number) => {
-    setSelectedApplicationId(applicationId);
+  const handleCardExpand = (applicationId: number) => {
+    // Only one card can be expanded at a time
+    setExpandedApplicationId(applicationId);
     if (onCardClick) {
       onCardClick(applicationId);
     }
   };
 
-  const handleCloseDetail = () => {
-    setSelectedApplicationId(undefined);
+  const handleCardCollapse = () => {
+    setExpandedApplicationId(undefined);
     if (onDetailClose) {
       onDetailClose();
     }
@@ -152,6 +152,18 @@ export const ClientCollegeApplications = ({
     if (onApplicationUpdate) {
       onApplicationUpdate();
     }
+  };
+
+  const handleApplicationDelete = (applicationId: number) => {
+    // Remove from list and collapse if it was expanded
+    setApplications(applications.filter(app => app.id !== applicationId));
+    if (expandedApplicationId === applicationId) {
+      setExpandedApplicationId(undefined);
+      if (onDetailClose) {
+        onDetailClose();
+      }
+    }
+    handleApplicationUpdate();
   };
 
   const handleOpenCreateDialog = () => {
@@ -250,21 +262,14 @@ export const ClientCollegeApplications = ({
             <CollegeApplicationCard
               key={application.id}
               application={application}
-              isSelected={selectedApplicationId === application.id}
-              onClick={() => handleCardClick(application.id)}
+              isExpanded={expandedApplicationId === application.id}
+              onExpand={() => handleCardExpand(application.id)}
+              onCollapse={handleCardCollapse}
+              onDelete={handleApplicationDelete}
+              onUpdate={handleApplicationUpdate}
             />
           ))}
         </>
-      )}
-
-      {/* College Application Detail Panel */}
-      {selectedApplicationId && (
-        <CollegeApplicationDetail
-          collegeApplicationId={selectedApplicationId}
-          initialApplication={applications.find((app) => app.id === selectedApplicationId)}
-          onClose={handleCloseDetail}
-          onUpdate={handleApplicationUpdate}
-        />
       )}
 
       {/* Create College Application Dialog */}
