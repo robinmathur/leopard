@@ -16,12 +16,14 @@ from immigration.api.v1.permissions import RoleBasedPermission
 from immigration.pagination import StandardResultsSetPagination
 from immigration.api.v1.serializers.groups import (
     GroupOutputSerializer,
+    GroupOptionSerializer,
     GroupCreateSerializer,
     GroupUpdateSerializer,
     PermissionSerializer,
     UserPermissionAssignmentSerializer,
     should_exclude_permission,
 )
+from immigration.constants import CREATABLE_GROUPS_BY_ROLE, ALL_GROUPS
 
 User = get_user_model()
 
@@ -275,6 +277,50 @@ class GroupViewSet(ViewSet):
         
         output_serializer = GroupOutputSerializer(group)
         return Response(output_serializer.data)
+    
+    @extend_schema(
+        summary="Get groups for dropdowns",
+        description="""
+        Returns a lightweight list of groups (id, name, display_name) for use in dropdowns/select lists.
+        
+        The list is filtered based on the requesting user's role:
+        - Super Admin: All groups (Super Admin, Region Manager, Branch Admin, Consultant)
+        - Region Manager: Branch Admin, Consultant
+        - Branch Admin: Consultant only
+        - Consultant: No groups (cannot create users)
+        """,
+        responses={
+            200: GroupOptionSerializer(many=True),
+            401: {'description': 'Unauthorized'},
+        },
+        tags=['groups'],
+    )
+    @action(detail=False, methods=['get'], url_path='options')
+    def options(self, request):
+        """
+        Get groups for dropdowns.
+        GET /api/v1/groups/options/
+        
+        Returns lightweight group data (id, name, display_name) filtered by user's role.
+        Only returns groups that the current user can assign to new users.
+        """
+        user = request.user
+        
+        # Determine which groups this user can assign
+        allowed_group_names = []
+        for group_name in ALL_GROUPS:
+            if user.is_in_group(group_name):
+                allowed_group_names = CREATABLE_GROUPS_BY_ROLE.get(group_name, [])
+                break
+        
+        # If no specific role found (shouldn't happen normally), return empty list
+        if not allowed_group_names:
+            return Response([])
+        
+        # Filter groups to only those the user can assign
+        groups = Group.objects.filter(name__in=allowed_group_names).order_by('name')
+        serializer = GroupOptionSerializer(groups, many=True)
+        return Response(serializer.data)
 
 
 @extend_schema_view(
@@ -319,7 +365,7 @@ class PermissionViewSet(ViewSet):
         GET /api/v1/permissions/
         """
         # Exclude admin-related permissions
-        excluded_apps = ['admin', 'contenttypes', 'sessions', 'token_blacklist']
+        excluded_apps = ['admin', 'contenttypes', 'sessions', 'token_blacklist', 'tenants']
         permissions = Permission.objects.select_related('content_type').exclude(
             content_type__app_label__in=excluded_apps
         )

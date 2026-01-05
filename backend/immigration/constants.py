@@ -177,6 +177,15 @@ GROUP_DISPLAY_NAMES = {
     GROUP_CONSULTANT: 'Consultant',
 }
 
+# Groups that each role can assign to users they create
+# This defines which groups are available in the dropdown when creating/editing users
+CREATABLE_GROUPS_BY_ROLE = {
+    GROUP_SUPER_ADMIN: [GROUP_REGION_MANAGER, GROUP_BRANCH_ADMIN, GROUP_CONSULTANT],
+    GROUP_REGION_MANAGER: [GROUP_BRANCH_ADMIN, GROUP_CONSULTANT],
+    GROUP_BRANCH_ADMIN: [GROUP_CONSULTANT],
+    GROUP_CONSULTANT: [],  # Consultants cannot create users
+}
+
 # Permission content types to exclude from permission lists in API responses
 # These are system-level permissions that should not be assignable to users/groups
 EXCLUDED_PERMISSION_CONTENT_TYPES = [

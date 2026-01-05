@@ -7,11 +7,13 @@ This ViewSet provides full CRUD functionality for branches with role-based acces
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
+from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 
 from immigration.models.branch import Branch
 from immigration.api.v1.serializers.branches import (
     BranchOutputSerializer,
+    BranchOptionSerializer,
     BranchCreateSerializer,
     BranchUpdateSerializer,
 )
@@ -438,4 +440,29 @@ class BranchViewSet(ViewSet):
                 {'detail': 'Branch not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+    
+    @extend_schema(
+        summary="Get branches for dropdowns",
+        description="Returns a lightweight list of all branches (id, name) for use in dropdowns/select lists. Filtered by user's role and scope.",
+        responses={
+            200: BranchOptionSerializer(many=True),
+            401: {'description': 'Unauthorized'},
+        },
+        tags=['branches'],
+    )
+    @action(detail=False, methods=['get'], url_path='options')
+    def options(self, request):
+        """
+        Get branches for dropdowns.
+        GET /api/v1/branches/options/
+        
+        Returns lightweight branch data (id, name) filtered by user's role and scope.
+        """
+        # Get filtered branches using selector (same filtering as list)
+        filters = {}
+        branches = branch_list(user=request.user, filters=filters, include_deleted=False)
+        
+        # Return only id and name
+        serializer = BranchOptionSerializer(branches, many=True)
+        return Response(serializer.data)
 

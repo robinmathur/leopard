@@ -125,9 +125,9 @@ export const UserTable = ({
                 <TableCell>{user.full_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  {user.primary_group ? (
+                  {user.primary_group_display || user.primary_group ? (
                     <Chip
-                      label={user.primary_group}
+                      label={user.primary_group_display || user.primary_group}
                       size="small"
                       color="primary"
                     />

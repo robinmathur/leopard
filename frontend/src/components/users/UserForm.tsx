@@ -19,10 +19,9 @@ import {
   Autocomplete,
   Chip,
 } from '@mui/material';
-import { GROUP_OPTIONS } from '@/constants/groups';
 import { branchApi } from '@/services/api/branchApi';
-import type { User, UserCreateRequest, UserUpdateRequest } from '@/types/user';
-import type { Branch } from '@/types/branch';
+import { groupApi } from '@/services/api/groupApi';
+import type { User, UserCreateRequest, UserUpdateRequest, GroupOption } from '@/types/user';
 
 interface UserFormProps {
   mode: 'add' | 'edit';
@@ -67,16 +66,35 @@ export const UserForm = ({
 }: UserFormProps) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branches, setBranches] = useState<Array<{ id: number; name: string }>>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
+  const [groups, setGroups] = useState<GroupOption[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
 
-  // Fetch branches
+  // Fetch groups from backend (lightweight endpoint)
+  useEffect(() => {
+    const fetchGroups = async () => {
+      setLoadingGroups(true);
+      try {
+        const groupsData = await groupApi.options();
+        setGroups(groupsData);
+      } catch (error) {
+        console.error('Failed to fetch groups:', error);
+        setGroups([]);
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+    fetchGroups();
+  }, []);
+
+  // Fetch branches from backend (lightweight endpoint)
   useEffect(() => {
     const fetchBranches = async () => {
       setLoadingBranches(true);
       try {
-        const response = await branchApi.list({ page_size: 100 });
-        setBranches(response.results);
+        const branchesData = await branchApi.options();
+        setBranches(branchesData);
       } catch (error) {
         console.error('Failed to fetch branches:', error);
         setBranches([]);
@@ -213,7 +231,7 @@ export const UserForm = ({
         )}
 
         {/* Email */}
-        <Grid sm={mode === 'add' ? 6 : 12}size={{ xs: 12 }}>
+        <Grid size={{ xs: 12, sm: mode === 'add' ? 6 : 12 }}>
           <TextField
             required
             fullWidth
@@ -294,28 +312,36 @@ export const UserForm = ({
 
         {/* Group */}
         <Grid size={{ xs: 12, sm: 6 }}>
-          <FormControl fullWidth size="small" required error={!!getFieldError('group_name')}>
+          <FormControl fullWidth size="small" required error={!!getFieldError('group_name')} disabled={loading || loadingGroups}>
             <InputLabel>Group</InputLabel>
             <Select
               value={formData.group_name}
               onChange={handleChange('group_name')}
               label="Group"
-              disabled={loading}
+              disabled={loading || loadingGroups}
             >
-              {GROUP_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
+              {groups.length === 0 && !loadingGroups && (
+                <MenuItem disabled value="">
+                  No groups available
+                </MenuItem>
+              )}
+              {groups.map((group) => (
+                <MenuItem key={group.id} value={group.name}>
+                  {group.display_name}
                 </MenuItem>
               ))}
             </Select>
             {getFieldError('group_name') && (
               <FormHelperText>{getFieldError('group_name')}</FormHelperText>
             )}
+            {loadingGroups && (
+              <FormHelperText>Loading groups...</FormHelperText>
+            )}
           </FormControl>
         </Grid>
 
         {/* Branches */}
-        <Grid size={{ xs: 12, sm: 6 }}>
+        <Grid size={{ xs: 12 }}>
           <Autocomplete
             multiple
             options={branches}
@@ -325,7 +351,10 @@ export const UserForm = ({
               setFormData((prev) => ({
                 ...prev,
                 branch_ids: newValue.map(b => b.id),
-              })); }}loading={loadingBranches}
+              }));
+            }}
+            loading={loadingBranches}
+            limitTags={2}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -333,18 +362,47 @@ export const UserForm = ({
                 size="small"
                 placeholder="Select branches"
                 disabled={loading || loadingBranches}
+                error={!!getFieldError('branch_ids')}
+                helperText={getFieldError('branch_ids') || `${formData.branch_ids.length} branch(es) selected`}
               />
             )}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  label={option.name}
-                  {...getTagProps({ index })}
-                  size="small"
-                  disabled={loading}
-                />
-              ))
-            }
+            renderTags={(value, getTagProps) => {
+              const numTags = value.length;
+              const limitTags = 2;
+              return (
+                <>
+                  {value.slice(0, limitTags).map((option, index) => (
+                    <Chip
+                      key={option.id}
+                      label={option.name}
+                      {...getTagProps({ index })}
+                      size="small"
+                      disabled={loading}
+                    />
+                  ))}
+                  {numTags > limitTags && (
+                    <Chip
+                      label={`+${numTags - limitTags} more`}
+                      size="small"
+                      disabled={loading}
+                      sx={{ ml: 0.5 }}
+                    />
+                  )}
+                </>
+              );
+            }}
+            sx={{
+              '& .MuiAutocomplete-tag': {
+                margin: '2px',
+                maxWidth: 'calc(50% - 4px)',
+              },
+              '& .MuiAutocomplete-inputRoot': {
+                flexWrap: 'wrap',
+                minHeight: '40px',
+                paddingTop: '4px',
+                paddingBottom: '4px',
+              },
+            }}
             disabled={loading || loadingBranches}
           />
         </Grid>

@@ -29,6 +29,18 @@ from immigration.models import (
     BroadField,
     NarrowField,
     CourseLevel,
+    ApplicationType,
+    Stage,
+    CollegeApplication,
+    LPE,
+    Proficiency,
+    Qualification,
+    Passport,
+    Employment,
+    CalendarEvent,
+    VisaCategory,
+    VisaType,
+    Reminder,
 )
 
 
@@ -102,35 +114,59 @@ class Command(BaseCommand):
         """Assign permissions to groups based on role hierarchy."""
         self.stdout.write('Assigning permissions to groups...')
         
-        # Define permissions for each model
-        models_permissions = {
-            Client: ['view', 'add', 'change', 'delete'],
-            VisaApplication: ['view', 'add', 'change', 'delete'],
-            Task: ['view', 'add', 'change', 'delete'],
-            Notification: ['view', 'add', 'change', 'delete'],
-            Branch: ['view', 'add', 'change', 'delete'],
-            Region: ['view', 'add', 'change', 'delete'],
-            User: ['view', 'add', 'change', 'delete'],
-            Note: ['view', 'add', 'change', 'delete'],
-            ClientActivity: ['view'],  # Read-only - created via signals
-            ProfilePicture: ['view', 'add', 'change', 'delete'],
-            Institute: ['view', 'add', 'change', 'delete'],
-            InstituteContactPerson: ['view', 'add', 'change', 'delete'],
-            InstituteLocation: ['view', 'add', 'change', 'delete'],
-            InstituteIntake: ['view', 'add', 'change', 'delete'],
-            InstituteRequirement: ['view', 'add', 'change', 'delete'],
-            Course: ['view', 'add', 'change', 'delete'],
-            BroadField: ['view', 'add', 'change', 'delete'],
-            NarrowField: ['view', 'add', 'change', 'delete'],
-            CourseLevel: ['view', 'add', 'change', 'delete'],
-        }
+        # Get all permissions dynamically, excluding the same ones as the permission API
+        # Exclude admin-related permissions
+        excluded_apps = ['admin', 'contenttypes', 'sessions', 'token_blacklist', 'tenants']
+        all_permissions = Permission.objects.select_related('content_type').exclude(
+            content_type__app_label__in=excluded_apps
+        )
         
-        # Define role-specific permissions
+        # Filter out system permissions (Group, Permission, EventProcessingControl, Event)
+        from django.db.models import Q
+        excluded_content_types = [
+            Q(content_type__app_label='auth', content_type__model='group'),
+            Q(content_type__app_label='auth', content_type__model='permission'),
+            Q(content_type__app_label='immigration', content_type__model='eventprocessingcontrol'),
+            Q(content_type__app_label='immigration', content_type__model='event'),
+        ]
+        exclude_q = excluded_content_types[0]
+        for q in excluded_content_types[1:]:
+            exclude_q |= q
+        all_permissions = all_permissions.exclude(exclude_q)
+        
+        # Get all permissions for SUPER_ADMIN (all permissions except excluded)
+        super_admin_permissions = list(all_permissions)
+        
+        # Add Group permissions for SUPER_ADMIN (Group is excluded from main query)
+        # SUPER_ADMIN can view and change groups, but NOT add or delete them
+        try:
+            group_content_type = ContentType.objects.get(app_label='auth', model='group')
+            group_perms = Permission.objects.filter(content_type=group_content_type)
+            excluded_group_perms = ['add_group', 'delete_group']
+            for perm in group_perms:
+                if perm.codename not in excluded_group_perms:
+                    if perm not in super_admin_permissions:
+                        super_admin_permissions.append(perm)
+        except ContentType.DoesNotExist:
+            self.stdout.write(
+                self.style.WARNING('  Group content type not found')
+            )
+        
+        # Get permissions for BRANCH_ADMIN (all except Branch and Group management, but keep view)
+        branch_admin_permissions = []
+        excluded_codenames = ['add_branch', 'change_branch', 'delete_branch', 
+                              'add_group', 'change_group', 'delete_group']
+        
+        for perm in super_admin_permissions:
+            # Include all permissions except Branch and Group management
+            if perm.codename not in excluded_codenames:
+                branch_admin_permissions.append(perm)
+            # But keep view permissions for Branch and Group
+            elif perm.codename in ['view_branch', 'view_group']:
+                branch_admin_permissions.append(perm)
+        
+        # Define role-specific permissions for other roles
         # Format: {role: {model: [actions]}}
-        # NEW PERMISSION ASSIGNMENTS
-        # Key changes:
-        # - REGION_MANAGER and BRANCH_ADMIN can NO LONGER create users (removed 'add' for User)
-        # - Only SUPER_SUPER_ADMIN and SUPER_ADMIN can create users
         role_permissions = {
             'CONSULTANT': {
                 Client: ['view', 'add', 'change'],
@@ -142,18 +178,6 @@ class Command(BaseCommand):
                 ClientActivity: ['view'],  # Can view timeline
                 ProfilePicture: ['view', 'add', 'change'],  # Can upload profile pictures
                 Institute: ['view'],  # Can view institutes
-            },
-            'BRANCH_ADMIN': {
-                Client: ['view', 'add', 'change', 'delete'],
-                VisaApplication: ['view', 'add', 'change', 'delete'],
-                Task: ['view', 'add', 'change', 'delete'],
-                Notification: ['view', 'add'],
-                Branch: ['view'],
-                User: ['view', 'change'],  # Can view and update, but NOT create users
-                Note: ['view', 'add', 'change', 'delete'],  # Full note access
-                ClientActivity: ['view'],  # Can view timeline
-                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
-                Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
             },
             'REGION_MANAGER': {
                 Client: ['view', 'add', 'change', 'delete'],
@@ -168,41 +192,6 @@ class Command(BaseCommand):
                 ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
                 Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
             },
-            'COUNTRY_MANAGER': {
-                Client: ['view', 'add', 'change', 'delete'],
-                VisaApplication: ['view', 'add', 'change', 'delete'],
-                Task: ['view', 'add', 'change', 'delete'],
-                Notification: ['view', 'add', 'change'],
-                Branch: ['view', 'add', 'change', 'delete'],
-                Region: ['view', 'add', 'change', 'delete'],
-                User: ['view', 'change', 'delete'],  # Deprecated role, no user creation
-                Note: ['view', 'add', 'change', 'delete'],  # Full note access
-                ClientActivity: ['view'],  # Can view timeline
-                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
-            },
-            'SUPER_ADMIN': {
-                Client: ['view', 'add', 'change', 'delete'],
-                VisaApplication: ['view', 'add', 'change', 'delete'],
-                Task: ['view', 'add', 'change', 'delete'],
-                Notification: ['view', 'add', 'change', 'delete'],
-                Branch: ['view', 'add', 'change', 'delete'],
-                Region: ['view', 'add', 'change', 'delete'],
-                User: ['view', 'add', 'change', 'delete'],  # CAN create users
-                Note: ['view', 'add', 'change', 'delete'],  # Full note access
-                ClientActivity: ['view'],  # Can view timeline
-                ProfilePicture: ['view', 'add', 'change', 'delete'],  # Full profile picture access
-                Institute: ['view', 'add', 'change', 'delete'],  # Full institute access
-                InstituteContactPerson: ['view', 'add', 'change', 'delete'],  # Full institute contact person access
-                InstituteLocation: ['view', 'add', 'change', 'delete'],  # Full institute location access
-                InstituteIntake: ['view', 'add', 'change', 'delete'],  # Full institute intake access
-                InstituteRequirement: ['view', 'add', 'change', 'delete'],  # Full institute requirement access
-                Course: ['view', 'add', 'change', 'delete'],  # Full course access
-                BroadField: ['view', 'add', 'change', 'delete'],  # Full broad field access
-                NarrowField: ['view', 'add', 'change', 'delete'],  # Full narrow field access
-                CourseLevel: ['view', 'add', 'change', 'delete'],  # Full course level access
-                Agent: ['view', 'add', 'change', 'delete'],  # Full agent management
-                Group: ['view', 'add', 'change', 'delete'],  # Full group management
-            },
         }
         
         # Assign permissions to each group
@@ -213,30 +202,44 @@ class Command(BaseCommand):
             # Clear existing permissions
             group.permissions.clear()
             
-            # Get permissions for this group
-            role_perms = role_permissions.get(group_name, {})
-            
-            for model, actions in role_perms.items():
-                content_type = ContentType.objects.get_for_model(model)
+            if group_name == 'SUPER_ADMIN':
+                # Assign all permissions to SUPER_ADMIN
+                group.permissions.set(super_admin_permissions)
+                self.stdout.write(
+                    f'  Assigned {len(super_admin_permissions)} permissions to {group_label}'
+                )
+            elif group_name == 'BRANCH_ADMIN':
+                # Assign all permissions except Branch/Group management to BRANCH_ADMIN
+                group.permissions.set(branch_admin_permissions)
+                self.stdout.write(
+                    f'  Assigned {len(branch_admin_permissions)} permissions to {group_label} '
+                    f'(excluded Branch/Group management permissions)'
+                )
+            else:
+                # Use role-specific permissions for other roles
+                role_perms = role_permissions.get(group_name, {})
                 
-                for action in actions:
-                    # Get the permission
-                    codename = f'{action}_{model._meta.model_name}'
-                    try:
-                        permission = Permission.objects.get(
-                            codename=codename,
-                            content_type=content_type
-                        )
-                        group.permissions.add(permission)
-                        self.stdout.write(
-                            f'  Added {action} permission for {model.__name__} to {group_label}'
-                        )
-                    except Permission.DoesNotExist:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f'  Permission {codename} not found for {model.__name__}'
+                for model, actions in role_perms.items():
+                    content_type = ContentType.objects.get_for_model(model)
+                    
+                    for action in actions:
+                        # Get the permission
+                        codename = f'{action}_{model._meta.model_name}'
+                        try:
+                            permission = Permission.objects.get(
+                                codename=codename,
+                                content_type=content_type
                             )
-                        )
+                            group.permissions.add(permission)
+                            self.stdout.write(
+                                f'  Added {action} permission for {model.__name__} to {group_label}'
+                            )
+                        except Permission.DoesNotExist:
+                            self.stdout.write(
+                                self.style.WARNING(
+                                    f'  Permission {codename} not found for {model.__name__}'
+                                )
+                            )
 
     def _sync_existing_users(self):
         """Sync existing users to their groups (if needed)."""

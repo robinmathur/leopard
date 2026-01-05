@@ -5,7 +5,7 @@ Group serializers for Django Groups management.
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from django.contrib.auth.models import Group, Permission
-from immigration.constants import EXCLUDED_PERMISSION_CONTENT_TYPES
+from immigration.constants import EXCLUDED_PERMISSION_CONTENT_TYPES, GROUP_DISPLAY_NAMES
 
 
 def should_exclude_permission(permission):
@@ -60,6 +60,25 @@ class PermissionSerializer(serializers.ModelSerializer):
         return f"{obj.content_type.app_label}.{obj.content_type.model}"
 
 
+class GroupOptionSerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for group dropdowns/select lists.
+    Returns only id, name, and display_name.
+    """
+    
+    display_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'display_name']
+        read_only_fields = ['id', 'name', 'display_name']
+    
+    @extend_schema_field(serializers.CharField())
+    def get_display_name(self, obj):
+        """Get human-readable display name for the group."""
+        return GROUP_DISPLAY_NAMES.get(obj.name, obj.name.replace('_', ' ').title())
+
+
 class GroupOutputSerializer(serializers.ModelSerializer):
     """
     Serializer for Group output (GET requests).
@@ -69,17 +88,24 @@ class GroupOutputSerializer(serializers.ModelSerializer):
     permissions_list = serializers.SerializerMethodField()
     permissions_count = serializers.SerializerMethodField()
     users_count = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Group
         fields = [
             'id',
             'name',
+            'display_name',
             'permissions_list',
             'permissions_count',
             'users_count',
         ]
         read_only_fields = ['id']
+    
+    @extend_schema_field(serializers.CharField())
+    def get_display_name(self, obj):
+        """Get human-readable display name for the group."""
+        return GROUP_DISPLAY_NAMES.get(obj.name, obj.name.replace('_', ' ').title())
     
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_permissions_list(self, obj):

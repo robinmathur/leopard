@@ -81,7 +81,7 @@ export const GroupTable = ({
               <TableRow key={group.id} hover>
                 <TableCell>
                   <Typography variant="body2" fontWeight={500}>
-                    {group.name}
+                    {group.display_name || group.name}
                   </Typography>
                 </TableCell>
                 <TableCell>

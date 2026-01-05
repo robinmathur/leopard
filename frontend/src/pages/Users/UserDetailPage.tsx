@@ -178,9 +178,9 @@ export const UserDetailPage = () => {
               {user.full_name || user.username}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-              {user.primary_group && (
+              {(user.primary_group_display || user.primary_group) && (
                 <Chip
-                  label={user.primary_group}
+                  label={user.primary_group_display || user.primary_group}
                   size="small"
                   color="primary"
                   variant="outlined"
@@ -280,8 +280,8 @@ export const UserDetailPage = () => {
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Primary Group
             </Typography>
-            {user.primary_group ? (
-              <Chip label={user.primary_group} size="small" color="primary" />
+            {user.primary_group_display || user.primary_group ? (
+              <Chip label={user.primary_group_display || user.primary_group} size="small" color="primary" />
             ) : (
               <Typography variant="body2" color="text.secondary">
                 No group assigned
@@ -295,8 +295,12 @@ export const UserDetailPage = () => {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {user.groups_list && user.groups_list.length > 0 ? (
-                user.groups_list.map((group) => (
-                  <Chip key={group} label={group} size="small" />
+                user.groups_list.map((group, index) => (
+                  <Chip 
+                    key={group} 
+                    label={user.groups_list_display?.[index] || group} 
+                    size="small" 
+                  />
                 ))
               ) : (
                 <Typography variant="body2" color="text.secondary">

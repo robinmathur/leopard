@@ -68,6 +68,14 @@ export const branchApi = {
     const response = await httpClient.post<Branch>(`/v1/branches/${id}/restore/`);
     return response.data;
   },
+
+  /**
+   * Get branches for dropdowns (lightweight - only id, name)
+   */
+  async options(): Promise<Array<{ id: number; name: string }>> {
+    const response = await httpClient.get<Array<{ id: number; name: string }>>('/v1/branches/options/');
+    return response.data;
+  },
 };
 
 export default branchApi;
