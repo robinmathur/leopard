@@ -71,7 +71,7 @@ const TasksSection = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [taskView, setTaskView] = useState<'my_tasks' | 'all_tasks'>('my_tasks');
+  const [taskView, setTaskView] = useState<'my_tasks' | 'team_tasks'>('my_tasks');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
 
   useEffect(() => {
@@ -85,7 +85,7 @@ const TasksSection = () => {
     try {
       const params: TaskListParams = {
         assigned_to_me: taskView === 'my_tasks',
-        all_tasks: taskView === 'all_tasks',
+        all_tasks: taskView === 'team_tasks',
         page_size: 5, // Show only 5 tasks on dashboard
       };
 
@@ -103,9 +103,9 @@ const TasksSection = () => {
       setLoading(false); }};
 
   const handleTaskClick = (task: Task) => {
-    // Preserve the filter (My Tasks/All Tasks) when navigating
-    const filterParam = taskView === 'my_tasks' ? 'my_tasks' : 'all_tasks';
-    navigate(`/tasks?taskId=${task.id}&view=${filterParam}`);
+    // Preserve the filter (My Tasks/Team Tasks) when navigating
+    const filterParam = taskView === 'my_tasks' ? 'my_tasks' : 'team_tasks';
+    navigate(`/tasks?taskId=${task.id}&taskType=${filterParam}`);
   };
 
   const handleAddTask = () => {
@@ -145,7 +145,7 @@ const TasksSection = () => {
           size="small"
         >
           <ToggleButton value="my_tasks">My Tasks</ToggleButton>
-          <ToggleButton value="all_tasks">All Tasks</ToggleButton>
+          <ToggleButton value="team_tasks">Team Tasks</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
 
