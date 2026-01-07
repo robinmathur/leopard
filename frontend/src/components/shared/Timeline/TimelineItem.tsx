@@ -66,7 +66,9 @@ export const TimelineItem = ({ activity }: TimelineItemProps) => {
           <Chip
             label="Visa Application"
             size="small"
-            onClick={() => navigate(`/clients/${activity.client}?tab=visa-applications&visaApplicationId=${visaApplicationId}`)}
+            onClick={() => navigate(`/visa-applications/${visaApplicationId}`, {
+              state: { from: `/clients/${activity.client}` }
+            })}
             sx={{
               cursor: 'pointer',
               bgcolor: '#1976d2',

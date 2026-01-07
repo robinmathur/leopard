@@ -29,8 +29,6 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.db.models.signals import post_save, pre_save
-from django.dispatch import receiver
 from django.conf import settings
 from django_tenants.utils import schema_context
 
@@ -53,6 +51,9 @@ from immigration.models import (
     BroadField,
     NarrowField,
     CourseLevel,
+    ApplicationType,
+    Stage,
+    CollegeApplication,
 )
 from immigration.constants import (
     ClientStage,
@@ -103,9 +104,28 @@ class Command(BaseCommand):
         
         try:
             # Temporarily disable signals that expect middleware context
-            # from immigration import signals as immigration_signals
-            # post_save.disconnect(immigration_signals.client_events, sender=Client)
-            # post_save.disconnect(immigration_signals.visa_application_events, sender=VisaApplication)
+            # Disable event dispatcher signals to prevent Event table creation during seeding
+            from django.db.models.signals import post_save, pre_save, post_delete
+            from immigration.events.dispatcher import (
+                create_event_on_save,
+                create_event_on_delete,
+                capture_pre_save_state,
+            )
+            
+            # Disconnect event dispatcher signals
+            # Disconnect by function reference (works with @receiver decorator)
+            try:
+                post_save.disconnect(create_event_on_save)
+            except Exception:
+                pass  # Not connected or already disconnected
+            try:
+                pre_save.disconnect(capture_pre_save_state)
+            except Exception:
+                pass  # Not connected or already disconnected
+            try:
+                post_delete.disconnect(create_event_on_delete)
+            except Exception:
+                pass  # Not connected or already disconnected
             
             with transaction.atomic():
                 # Seed in order of dependencies
@@ -150,6 +170,9 @@ class Command(BaseCommand):
                 all_agents_count = 0
                 all_clients_count = 0
                 all_applications_count = 0
+                all_application_types_count = 0
+                all_stages_count = 0
+                all_college_applications_count = 0
                 for tenant in tenants:
                     with schema_context(tenant.schema_name):
                         # Get tenant-specific data (query fresh in schema)
@@ -174,10 +197,23 @@ class Command(BaseCommand):
                         
                         applications = self.seed_applications(clients, tenant_visa_types, tenant_users, tenant)
                         all_applications_count += len(applications)
+                        
+                        # Seed application types and stages (for college applications)
+                        application_types = self.seed_application_types(created_by, tenant)
+                        all_application_types_count += len(application_types)
+                        
+                        stages = self.seed_stages(application_types, tenant)
+                        all_stages_count += len(stages)
+                        
+                        # Seed college applications (depends on clients, courses, institutes, application types, stages)
+                        college_applications = self.seed_college_applications(
+                            clients, courses, institutes, application_types, agents, tenant_users, tenant
+                        )
+                        all_college_applications_count += len(college_applications)
                 
                 elapsed = time.time() - start_time
             
-            # Tasks are part of User Story 3 - may not exist yet (outside transaction so it doesn't rollback)
+            # Tasks (outside transaction so it doesn't rollback)
             all_tasks_count = 0
             try:
                 for tenant in tenants:
@@ -185,16 +221,45 @@ class Command(BaseCommand):
                         # Query fresh in schema context
                         tenant_users = list(User.objects.all())
                         tenant_clients = list(Client.objects.all())
-                        tasks = self.seed_tasks(tenant_users, tenant_clients)
+                        tenant_visa_applications = list(VisaApplication.objects.all())
+                        tenant_college_applications = list(CollegeApplication.objects.all())
+                        
+                        # Seed tasks
+                        tasks = self.seed_tasks(
+                            tenant_users, 
+                            tenant_clients, 
+                            tenant_visa_applications, 
+                            tenant_college_applications
+                        )
                         all_tasks_count += len(tasks)
                         if tasks:
                             self.stdout.write(f'  ✓ Created {len(tasks)} tasks for {tenant.name}')
             except Exception as e:
-                self.stdout.write(self.style.WARNING(f'  ⚠  Skipping tasks (User Story 3 not implemented): {str(e)}'))
+                import traceback
+                self.stdout.write(self.style.ERROR(f'  ❌ Error seeding tasks: {str(e)}'))
+                self.stdout.write(self.style.ERROR(f'  Traceback: {traceback.format_exc()}'))
             
             # Re-enable signals
-            # post_save.connect(immigration_signals.client_events, sender=Client)
-            # post_save.connect(immigration_signals.visa_application_events, sender=VisaApplication)
+            from django.db.models.signals import post_save, pre_save, post_delete
+            from immigration.events.dispatcher import (
+                create_event_on_save,
+                create_event_on_delete,
+                capture_pre_save_state,
+            )
+            
+            # Reconnect event dispatcher signals
+            try:
+                post_save.connect(create_event_on_save, weak=False)
+            except Exception:
+                pass  # Already connected
+            try:
+                pre_save.connect(capture_pre_save_state, weak=False)
+            except Exception:
+                pass  # Already connected
+            try:
+                post_delete.connect(create_event_on_delete, weak=False)
+            except Exception:
+                pass  # Already connected
             
             # Count total users (including super super admin in public schema)
             total_users_count = 1  # Super Super Admin
@@ -218,6 +283,9 @@ class Command(BaseCommand):
             self.stdout.write(f'  • Agents: {all_agents_count}')
             self.stdout.write(f'  • Clients: {all_clients_count}')
             self.stdout.write(f'  • Visa Applications: {all_applications_count}')
+            self.stdout.write(f'  • Application Types: {all_application_types_count}')
+            self.stdout.write(f'  • Stages: {all_stages_count}')
+            self.stdout.write(f'  • College Applications: {all_college_applications_count}')
             self.stdout.write(f'  • Tasks: {all_tasks_count}')
                 
         except Exception as e:
@@ -238,6 +306,9 @@ class Command(BaseCommand):
                 except Exception:
                     pass  # Task model from User Story 3 may not exist yet
 
+                CollegeApplication.objects.all().delete()
+                Stage.objects.all().delete()
+                ApplicationType.objects.all().delete()
                 VisaApplication.objects.all().delete()
                 Client.objects.all().delete()
                 Agent.objects.all().delete()
@@ -282,6 +353,9 @@ class Command(BaseCommand):
             except Exception:
                 pass  # Task model from User Story 3 may not exist yet
             
+            CollegeApplication.objects.all().delete()
+            Stage.objects.all().delete()
+            ApplicationType.objects.all().delete()
             VisaApplication.objects.all().delete()
             Client.objects.all().delete()
             Agent.objects.all().delete()
@@ -1118,10 +1192,221 @@ class Command(BaseCommand):
         
         return applications
 
-    def seed_tasks(self, users, clients):
+    def seed_application_types(self, created_by, tenant):
+        """Create application types in tenant schema."""
+        application_types_data = [
+            ('Undergraduate', 'USD', 'GST', Decimal('10.00'), 'Undergraduate degree programs (Bachelor\'s level)'),
+            ('Postgraduate', 'USD', 'GST', Decimal('10.00'), 'Postgraduate degree programs (Master\'s and PhD)'),
+            ('Foundation Program', 'USD', 'GST', Decimal('10.00'), 'Foundation programs for students preparing for university'),
+            ('Diploma', 'USD', 'GST', Decimal('10.00'), 'Diploma and certificate programs'),
+            ('Short Course', 'USD', 'GST', Decimal('10.00'), 'Short-term courses and professional development programs'),
+            ('English Language', 'USD', 'GST', Decimal('10.00'), 'English language courses and preparation programs'),
+        ]
+        
+        application_types = []
+        for title, currency, tax_name, tax_percentage, description in application_types_data:
+            application_type = ApplicationType.objects.create(
+                title=title,
+                currency=currency,
+                tax_name=tax_name,
+                tax_percentage=tax_percentage,
+                description=description,
+                is_active=True,
+            )
+            application_types.append(application_type)
+        
+        if application_types:
+            self.stdout.write(f'  ✓ Created {len(application_types)} application types for {tenant.name}')
+        
+        return application_types
+
+    def seed_stages(self, application_types, tenant):
+        """Create stages for each application type in tenant schema."""
+        # Define stage templates for different application types
+        stage_templates = {
+            'Undergraduate': [
+                ('Application Received', 1, 'Initial application submission received'),
+                ('Documents Verified', 2, 'All required documents have been verified'),
+                ('Submitted to Institute', 3, 'Application submitted to the educational institution'),
+                ('Under Review', 4, 'Application is being reviewed by the institute'),
+                ('Offer Received', 5, 'Offer letter received from the institute'),
+                ('Offer Accepted', 6, 'Student has accepted the offer'),
+                ('Enrolled', 7, 'Student has successfully enrolled'),
+            ],
+            'Postgraduate': [
+                ('Application Received', 1, 'Initial application submission received'),
+                ('Documents Verified', 2, 'All required documents have been verified'),
+                ('Submitted to Institute', 3, 'Application submitted to the educational institution'),
+                ('Under Review', 4, 'Application is being reviewed by the institute'),
+                ('Interview Scheduled', 5, 'Interview has been scheduled with the institute'),
+                ('Offer Received', 6, 'Offer letter received from the institute'),
+                ('Offer Accepted', 7, 'Student has accepted the offer'),
+                ('Enrolled', 8, 'Student has successfully enrolled'),
+            ],
+            'Foundation Program': [
+                ('Application Received', 1, 'Initial application submission received'),
+                ('Documents Verified', 2, 'All required documents have been verified'),
+                ('Submitted to Institute', 3, 'Application submitted to the educational institution'),
+                ('Offer Received', 4, 'Offer letter received from the institute'),
+                ('Enrolled', 5, 'Student has successfully enrolled'),
+            ],
+            'Diploma': [
+                ('Application Received', 1, 'Initial application submission received'),
+                ('Documents Verified', 2, 'All required documents have been verified'),
+                ('Submitted to Institute', 3, 'Application submitted to the educational institution'),
+                ('Offer Received', 4, 'Offer letter received from the institute'),
+                ('Enrolled', 5, 'Student has successfully enrolled'),
+            ],
+            'Short Course': [
+                ('Application Received', 1, 'Initial application submission received'),
+                ('Documents Verified', 2, 'All required documents have been verified'),
+                ('Submitted to Institute', 3, 'Application submitted to the educational institution'),
+                ('Enrolled', 4, 'Student has successfully enrolled'),
+            ],
+            'English Language': [
+                ('Application Received', 1, 'Initial application submission received'),
+                ('Documents Verified', 2, 'All required documents have been verified'),
+                ('Submitted to Institute', 3, 'Application submitted to the educational institution'),
+                ('Enrolled', 4, 'Student has successfully enrolled'),
+            ],
+        }
+        
+        stages = []
+        for application_type in application_types:
+            stage_data = stage_templates.get(application_type.title, stage_templates['Diploma'])
+            for stage_name, position, description in stage_data:
+                stage = Stage.objects.create(
+                    application_type=application_type,
+                    stage_name=stage_name,
+                    position=position,
+                    description=description,
+                )
+                stages.append(stage)
+        
+        if stages:
+            self.stdout.write(f'  ✓ Created {len(stages)} stages for {tenant.name}')
+        
+        return stages
+
+    def seed_college_applications(self, clients, courses, institutes, application_types, agents, users, tenant):
+        """Create college applications in tenant schema."""
+        applications = []
+        
+        if not clients or not courses or not institutes or not application_types:
+            return applications
+        
+        # Get all stages for the application types
+        all_stages = {}
+        for app_type in application_types:
+            all_stages[app_type.id] = list(Stage.objects.filter(application_type=app_type).order_by('position'))
+        
+        # Get super agents and sub agents
+        super_agents = [a for a in agents if a.agent_type == 'SUPER_AGENT']
+        sub_agents = [a for a in agents if a.agent_type == 'SUB_AGENT']
+        
+        # Get consultants for assignment
+        consultants = [u for u in users if hasattr(u, 'is_in_group') and u.is_in_group(GROUP_CONSULTANT)]
+        
+        # Create applications for ~40% of clients
+        sample_size = min(int(len(clients) * 0.4), len(clients))
+        selected_clients = random.sample(clients, sample_size) if sample_size > 0 else []
+        
+        for client in selected_clients:
+            # Some clients may have multiple applications
+            num_applications = random.choices([1, 2], weights=[80, 20])[0]
+            
+            for _ in range(num_applications):
+                # Select random application type
+                application_type = random.choice(application_types)
+                
+                # Get first stage for this application type (position 1)
+                stages_for_type = all_stages.get(application_type.id, [])
+                if not stages_for_type:
+                    continue  # Skip if no stages available
+                
+                # Randomly select a stage (weighted towards earlier stages)
+                # Create weights that match the number of stages
+                num_stages = len(stages_for_type)
+                # Generate weights: higher for earlier stages, decreasing exponentially
+                stage_weights = []
+                base_weight = 50
+                for i in range(num_stages):
+                    # Weight decreases as position increases
+                    weight = max(1, int(base_weight * (0.6 ** i)))
+                    stage_weights.append(weight)
+                
+                stage_index = random.choices(range(num_stages), weights=stage_weights)[0]
+                stage = stages_for_type[stage_index]
+                
+                # Select random course and ensure it belongs to an institute
+                course = random.choice(courses)
+                institute = course.institute
+                
+                # Get locations and intakes for this institute
+                locations = list(InstituteLocation.objects.filter(institute=institute))
+                intakes = list(InstituteIntake.objects.filter(institute=institute))
+                
+                if not locations or not intakes:
+                    continue  # Skip if no locations or intakes
+                
+                location = random.choice(locations)
+                start_date = random.choice(intakes)
+                
+                # Calculate finish date (typically 1-4 years from start, depending on course level)
+                finish_date = None
+                if start_date.intake_date:
+                    years = 1 if 'Short' in application_type.title or 'English' in application_type.title else random.randint(2, 4)
+                    finish_date = start_date.intake_date + timedelta(days=years * 365)
+                
+                # Random tuition fee (based on course fee with some variation)
+                base_fee = course.total_tuition_fee if course.total_tuition_fee else Decimal('30000.00')
+                tuition_fee = base_fee * Decimal(str(random.uniform(0.9, 1.1)))  # ±10% variation
+                
+                # Random student ID (only if enrolled or later stages)
+                student_id = ''
+                if stage.position >= 5:  # Assume position 5+ means enrolled
+                    student_id = f'STU{random.randint(100000, 999999)}'
+                
+                # Random agent assignment (30% chance)
+                super_agent = random.choice(super_agents) if super_agents and random.random() < 0.15 else None
+                sub_agent = random.choice(sub_agents) if sub_agents and random.random() < 0.15 else None
+                
+                # Assign to consultant (usually the client's assigned consultant)
+                assigned_to = client.assigned_to if client.assigned_to else (random.choice(consultants) if consultants else None)
+                
+                # Create application
+                application = CollegeApplication.objects.create(
+                    application_type=application_type,
+                    stage=stage,
+                    client=client,
+                    institute=institute,
+                    course=course,
+                    start_date=start_date,
+                    location=location,
+                    finish_date=finish_date,
+                    total_tuition_fee=tuition_fee,
+                    student_id=student_id,
+                    super_agent=super_agent,
+                    sub_agent=sub_agent,
+                    assigned_to=assigned_to,
+                    notes=f'College application for {course.name} at {institute.name}. Stage: {stage.stage_name}',
+                )
+                applications.append(application)
+        
+        if applications:
+            self.stdout.write(f'  ✓ Created {len(applications)} college applications for {tenant.name}')
+        
+        return applications
+
+    def seed_tasks(self, users, clients, visa_applications=None, college_applications=None):
         """Create tasks for users (per tenant schema)."""
         from django.utils import timezone
         from django.contrib.contenttypes.models import ContentType
+        
+        if visa_applications is None:
+            visa_applications = []
+        if college_applications is None:
+            college_applications = []
         
         task_templates = [
             ('Follow up with client', 'Contact client regarding application status and answer any questions'),
@@ -1149,6 +1434,11 @@ class Command(BaseCommand):
             ('Biometric appointment', 'Schedule biometric data collection appointment'),
             ('Payment processing', 'Process visa application fees and service charges'),
             ('Case file organization', 'Organize and maintain case file documentation'),
+            ('College application review', 'Review college application documents and requirements'),
+            ('Submit college application', 'Submit college application to educational institution'),
+            ('Follow up on college application', 'Check status of college application with institution'),
+            ('College offer processing', 'Process offer letter and assist with acceptance'),
+            ('College enrollment support', 'Assist with college enrollment and registration'),
         ]
         
         tasks = []
@@ -1159,13 +1449,13 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('  ⚠  No users available for task assignment. Skipping task creation.'))
             return tasks
         
-        # Get branches and visa applications for linking
+        # Get branches for linking
         branches = list(Branch.objects.all())
-        visa_applications = list(VisaApplication.objects.all())
         
-        # Get ContentType for Client and VisaApplication
+        # Get ContentType for Client, VisaApplication, and CollegeApplication
         client_content_type = ContentType.objects.get_for_model(Client) if clients else None
         visa_app_content_type = ContentType.objects.get_for_model(VisaApplication) if visa_applications else None
+        college_app_content_type = ContentType.objects.get_for_model(CollegeApplication) if college_applications else None
         
         # Create approximately 100 tasks
         target_count = 100
@@ -1228,24 +1518,46 @@ class Command(BaseCommand):
             if assigned_to and all_users:
                 assigned_by = random.choice([u for u in all_users if u != assigned_to] + [assigned_to])
             
-            # Link to client or visa application (30% chance)
+            # Link to client, visa application, or college application (40% chance)
             content_type = None
             object_id = None
-            if random.random() < 0.3:
-                if clients and random.random() < 0.6:
+            if random.random() < 0.4:
+                # Determine which entity type to link to (weighted distribution)
+                entity_choice = random.choices(
+                    ['client', 'visa_application', 'college_application'],
+                    weights=[40, 35, 25]  # 40% client, 35% visa app, 25% college app
+                )[0]
+                
+                if entity_choice == 'client' and clients:
                     # Link to client
                     linked_client = random.choice(clients)
-                    content_type = client_content_type
-                    object_id = linked_client.id
-                    # Enhance detail with client info
-                    detail = f'{detail} (Client: {linked_client.first_name} {linked_client.last_name})'
-                elif visa_applications:
+                    # Verify the client still exists in database
+                    if Client.objects.filter(id=linked_client.id).exists():
+                        content_type = client_content_type
+                        object_id = linked_client.id
+                        # Enhance detail with client info
+                        detail = f'{detail} (Client: {linked_client.first_name} {linked_client.last_name})'
+                elif entity_choice == 'visa_application' and visa_applications:
                     # Link to visa application
                     linked_app = random.choice(visa_applications)
-                    content_type = visa_app_content_type
-                    object_id = linked_app.id
-                    # Enhance detail with application info
-                    detail = f'{detail} (Application: {linked_app.visa_type.name if linked_app.visa_type else "N/A"})'
+                    # Verify the visa application still exists in database
+                    if VisaApplication.objects.filter(id=linked_app.id).exists():
+                        content_type = visa_app_content_type
+                        object_id = linked_app.id
+                        # Enhance detail with application info
+                        visa_type_name = linked_app.visa_type.name if linked_app.visa_type else "N/A"
+                        detail = f'{detail} (Visa Application: {visa_type_name})'
+                elif entity_choice == 'college_application' and college_applications:
+                    # Link to college application
+                    linked_college_app = random.choice(college_applications)
+                    # Verify the college application still exists in database
+                    if CollegeApplication.objects.filter(id=linked_college_app.id).exists():
+                        content_type = college_app_content_type
+                        object_id = linked_college_app.id
+                        # Enhance detail with college application info
+                        course_name = linked_college_app.course.name if linked_college_app.course else "N/A"
+                        institute_name = linked_college_app.institute.short_name if linked_college_app.institute else "N/A"
+                        detail = f'{detail} (College Application: {course_name} at {institute_name})'
             
             # Random tags (20% chance)
             tags = []

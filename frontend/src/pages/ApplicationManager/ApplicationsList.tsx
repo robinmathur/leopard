@@ -48,6 +48,7 @@ import type { User } from '@/types/user';
 import { AssignCollegeApplicationDialog } from '@/components/college/AssignCollegeApplicationDialog';
 import { ChangeStageDialog } from '@/components/college/ChangeStageDialog';
 import { useAuthStore } from '@/store/authStore';
+import { formatVirtualId } from '@/utils/virtualId';
 
 interface SearchFilters {
   client_name?: string;
@@ -169,7 +170,7 @@ export const ApplicationsList: React.FC = () => {
 
   // Handlers
   const handleView = (application: CollegeApplication) => {
-    navigate(`/clients/${application.client}?tab=applications&collegeApplicationId=${application.id}`, {
+    navigate(`/college-applications/${application.id}`, {
       state: { from: '/application-manager/applications' }
     });
   };
@@ -197,6 +198,28 @@ export const ApplicationsList: React.FC = () => {
 
   // DataGrid column definitions
   const columns: GridColDef<CollegeApplication>[] = [
+    {
+      field: 'id',
+      headerName: 'ID',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Link
+          component="button"
+          variant="body2"
+          fontWeight={500}
+          onClick={() => handleView(params.row)}
+          sx={{
+            textDecoration: 'none',
+            color: 'primary.main',
+            '&:hover': { textDecoration: 'underline' },
+            cursor: 'pointer',
+          }}
+        >
+          {formatVirtualId('college-application', params.row.id)}
+        </Link>
+      ),
+    },
     {
       field: 'client_name',
       headerName: 'Client',
@@ -250,28 +273,10 @@ export const ApplicationsList: React.FC = () => {
       sortable: false,
     },
     {
-      field: 'intake_date',
-      headerName: 'Intake Date',
-      width: 130,
-      sortable: false,
-      valueFormatter: (value) => new Date(value).toLocaleDateString(),
-    },
-    {
       field: 'location_display',
       headerName: 'Location',
       width: 150,
       sortable: false,
-    },
-    {
-      field: 'total_tuition_fee',
-      headerName: 'Tuition Fee',
-      width: 130,
-      sortable: false,
-      valueFormatter: (value) =>
-        new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-        }).format(parseFloat(value)),
     },
     {
       field: 'assigned_to_name',

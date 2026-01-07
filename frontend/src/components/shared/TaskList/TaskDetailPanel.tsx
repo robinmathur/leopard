@@ -1,10 +1,9 @@
 /**
  * TaskDetailPanel Component
- * Side panel (drawer) that shows complete task details with comments
+ * Inline panel that shows complete task details with comments
  */
 import { useState, useEffect } from 'react';
 import {
-  Drawer,
   Box,
   Typography,
   IconButton,
@@ -37,8 +36,6 @@ interface TaskDetailPanelProps {
   onTaskDelete?: (taskId: number) => void;
   onEdit?: (task: Task) => void;
 }
-
-const DRAWER_WIDTH = 600;
 
 /**
  * Format date for display
@@ -232,29 +229,20 @@ export const TaskDetailPanel = ({
     }
   };
 
+  if (!open) {
+    return null;
+  }
+
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
+    <Paper
       sx={{
-        '& .MuiDrawer-paper': {
-          width: DRAWER_WIDTH,
-          boxSizing: 'border-box',
-        },
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 0,
       }}
     >
-      <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Typography variant="h6" sx={{ flex: 1, pr: 2 }}>
-            Task Details
-          </Typography>
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-
+      <Box sx={{ p: 3, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
             <CircularProgress />
@@ -265,12 +253,19 @@ export const TaskDetailPanel = ({
           </Alert>
         ) : task ? (
           <>
-            {/* Task Title and Status */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h5" sx={{ mb: 1 }}>
+            {/* Header with Title and Close Button */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+              <Typography variant="h5" sx={{ flex: 1, pr: 2 }}>
                 {task.title}
               </Typography>
-              <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <IconButton onClick={onClose} size="small">
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
+            {/* Task Status */}
+            <Box sx={{ mb: 2 }}>
+              <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
                 <Chip
                   label={task.status_display}
                   size="small"
@@ -286,47 +281,47 @@ export const TaskDetailPanel = ({
               </Stack>
             </Box>
 
-            <Divider sx={{ mb: 3 }} />
+            <Divider sx={{ mb: 2 }} />
 
             {/* Task Details */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
                 Description
               </Typography>
-              <Typography variant="body2" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+              <Typography variant="body2" sx={{ mb: 1.5, whiteSpace: 'pre-wrap' }}>
                 {task.detail}
               </Typography>
 
-              <Stack spacing={1} sx={{ mt: 2 }}>
+              <Stack spacing={0.75} sx={{ mt: 1.5 }}>
                 <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                     Due Date
                   </Typography>
-                  <Typography variant="body2">{formatDate(task.due_date)}</Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>{formatDate(task.due_date)}</Typography>
                 </Box>
 
                 {task.assigned_to_branch ? (
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                       Assigned To Branch
                     </Typography>
-                    <Typography variant="body2">{task.branch_name || 'Branch'}</Typography>
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>{task.branch_name || 'Branch'}</Typography>
                   </Box>
                 ) : task.assigned_to_name ? (
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                       Assigned To
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                       {task.assigned_to_full_name || task.assigned_to_name}
                     </Typography>
                   </Box>
                 ) : (
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                       Assigned To
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
                       Unassigned
                     </Typography>
                   </Box>
@@ -334,10 +329,10 @@ export const TaskDetailPanel = ({
 
                 {task.assigned_by_name && (
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                       Assigned By
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                       {task.assigned_by_full_name || task.assigned_by_name}
                     </Typography>
                   </Box>
@@ -345,10 +340,10 @@ export const TaskDetailPanel = ({
 
                 {task.status === 'COMPLETED' && task.completed_at && (
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                       Completed
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                       {formatDate(task.completed_at)}
                       {task.updated_by_full_name && ` by ${task.updated_by_full_name}`}
                       {!task.updated_by_full_name && task.updated_by_name && ` by ${task.updated_by_name}`}
@@ -358,10 +353,10 @@ export const TaskDetailPanel = ({
 
                 {task.status === 'CANCELLED' && (
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                       Cancelled
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                       {task.updated_by_full_name || task.updated_by_name || 'Unknown user'}
                     </Typography>
                   </Box>
@@ -369,7 +364,7 @@ export const TaskDetailPanel = ({
 
                 {task.tags && task.tags.length > 0 && (
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.25 }}>
                       Tags
                     </Typography>
                     <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
@@ -382,10 +377,10 @@ export const TaskDetailPanel = ({
               </Stack>
             </Box>
 
-            <Divider sx={{ mb: 3 }} />
+            <Divider sx={{ mb: 2 }} />
 
             {/* Action Buttons */}
-            <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
+            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
               {task.assigned_to_branch && (
                 <Button
                   variant="outlined"
@@ -441,7 +436,7 @@ export const TaskDetailPanel = ({
               )}
             </Stack>
 
-            <Divider sx={{ mb: 3 }} />
+            <Divider sx={{ mb: 2 }} />
 
             {/* Comments Section */}
             <Box>
@@ -534,7 +529,7 @@ export const TaskDetailPanel = ({
           </>
         ) : null}
       </Box>
-    </Drawer>
+    </Paper>
   );
 };
 

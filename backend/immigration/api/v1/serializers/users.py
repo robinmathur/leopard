@@ -7,7 +7,7 @@ No role field - uses group_name instead.
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from django.contrib.auth import get_user_model
-from immigration.constants import ALL_GROUPS
+from immigration.constants import ALL_GROUPS, GROUP_DISPLAY_NAMES
 
 User = get_user_model()
 
@@ -25,10 +25,11 @@ class AssignableUserSerializer(serializers.ModelSerializer):
 
     full_name = serializers.SerializerMethodField(read_only=True)
     primary_group = serializers.SerializerMethodField(read_only=True)
+    primary_group_display = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'email', 'primary_group', 'username']
+        fields = ['id', 'full_name', 'email', 'primary_group', 'primary_group_display', 'username']
         read_only_fields = fields
 
     @extend_schema_field(serializers.CharField())
@@ -43,6 +44,14 @@ class AssignableUserSerializer(serializers.ModelSerializer):
         """Get the user's primary group (role)."""
         primary = obj.get_primary_group()
         return primary.name if primary else None
+    
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_primary_group_display(self, obj):
+        """Get the display name for the user's primary group."""
+        primary = obj.get_primary_group()
+        if primary:
+            return GROUP_DISPLAY_NAMES.get(primary.name, primary.name.replace('_', ' ').title())
+        return None
 
 
 class UserOutputSerializer(serializers.ModelSerializer):
@@ -55,11 +64,16 @@ class UserOutputSerializer(serializers.ModelSerializer):
     
     full_name = serializers.SerializerMethodField(read_only=True)
     groups_list = serializers.SerializerMethodField(read_only=True)
+    groups_list_display = serializers.SerializerMethodField(read_only=True)
     primary_group = serializers.SerializerMethodField(read_only=True)
+    primary_group_display = serializers.SerializerMethodField(read_only=True)
     
     # Multiple branches and regions
     branches_data = serializers.SerializerMethodField(read_only=True)
     regions_data = serializers.SerializerMethodField(read_only=True)
+    
+    # Direct user permissions (not from groups)
+    user_permissions_list = serializers.SerializerMethodField(read_only=True)
     
     @extend_schema_field(serializers.CharField())
     def get_full_name(self, obj):
@@ -73,11 +87,27 @@ class UserOutputSerializer(serializers.ModelSerializer):
         """Get all groups user belongs to."""
         return [g.name for g in obj.groups.all()]
     
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
+    def get_groups_list_display(self, obj):
+        """Get display names for all groups user belongs to."""
+        return [
+            GROUP_DISPLAY_NAMES.get(g.name, g.name.replace('_', ' ').title())
+            for g in obj.groups.all()
+        ]
+    
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_primary_group(self, obj):
         """Get the user's primary group."""
         primary = obj.get_primary_group()
         return primary.name if primary else None
+    
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_primary_group_display(self, obj):
+        """Get the display name for the user's primary group."""
+        primary = obj.get_primary_group()
+        if primary:
+            return GROUP_DISPLAY_NAMES.get(primary.name, primary.name.replace('_', ' ').title())
+        return None
     
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_branches_data(self, obj):
@@ -89,6 +119,20 @@ class UserOutputSerializer(serializers.ModelSerializer):
         """Get all regions."""
         return [{'id': r.id, 'name': r.name} for r in obj.regions.all()]
     
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_user_permissions_list(self, obj):
+        """Get user's direct permissions (not from groups)."""
+        from immigration.api.v1.serializers.groups import should_exclude_permission
+        return [
+            {
+                'id': perm.id,
+                'name': perm.name,
+                'content_type': f'{perm.content_type.app_label}.{perm.content_type.model}',
+            }
+            for perm in obj.user_permissions.all().select_related('content_type')
+            if not should_exclude_permission(perm)
+        ]
+    
     class Meta:
         model = User
         fields = [
@@ -99,9 +143,12 @@ class UserOutputSerializer(serializers.ModelSerializer):
             'last_name',
             'full_name',
             'groups_list',
+            'groups_list_display',
             'primary_group',
+            'primary_group_display',
             'branches_data',
             'regions_data',
+            'user_permissions_list',
             'is_active',
             'is_staff',
             'is_superuser',

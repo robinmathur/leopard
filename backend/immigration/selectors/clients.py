@@ -81,14 +81,15 @@ def client_list(*, user, filters: Optional[Dict[str, Any]] = None, include_delet
     
     # Apply additional filters
     
-    # General search across name and email
+    # General search across name, email, and phone_number
     if 'search' in filters and filters['search']:
         from django.db.models import Q
         search_term = filters['search']
         qs = qs.filter(
             Q(first_name__icontains=search_term) |
             Q(last_name__icontains=search_term) |
-            Q(email__icontains=search_term)
+            Q(email__icontains=search_term) |
+            Q(phone_number__icontains=search_term)
         )
     
     if 'email' in filters and filters['email']:

@@ -22,10 +22,10 @@ import { UserTable } from '@/components/users/UserTable';
 import { UserForm } from '@/components/users/UserForm';
 import { PermissionAssignmentDialog } from '@/components/users/PermissionAssignmentDialog';
 import { userApi } from '@/services/api/userApi';
-import type { User, UserCreateRequest, UserUpdateRequest } from '@/types/user';
+import type { User, UserCreateRequest } from '@/types/user';
 import type { ApiError } from '@/services/api/httpClient';
 
-type DialogMode = 'add' | 'edit' | null;
+type DialogMode = 'add' | null;
 
 export const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -93,13 +93,6 @@ export const UsersPage = () => {
     setFieldErrors({});
   };
 
-  // --- Edit User ---
-  const handleEdit = (user: User) => {
-    setDialogMode('edit');
-    setSelectedUser(user);
-    setFieldErrors({});
-  };
-
 
   // --- Assign Permissions ---
   const handleAssignPermissions = (user: User) => {
@@ -146,30 +139,19 @@ export const UsersPage = () => {
   };
 
   const handleSaveUser = useCallback(
-    async (data: UserCreateRequest | UserUpdateRequest) => {
+    async (data: UserCreateRequest) => {
       setFormLoading(true);
       setFieldErrors({});
 
       try {
-        if (dialogMode === 'add') {
-          const result = await userApi.create(data as UserCreateRequest);
-          handleCloseDialog();
-          setSnackbar({
-            open: true,
-            message: `User "${result.username}" added successfully`,
-            severity: 'success',
-          });
-          fetchUsers(pagination.page, pagination.pageSize);
-        } else if (dialogMode === 'edit' && selectedUser) {
-          const result = await userApi.update(selectedUser.id, data as UserUpdateRequest);
-          handleCloseDialog();
-          setSnackbar({
-            open: true,
-            message: `User "${result.username}" updated successfully`,
-            severity: 'success',
-          });
-          fetchUsers(pagination.page, pagination.pageSize);
-        }
+        const result = await userApi.create(data);
+        handleCloseDialog();
+        setSnackbar({
+          open: true,
+          message: `User "${result.username}" added successfully`,
+          severity: 'success',
+        });
+        fetchUsers(pagination.page, pagination.pageSize);
       } catch (err) {
         const apiError = err as ApiError;
         if (apiError.fieldErrors) {
@@ -185,7 +167,7 @@ export const UsersPage = () => {
         setFormLoading(false);
       }
     },
-    [dialogMode, selectedUser, fetchUsers, pagination]
+    [fetchUsers, pagination]
   );
 
   const handleCloseSnackbar = () => {
@@ -222,12 +204,11 @@ export const UsersPage = () => {
           pagination={pagination}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
-          onEdit={handleEdit}
           onAssignPermissions={handleAssignPermissions}
         />
       </Paper>
 
-      {/* Add/Edit User Dialog */}
+      {/* Add User Dialog */}
       <Dialog
         open={dialogMode !== null}
         onClose={formLoading ? undefined : handleCloseDialog}
@@ -235,7 +216,7 @@ export const UsersPage = () => {
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {dialogMode === 'add' ? 'Add New User' : 'Edit User'}
+          Add New User
           <IconButton
             onClick={handleCloseDialog}
             disabled={formLoading}
@@ -246,8 +227,7 @@ export const UsersPage = () => {
         </DialogTitle>
         <DialogContent dividers>
           <UserForm
-            mode={dialogMode || 'add'}
-            initialData={selectedUser || undefined}
+            mode="add"
             onSave={handleSaveUser}
             onCancel={handleCloseDialog}
             loading={formLoading}

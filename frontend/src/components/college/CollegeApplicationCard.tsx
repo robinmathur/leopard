@@ -3,6 +3,7 @@
  * Card component for displaying college application summary with expandable details
  */
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -17,11 +18,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -29,8 +25,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { CollegeApplication } from '@/types/collegeApplication';
 import { CollegeApplicationForm } from '@/components/college/CollegeApplicationForm';
 import { deleteCollegeApplication, updateCollegeApplication, getCollegeApplication } from '@/services/api/collegeApplicationApi';
@@ -114,11 +109,11 @@ export const CollegeApplicationCard = ({
   onDelete,
   onUpdate,
 }: CollegeApplicationCardProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-  const [addDocumentDialogOpen, setAddDocumentDialogOpen] = useState(false);
-  const [documents, setDocuments] = useState<any[]>([]); // Placeholder for documents
 
   const handleHeaderClick = () => {
     if (isExpanded) {
@@ -176,15 +171,20 @@ export const CollegeApplicationCard = ({
     }
   };
 
-  const handleAddDocument = () => {
-    // Placeholder - upload functionality to be implemented later
-    setAddDocumentDialogOpen(true);
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Pass the current location as 'from' state for proper back navigation
+    const fromPath = location.pathname;
+    navigate(`/college-applications/${application.id}`, {
+      state: { from: fromPath }
+    });
   };
 
   return (
     <>
       <Paper
         variant="outlined"
+        onClick={handleHeaderClick}
         sx={{
           p: 2,
           mb: 2,
@@ -198,7 +198,7 @@ export const CollegeApplicationCard = ({
           transition: 'all 0.2s ease-in-out',
         }}
       >
-        {/* Header Section - Clickable */}
+        {/* Header Section */}
         <Box
           sx={{
             display: 'flex',
@@ -206,7 +206,6 @@ export const CollegeApplicationCard = ({
             alignItems: 'flex-start',
             mb: 1.5,
           }}
-          onClick={handleHeaderClick}
         >
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, flex: 1 }}>
             <SchoolIcon color="primary" />
@@ -237,6 +236,7 @@ export const CollegeApplicationCard = ({
             ) : (
               <IconButton
                 size="small"
+                onClick={(e) => e.stopPropagation()}
                 sx={{ ml: 1 }}
                 aria-label="Expand"
               >
@@ -278,7 +278,18 @@ export const CollegeApplicationCard = ({
         <Collapse in={isExpanded}>
           <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
             {/* Action Buttons in Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 3 }}>
+            <Box 
+              sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 3 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<VisibilityIcon />}
+                onClick={handleViewDetails}
+              >
+                View Details
+              </Button>
               <Protect permission="change_collegeapplication">
                 <Button
                   variant="outlined"
@@ -348,74 +359,6 @@ export const CollegeApplicationCard = ({
                 </Grid>
               )}
 
-              {/* Documents Section */}
-              <Grid size={{ xs: 12 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    Documents
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddDocument}
-                  >
-                    Add Document
-                  </Button>
-                </Box>
-                <Paper variant="outlined" sx={{ p: 2 }}>
-                  {documents.length === 0 ? (
-                    <Box
-                      sx={{
-                        py: 3,
-                        textAlign: 'center',
-                        color: 'text.secondary',
-                      }}
-                    >
-                      <AttachFileIcon sx={{ fontSize: 48, mb: 1, opacity: 0.3 }} />
-                      <Typography variant="body2" gutterBottom>
-                        No documents uploaded yet
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Upload functionality will be available soon
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <List dense>
-                      {documents.map((doc, index) => (
-                        <ListItem
-                          key={index}
-                          sx={{
-                            '&:hover': {
-                              backgroundColor: 'action.hover',
-                            },
-                            borderRadius: 1,
-                            mb: 0.5,
-                          }}
-                          secondaryAction={
-                            <IconButton
-                              edge="end"
-                              size="small"
-                              color="error"
-                              aria-label={`Delete ${doc.name}`}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          }
-                        >
-                          <ListItemIcon>
-                            <AttachFileIcon />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={doc.name}
-                            secondary={doc.uploadDate ? formatDate(doc.uploadDate) : 'No date'}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                </Paper>
-              </Grid>
             </Grid>
           </Box>
         </Collapse>
@@ -481,32 +424,6 @@ export const CollegeApplicationCard = ({
         </DialogActions>
       </Dialog>
 
-      {/* Add Document Dialog - Placeholder */}
-      <Dialog
-        open={addDocumentDialogOpen}
-        onClose={() => setAddDocumentDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Add Document</Typography>
-            <IconButton onClick={() => setAddDocumentDialogOpen(false)} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-            Document upload functionality will be implemented in the future.
-            <br />
-            This dialog will allow you to upload and manage documents for this application.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddDocumentDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 };

@@ -35,6 +35,7 @@ import { useAgentStore } from '@/store/agentStore';
 import type { Agent, AgentCreateRequest, AgentUpdateRequest } from '@/types/agent';
 import type { ApiError } from '@/services/api/httpClient';
 import { AGENT_TYPE_LABELS } from '@/types/agent';
+import { formatVirtualId } from '@/utils/virtualId';
 
 type DialogMode = 'add' | 'edit' | null;
 
@@ -138,6 +139,17 @@ export const AgentPage = () => {
 
   // DataGrid column definitions
   const columns: GridColDef<Agent>[] = [
+    {
+      field: 'id',
+      headerName: 'ID',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Typography variant="body2" color="text.secondary">
+          {formatVirtualId('agent', params.row.id)}
+        </Typography>
+      ),
+    },
     {
       field: 'agent_name',
       headerName: 'Agent Name',
