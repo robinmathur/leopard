@@ -29,8 +29,6 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.db.models.signals import post_save, pre_save
-from django.dispatch import receiver
 from django.conf import settings
 from django_tenants.utils import schema_context
 
@@ -106,9 +104,28 @@ class Command(BaseCommand):
         
         try:
             # Temporarily disable signals that expect middleware context
-            # from immigration import signals as immigration_signals
-            # post_save.disconnect(immigration_signals.client_events, sender=Client)
-            # post_save.disconnect(immigration_signals.visa_application_events, sender=VisaApplication)
+            # Disable event dispatcher signals to prevent Event table creation during seeding
+            from django.db.models.signals import post_save, pre_save, post_delete
+            from immigration.events.dispatcher import (
+                create_event_on_save,
+                create_event_on_delete,
+                capture_pre_save_state,
+            )
+            
+            # Disconnect event dispatcher signals
+            # Disconnect by function reference (works with @receiver decorator)
+            try:
+                post_save.disconnect(create_event_on_save)
+            except Exception:
+                pass  # Not connected or already disconnected
+            try:
+                pre_save.disconnect(capture_pre_save_state)
+            except Exception:
+                pass  # Not connected or already disconnected
+            try:
+                post_delete.disconnect(create_event_on_delete)
+            except Exception:
+                pass  # Not connected or already disconnected
             
             with transaction.atomic():
                 # Seed in order of dependencies
@@ -196,7 +213,7 @@ class Command(BaseCommand):
                 
                 elapsed = time.time() - start_time
             
-            # Tasks are part of User Story 3 - may not exist yet (outside transaction so it doesn't rollback)
+            # Tasks (outside transaction so it doesn't rollback)
             all_tasks_count = 0
             try:
                 for tenant in tenants:
@@ -206,6 +223,8 @@ class Command(BaseCommand):
                         tenant_clients = list(Client.objects.all())
                         tenant_visa_applications = list(VisaApplication.objects.all())
                         tenant_college_applications = list(CollegeApplication.objects.all())
+                        
+                        # Seed tasks
                         tasks = self.seed_tasks(
                             tenant_users, 
                             tenant_clients, 
@@ -216,11 +235,31 @@ class Command(BaseCommand):
                         if tasks:
                             self.stdout.write(f'  ✓ Created {len(tasks)} tasks for {tenant.name}')
             except Exception as e:
-                self.stdout.write(self.style.WARNING(f'  ⚠  Skipping tasks (User Story 3 not implemented): {str(e)}'))
+                import traceback
+                self.stdout.write(self.style.ERROR(f'  ❌ Error seeding tasks: {str(e)}'))
+                self.stdout.write(self.style.ERROR(f'  Traceback: {traceback.format_exc()}'))
             
             # Re-enable signals
-            # post_save.connect(immigration_signals.client_events, sender=Client)
-            # post_save.connect(immigration_signals.visa_application_events, sender=VisaApplication)
+            from django.db.models.signals import post_save, pre_save, post_delete
+            from immigration.events.dispatcher import (
+                create_event_on_save,
+                create_event_on_delete,
+                capture_pre_save_state,
+            )
+            
+            # Reconnect event dispatcher signals
+            try:
+                post_save.connect(create_event_on_save, weak=False)
+            except Exception:
+                pass  # Already connected
+            try:
+                pre_save.connect(capture_pre_save_state, weak=False)
+            except Exception:
+                pass  # Already connected
+            try:
+                post_delete.connect(create_event_on_delete, weak=False)
+            except Exception:
+                pass  # Already connected
             
             # Count total users (including super super admin in public schema)
             total_users_count = 1  # Super Super Admin
