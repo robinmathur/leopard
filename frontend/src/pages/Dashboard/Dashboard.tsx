@@ -24,7 +24,7 @@ import { Protect } from '@/components/protected/Protect';
 import { Task, getTasks, TaskListParams, TaskStatus } from '@/services/api/taskApi';
 import { EntityTag } from '@/components/shared/TaskList/EntityTag';
 import { STATUS_COLORS } from '@/components/shared/TaskList/types';
-import { TodaysEventsWidget } from '@/components/dashboard/TodaysEventsWidget';
+import { CalendarEventsWidget } from '@/components/dashboard/CalendarEventsWidget';
 
 interface StatCardProps {
   title: string;
@@ -262,8 +262,20 @@ export const Dashboard = () => {
           {/*</Protect>*/}
         </Grid>
 
-        {/* Recent Activity */}
+        {/* Tasks Section */}
         <Grid size={{ xs: 12, md: 6 }}>
+          <TasksSection />
+        </Grid>
+
+        {/* Calendar Events */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <CalendarEventsWidget />
+          </Paper>
+        </Grid>
+
+        {/* Recent Activity */}
+        <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 2, height: '400px' }}>
             <Typography variant="h6" gutterBottom>
               Recent Activity
@@ -271,21 +283,6 @@ export const Dashboard = () => {
             <Typography variant="body2" color="text.secondary">
               Activity feed will be displayed here
             </Typography>
-          </Paper>
-        </Grid>
-
-        {/* Tasks Section */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <TasksSection />
-        </Grid>
-
-        {/* Today's Events */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6" gutterBottom>
-              Today's Events
-            </Typography>
-            <TodaysEventsWidget />
           </Paper>
         </Grid>
       </Grid>

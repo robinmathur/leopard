@@ -5,7 +5,6 @@ import {
   Toolbar,
   IconButton,
   Typography,
-  InputBase,
   Avatar,
   Box,
   Breadcrumbs,
@@ -15,9 +14,7 @@ import {
   Divider,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { alpha } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
 import TaskIcon from '@mui/icons-material/Task';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -34,6 +31,7 @@ import { useNotificationStore } from '@/store/notificationStore';
 import { navigationConfig, NavItem } from './navigation.config';
 import { CalendarDialog } from '@/components/calendar/CalendarDialog';
 import { NotificationTypeDropdown } from '@/components/notifications/NotificationTypeDropdown';
+import { GlobalSearch } from './GlobalSearch';
 
 /**
  * Breadcrumb item interface
@@ -44,45 +42,6 @@ interface BreadcrumbItem {
   isLast: boolean;
 }
 
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: alpha(theme.palette.common.white, 0.15),
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.common.white, 0.25),
-  },
-  marginRight: theme.spacing(2),
-  marginLeft: 0,
-  width: '100%',
-  [theme.breakpoints.up('sm')]: {
-    marginLeft: theme.spacing(3),
-    width: 'auto',
-  },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 1),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: 'inherit',
-  fontSize: '0.8125rem',
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(0.75, 0.75, 0.75, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(3)})`,
-    transition: theme.transitions.create('width'),
-    width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: '30ch',
-    },
-  },
-}));
 
 interface AppBarProps {
   open: boolean;
@@ -282,15 +241,7 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
 
           {/* Global Search */}
           <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-            <Search>
-              <SearchIconWrapper>
-                <SearchIcon fontSize="small" />
-              </SearchIconWrapper>
-              <StyledInputBase
-                placeholder="Search clients, applications..."
-                inputProps={{ 'aria-label': 'search' }}
-              />
-            </Search>
+            <GlobalSearch placeholder="Search clients, applications..." />
           </Box>
 
           {/* Right side actions */}
