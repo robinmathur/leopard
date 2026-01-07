@@ -43,6 +43,7 @@ import type {
 import { AssignCollegeApplicationDialog } from '@/components/college/AssignCollegeApplicationDialog';
 import { ChangeStageDialog } from '@/components/college/ChangeStageDialog';
 import { useAuthStore } from '@/store/authStore';
+import { formatVirtualId } from '@/utils/virtualId';
 
 export const ApplicationTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -288,6 +289,28 @@ export const ApplicationTracker: React.FC = () => {
 
   // DataGrid column definitions (same as ApplicationsList but without stage_name)
   const columns: GridColDef<CollegeApplication>[] = [
+    {
+      field: 'id',
+      headerName: 'ID',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Link
+          component="button"
+          variant="body2"
+          fontWeight={500}
+          onClick={() => handleView(params.row)}
+          sx={{
+            textDecoration: 'none',
+            color: 'primary.main',
+            '&:hover': { textDecoration: 'underline' },
+            cursor: 'pointer',
+          }}
+        >
+          {formatVirtualId('college-application', params.row.id)}
+        </Link>
+      ),
+    },
     {
       field: 'client_name',
       headerName: 'Client',

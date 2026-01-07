@@ -32,6 +32,7 @@ import { navigationConfig, NavItem } from './navigation.config';
 import { CalendarDialog } from '@/components/calendar/CalendarDialog';
 import { NotificationTypeDropdown } from '@/components/notifications/NotificationTypeDropdown';
 import { GlobalSearch } from './GlobalSearch';
+import { formatVirtualId } from '@/utils/virtualId';
 
 /**
  * Breadcrumb item interface
@@ -131,9 +132,29 @@ const generateBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
     });
   }
 
-  // Add detail page indicator
+  // Add detail page indicator with virtual ID
   if (isDetailPage && detailId) {
-    breadcrumbs.push({ label: `#${detailId}`, path: pathname, isLast: true });
+    // Determine entity type from path
+    let entityType: 'client' | 'visa-application' | 'college-application' | 'agent' | 'institute' | null = null;
+    const numericId = parseInt(detailId, 10);
+    
+    if (pathname.startsWith('/clients/')) {
+      entityType = 'client';
+    } else if (pathname.startsWith('/visa-applications/')) {
+      entityType = 'visa-application';
+    } else if (pathname.startsWith('/college-applications/')) {
+      entityType = 'college-application';
+    } else if (pathname.startsWith('/agent/')) {
+      entityType = 'agent';
+    } else if (pathname.startsWith('/institute/')) {
+      entityType = 'institute';
+    }
+    
+    const virtualId = entityType && !isNaN(numericId) 
+      ? formatVirtualId(entityType, numericId)
+      : `#${detailId}`;
+    
+    breadcrumbs.push({ label: virtualId, path: pathname, isLast: true });
   }
 
   return breadcrumbs;

@@ -53,6 +53,7 @@ import { User } from '@/services/api/userApi';
 import { VISA_STATUS_LABELS, VisaType } from '@/types/visaType';
 import { VisaApplicationForm } from '@/components/visa/VisaApplicationForm';
 import { VisaApplicationDeleteDialog } from '@/components/visa/VisaApplicationDeleteDialog';
+import { formatVirtualId } from '@/utils/virtualId';
 import { UserAutocomplete } from '@/components/common/UserAutocomplete';
 import { AssignVisaApplicationDialog } from '@/components/visa/AssignVisaApplicationDialog';
 import { ChangeVisaStatusDialog } from '@/components/visa/ChangeVisaStatusDialog';
@@ -525,6 +526,28 @@ export const VisaApplicationsManagementPage = () => {
 
   // DataGrid column definitions
   const columns: GridColDef<VisaApplication>[] = [
+    {
+      field: 'id',
+      headerName: 'ID',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Link
+          component="button"
+          variant="body2"
+          fontWeight={500}
+          onClick={() => handleView(params.row)}
+          sx={{
+            textDecoration: 'none',
+            color: 'primary.main',
+            '&:hover': { textDecoration: 'underline' },
+            cursor: 'pointer',
+          }}
+        >
+          {formatVirtualId('visa-application', params.row.id)}
+        </Link>
+      ),
+    },
     {
       field: 'client_name',
       headerName: 'Client',

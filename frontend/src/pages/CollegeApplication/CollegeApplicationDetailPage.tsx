@@ -32,6 +32,7 @@ import { CollegeApplicationCollegeAccount } from '@/components/college/CollegeAp
 import { CollegeApplicationApplicantAccount } from '@/components/college/CollegeApplicationApplicantAccount';
 import { CollegeApplicationDocuments } from '@/components/college/CollegeApplicationDocuments';
 import { Protect } from '@/components/protected/Protect';
+import { formatVirtualId } from '@/utils/virtualId';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -194,9 +195,14 @@ export const CollegeApplicationDetailPage = () => {
               <ArrowBackIcon />
             </IconButton>
             <Box>
-              <Typography variant="h5" fontWeight={600}>
-                {application.course_name}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Typography variant="h5" fontWeight={600}>
+                  {application.course_name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  ({formatVirtualId('college-application', application.id)})
+                </Typography>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 {application.institute_name}
               </Typography>

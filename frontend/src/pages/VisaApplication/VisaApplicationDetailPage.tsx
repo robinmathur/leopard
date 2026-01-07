@@ -32,6 +32,7 @@ import { VisaApplicationFinancialAccount } from '@/components/visa/VisaApplicati
 import { VisaApplicationApplicantAccount } from '@/components/visa/VisaApplicationApplicantAccount';
 import { VisaApplicationDocuments } from '@/components/visa/VisaApplicationDocuments';
 import { Protect } from '@/components/protected/Protect';
+import { formatVirtualId } from '@/utils/virtualId';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -194,9 +195,14 @@ export const VisaApplicationDetailPage = () => {
               <ArrowBackIcon />
             </IconButton>
             <Box>
-              <Typography variant="h5" fontWeight={600}>
-                {application.visa_type_name}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Typography variant="h5" fontWeight={600}>
+                  {application.visa_type_name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  ({formatVirtualId('visa-application', application.id)})
+                </Typography>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 {application.visa_category_name}
               </Typography>

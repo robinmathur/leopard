@@ -35,6 +35,7 @@ import { clientApi } from '@/services/api/clientApi';
 import { getVisaCategories } from '@/services/api/visaTypeApi';
 import { VisaCategory } from '@/types/visaType';
 import { listReminders, Reminder, CLIENT_CONTENT_TYPE_ID } from '@/services/api/reminderApi';
+import { formatVirtualId } from '@/utils/virtualId';
 
 export interface ClientSummaryPanelProps {
   client: Client;
@@ -295,7 +296,7 @@ export const ClientSummaryPanel = ({ client, onClientUpdate }: ClientSummaryPane
           Basic Information
         </Typography>
 
-        <DetailRow label="Client ID" value={`#${client.id}`} />
+        <DetailRow label="Client ID" value={formatVirtualId('client', client.id)} />
         <DetailRow label="Created Date" value={formatDate(client.created_at)} />
         <DetailRow label="Created By" value={client.created_by_name} />
         <DetailRow label="Branch" value={client.branch_name} />
