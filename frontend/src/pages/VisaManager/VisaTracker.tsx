@@ -46,6 +46,7 @@ import { VisaApplicationDeleteDialog } from '@/components/visa/VisaApplicationDe
 import { AssignVisaApplicationDialog } from '@/components/visa/AssignVisaApplicationDialog';
 import { ChangeVisaStatusDialog } from '@/components/visa/ChangeVisaStatusDialog';
 import { useAuthStore } from '@/store/authStore';
+import { formatVirtualId } from '@/utils/virtualId';
 
 
 // Tab configuration with status filters
@@ -147,6 +148,28 @@ const VisaApplicationTable = ({
 
   // DataGrid column definitions
   const columns: GridColDef<VisaApplication>[] = [
+    {
+      field: 'id',
+      headerName: 'ID',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Link
+          component="button"
+          variant="body2"
+          fontWeight={500}
+          onClick={() => onView(params.row)}
+          sx={{
+            textDecoration: 'none',
+            color: 'primary.main',
+            '&:hover': { textDecoration: 'underline' },
+            cursor: 'pointer',
+          }}
+        >
+          {formatVirtualId('visa-application', params.row.id)}
+        </Link>
+      ),
+    },
     {
       field: 'client_name',
       headerName: 'Client',
@@ -421,7 +444,7 @@ export const VisaTracker = () => {
 
   // Handlers
   const handleView = (application: VisaApplication) => {
-    navigate(`/clients/${application.client}?tab=visa-applications&visaApplicationId=${application.id}`, {
+    navigate(`/visa-applications/${application.id}`, {
       state: { from: '/visa-manager/tracker' }
     });
   };

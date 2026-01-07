@@ -3,7 +3,7 @@
  * Basic user information page for viewing user details
  */
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -19,12 +19,16 @@ import {
   DialogActions,
   Snackbar,
   Grid,
+  IconButton,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
 import { Protect } from '@/components/protected/Protect';
+import { UserForm } from '@/components/users/UserForm';
 import { userApi } from '@/services/api/userApi';
-import type { User } from '@/types/user';
+import type { User, UserUpdateRequest } from '@/types/user';
 import type { ApiError } from '@/services/api/httpClient';
 
 /**
@@ -47,11 +51,17 @@ const formatDate = (dateString?: string | null): string => {
 export const UserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPath = (location.state as { from?: string })?.from || '/user-management/users';
+  
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -88,12 +98,61 @@ export const UserDetailPage = () => {
     );
   }
 
+  const handleBack = () => {
+    navigate(fromPath);
+  };
+
+  const handleEdit = () => {
+    setEditDialogOpen(true);
+    setFieldErrors({});
+  };
+
+  const handleCloseEditDialog = () => {
+    if (!formLoading) {
+      setEditDialogOpen(false);
+      setFieldErrors({});
+    }
+  };
+
+  const handleSaveUser = async (data: UserUpdateRequest) => {
+    if (!user) return;
+
+    setFormLoading(true);
+    setFieldErrors({});
+
+    try {
+      const result = await userApi.update(user.id, data);
+      setEditDialogOpen(false);
+      // Refresh user data
+      const userData = await userApi.getById(user.id);
+      setUser(userData);
+      setSnackbar({
+        open: true,
+        message: `User "${result.username}" updated successfully`,
+        severity: 'success',
+      });
+    } catch (err) {
+      const apiError = err as ApiError;
+      if (apiError.fieldErrors) {
+        setFieldErrors(apiError.fieldErrors);
+      } else {
+        setSnackbar({
+          open: true,
+          message: apiError.message || 'Failed to update user',
+          severity: 'error',
+        });
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   if (error || !user) {
     return (
       <Box>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/user-management/users')}
+          onClick={handleBack}
           sx={{ mb: 2 }}>
           Back to Users
         </Button>
@@ -105,34 +164,60 @@ export const UserDetailPage = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/user-management/users')}
-          size="small"
-        >
-          Back to Users
-        </Button>
-        <Box>
-          <Typography variant="h4" fontWeight={600} gutterBottom>
-            User Information
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            View user details and information
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBack}
+            size="small"
+            sx={{ mr: 2 }}
+          >
+            Back to Users
+          </Button>
+          <Box>
+            <Typography variant="h4" fontWeight={600}>
+              {user.full_name || user.username}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              {(user.primary_group_display || user.primary_group) && (
+                <Chip
+                  label={user.primary_group_display || user.primary_group}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+              )}
+              <Chip
+                label={user.is_active ? 'Active' : 'Inactive'}
+                size="small"
+                color={user.is_active ? 'success' : 'default'}
+                variant="outlined"
+              />
+            </Box>
           </Box>
         </Box>
-        <Protect permission="delete_user">
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteIcon />}
-            size="small"
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            Delete User
-          </Button>
-        </Protect>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Protect permission="change_user">
+            <Button
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={handleEdit}
+              size="small"
+            >
+              Edit User
+            </Button>
+          </Protect>
+          <Protect permission="delete_user">
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteIcon />}
+              size="small"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              Delete User
+            </Button>
+          </Protect>
+        </Box>
       </Box>
 
       <Paper sx={{ p: 3 }}>
@@ -195,8 +280,8 @@ export const UserDetailPage = () => {
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               Primary Group
             </Typography>
-            {user.primary_group ? (
-              <Chip label={user.primary_group} size="small" color="primary" />
+            {user.primary_group_display || user.primary_group ? (
+              <Chip label={user.primary_group_display || user.primary_group} size="small" color="primary" />
             ) : (
               <Typography variant="body2" color="text.secondary">
                 No group assigned
@@ -210,8 +295,12 @@ export const UserDetailPage = () => {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {user.groups_list && user.groups_list.length > 0 ? (
-                user.groups_list.map((group) => (
-                  <Chip key={group} label={group} size="small" />
+                user.groups_list.map((group, index) => (
+                  <Chip 
+                    key={group} 
+                    label={user.groups_list_display?.[index] || group} 
+                    size="small" 
+                  />
                 ))
               ) : (
                 <Typography variant="body2" color="text.secondary">
@@ -227,15 +316,6 @@ export const UserDetailPage = () => {
               Organization
             </Typography>
             <Divider sx={{ mb: 2 }}/>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-              Tenant
-            </Typography>
-            <Typography variant="body1">
-              {user.tenant_name || '-'}
-            </Typography>
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -297,30 +377,37 @@ export const UserDetailPage = () => {
               {formatDate(user.last_login)}
             </Typography>
           </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-              Staff Status
-            </Typography>
-            <Chip
-              label={user.is_staff ? 'Staff' : 'Regular User'}
-              size="small"
-              color={user.is_staff ? 'primary' : 'default'}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-              Superuser Status
-            </Typography>
-            <Chip
-              label={user.is_superuser ? 'Superuser' : 'Regular User'}
-              size="small"
-              color={user.is_superuser ? 'warning' : 'default'}
-            />
-          </Grid>
         </Grid>
       </Paper>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={formLoading ? undefined : handleCloseEditDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Edit User
+          <IconButton
+            onClick={handleCloseEditDialog}
+            disabled={formLoading}
+            size="small"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <UserForm
+            mode="edit"
+            initialData={user}
+            onSave={handleSaveUser}
+            onCancel={handleCloseEditDialog}
+            loading={formLoading}
+            fieldErrors={fieldErrors}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => !deleting && setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
@@ -350,7 +437,7 @@ export const UserDetailPage = () => {
                 });
                 // Navigate to users page after a short delay
                 setTimeout(() => {
-                  navigate('/users');
+                  navigate(fromPath);
                 }, 1000);
               } catch (err) {
                 const apiError = err as ApiError;

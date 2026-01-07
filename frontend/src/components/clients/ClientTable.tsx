@@ -19,6 +19,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import { Client, STAGE_LABELS, STAGE_COLORS, COUNTRIES } from '@/types/client';
 import { ClientActions } from './ClientActions';
+import { formatVirtualId } from '@/utils/virtualId';
 
 interface ClientTableProps {
   clients: Client[];
@@ -155,7 +156,7 @@ export const ClientTable = ({
                 >
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {client.id}
+                      {formatVirtualId('client', client.id)}
                     </Typography>
                   </TableCell>
                   <TableCell>

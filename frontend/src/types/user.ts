@@ -10,11 +10,14 @@ export interface User {
   last_name: string;
   full_name: string;
   groups_list: string[];
+  groups_list_display?: string[];
   primary_group: string | null;
+  primary_group_display?: string | null;
   tenant: number | null;
   tenant_name: string | null;
   branches_data: Array<{ id: number; name: string }>;
   regions_data: Array<{ id: number; name: string }>;
+  user_permissions_list?: Array<{ id: number; name: string; content_type: string }>;
   is_active: boolean;
   is_staff: boolean;
   is_superuser: boolean;
@@ -67,9 +70,16 @@ export interface PaginatedResponse<T> {
 export interface Group {
   id: number;
   name: string;
-  permissions_list: UserPermission[];
-  permissions_count: number;
-  users_count: number;
+  display_name?: string;
+  permissions_list?: UserPermission[];
+  permissions_count?: number;
+  users_count?: number;
+}
+
+export interface GroupOption {
+  id: number;
+  name: string;
+  display_name: string;
 }
 
 export interface UserPermission {

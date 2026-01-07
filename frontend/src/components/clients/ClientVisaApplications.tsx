@@ -3,6 +3,7 @@
  * Displays visa applications for a client
  */
 import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -14,15 +15,22 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   IconButton,
   Grid,
+  Collapse,
+  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import { getVisaApplications, createVisaApplication, VisaApplication, VisaApplicationStatus } from '@/services/api/visaApplicationApi';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { getVisaApplications, createVisaApplication, VisaApplication, VisaApplicationStatus, deleteVisaApplication, updateVisaApplication, getVisaApplication } from '@/services/api/visaApplicationApi';
 import {Protect} from "@/components/protected/Protect.tsx";
-import { VisaApplicationDetail } from './VisaApplicationDetail';
 import { VisaApplicationForm } from '@/components/visa/VisaApplicationForm';
 
 export interface ClientVisaApplicationsProps {
@@ -85,6 +93,18 @@ const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) 
 );
 
 /**
+ * Expanded detail row component
+ */
+const ExpandedDetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <Box sx={{ mb: 2 }}>
+    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+      {label}
+    </Typography>
+    <Typography variant="body1">{value || '-'}</Typography>
+  </Box>
+);
+
+/**
  * Loading skeleton
  */
 const VisaApplicationsSkeleton = () => (
@@ -100,82 +120,344 @@ const VisaApplicationsSkeleton = () => (
 /**
  * Visa application card
  */
+interface VisaApplicationCardProps {
+  application: VisaApplication;
+  isExpanded?: boolean;
+  onExpand?: () => void;
+  onCollapse?: () => void;
+  onEdit?: (application: VisaApplication) => void;
+  onDelete?: (applicationId: number) => void;
+  onUpdate?: () => void;
+}
+
 const VisaApplicationCard = ({ 
   application, 
-  isSelected, 
-  onClick 
-}: { 
-  application: VisaApplication;
-  isSelected?: boolean;
-  onClick: () => void;
-}) => {
+  isExpanded = false,
+  onExpand,
+  onCollapse,
+  onEdit,
+  onDelete,
+  onUpdate,
+}: VisaApplicationCardProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+
+  const handleHeaderClick = () => {
+    if (isExpanded) {
+      onCollapse?.();
+    } else {
+      onExpand?.();
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCollapseClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCollapse?.();
+  };
+
+  const handleSaveApplication = async (data: any) => {
+    try {
+      setFormLoading(true);
+      await updateVisaApplication(application.id, data);
+      
+      // Refresh application data
+      const updated = await getVisaApplication(application.id);
+      
+      setEditDialogOpen(false);
+      onUpdate?.();
+    } catch (err: any) {
+      console.error('Failed to update visa application:', err);
+      throw err;
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      setFormLoading(true);
+      await deleteVisaApplication(application.id);
+      setDeleteDialogOpen(false);
+      onDelete?.(application.id);
+      onUpdate?.();
+    } catch (err: any) {
+      console.error('Failed to delete visa application:', err);
+      alert('Failed to delete visa application. Please try again.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Pass the current location as 'from' state for proper back navigation
+    const fromPath = location.pathname;
+    navigate(`/visa-applications/${application.id}`, {
+      state: { from: fromPath }
+    });
+  };
+
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: 2,
-        mb: 2,
-        border: isSelected ? 2 : 1,
-        borderColor: isSelected ? 'primary.main' : 'divider',
-        bgcolor: isSelected ? 'action.selected' : 'background.paper',
-        '&:hover': {
-          boxShadow: 2,
-          cursor: 'pointer',
-        },
-        transition: 'all 0.2s ease-in-out', }} onClick={onClick}
-    >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-          <FlightTakeoffIcon color="primary" />
-          <Box>
-            <Typography variant="subtitle1" fontWeight={600}>
-              {application.visa_type_name}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {application.visa_category_name}
-            </Typography>
+    <>
+      <Paper
+        variant="outlined"
+        onClick={handleHeaderClick}
+        sx={{
+          p: 2,
+          mb: 2,
+          border: isExpanded ? 2 : 1,
+          borderColor: isExpanded ? 'primary.main' : 'divider',
+          bgcolor: isExpanded ? 'action.selected' : 'background.paper',
+          '&:hover': {
+            boxShadow: 2,
+            cursor: 'pointer',
+          },
+          transition: 'all 0.2s ease-in-out',
+        }}
+      >
+        {/* Header Section */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            mb: 1.5,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, flex: 1 }}>
+            <FlightTakeoffIcon color="primary" />
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {application.visa_type_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {application.visa_category_name}
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              label={STATUS_LABELS[application.status]}
+              color={STATUS_COLORS[application.status]}
+              size="small"
+            />
+            {isExpanded ? (
+              <IconButton
+                size="small"
+                onClick={handleCollapseClick}
+                sx={{ ml: 1 }}
+                aria-label="Collapse"
+              >
+                <ExpandLessIcon />
+              </IconButton>
+            ) : (
+              <IconButton
+                size="small"
+                onClick={(e) => e.stopPropagation()}
+                sx={{ ml: 1 }}
+                aria-label="Expand"
+              >
+                <ExpandMoreIcon />
+              </IconButton>
+            )}
           </Box>
         </Box>
-        <Chip
-          label={STATUS_LABELS[application.status]}
-          color={STATUS_COLORS[application.status]}
-          size="small"
-        />
-      </Box>
 
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        {application.date_applied && (
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <DetailRow label="Date Applied" value={formatDate(application.date_applied)} />
-          </Grid>
-        )}
-        {application.date_granted && (
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <DetailRow label="Date Granted" value={formatDate(application.date_granted)} />
-          </Grid>
-        )}
-        {application.date_rejected && (
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <DetailRow label="Date Rejected" value={formatDate(application.date_rejected)} />
-          </Grid>
-        )}
-        {application.expiry_date && (
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <DetailRow label="Expiry Date" value={formatDate(application.expiry_date)} />
-          </Grid>
-        )}
-        {application.assigned_to_name && (
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <DetailRow label="Assigned To" value={application.assigned_to_name} />
-          </Grid>
-        )}
-        {application.transaction_reference_no && (
-          <Grid size={{ xs: 12 }}>
-            <DetailRow label="Reference Number" value={application.transaction_reference_no} />
-          </Grid>
-        )}
-      </Grid>
-    </Paper>
+        {/* Summary Section - Always Visible */}
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          {application.date_applied && (
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <DetailRow label="Date Applied" value={formatDate(application.date_applied)} />
+            </Grid>
+          )}
+          {application.date_granted && (
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <DetailRow label="Date Granted" value={formatDate(application.date_granted)} />
+            </Grid>
+          )}
+          {application.date_rejected && (
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <DetailRow label="Date Rejected" value={formatDate(application.date_rejected)} />
+            </Grid>
+          )}
+          {application.expiry_date && (
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <DetailRow label="Expiry Date" value={formatDate(application.expiry_date)} />
+            </Grid>
+          )}
+          {application.assigned_to_name && (
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <DetailRow label="Assigned To" value={application.assigned_to_name} />
+            </Grid>
+          )}
+          {application.transaction_reference_no && (
+            <Grid size={{ xs: 12 }}>
+              <DetailRow label="Reference Number" value={application.transaction_reference_no} />
+            </Grid>
+          )}
+        </Grid>
+
+        {/* Expanded Section */}
+        <Collapse in={isExpanded}>
+          <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+            {/* Action Buttons in Header */}
+            <Box 
+              sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 3 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<VisibilityIcon />}
+                onClick={handleViewDetails}
+              >
+                View Details
+              </Button>
+              <Protect permission="change_visaapplication">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<EditIcon />}
+                  onClick={handleEditClick}
+                >
+                  Edit
+                </Button>
+              </Protect>
+              <Protect permission="delete_visaapplication">
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleDeleteClick}
+                >
+                  Delete
+                </Button>
+              </Protect>
+            </Box>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Additional Details */}
+            <Grid container spacing={3}>
+              {/* Financial Information */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  Financial Information
+                </Typography>
+                <ExpandedDetailRow 
+                  label="Immigration Fee" 
+                  value={`${parseFloat(application.immigration_fee || '0').toLocaleString('en-US', { style: 'currency', currency: application.immigration_fee_currency || 'USD' })}`} 
+                />
+                <ExpandedDetailRow 
+                  label="Service Fee" 
+                  value={`${parseFloat(application.service_fee || '0').toLocaleString('en-US', { style: 'currency', currency: application.service_fee_currency || 'USD' })}`} 
+                />
+              </Grid>
+
+              {/* Metadata */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  Metadata
+                </Typography>
+                <ExpandedDetailRow label="Created At" value={formatDate(application.created_at)} />
+                <ExpandedDetailRow label="Last Updated" value={formatDate(application.updated_at)} />
+                {application.created_by_name && (
+                  <ExpandedDetailRow label="Created By" value={application.created_by_name} />
+                )}
+              </Grid>
+
+              {/* Notes */}
+              {application.notes && (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    Notes
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {application.notes}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              )}
+            </Grid>
+          </Box>
+        </Collapse>
+      </Paper>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: '90vh',
+            },
+          },
+        }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Edit Visa Application</Typography>
+            <IconButton onClick={() => setEditDialogOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <VisaApplicationForm
+            mode="edit"
+            initialData={application}
+            onSave={handleSaveApplication}
+            onCancel={() => setEditDialogOpen(false)}
+            loading={formLoading}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="sm"
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this visa application? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={formLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteConfirm}
+            disabled={formLoading}
+          >
+            {formLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 
@@ -192,7 +474,7 @@ export const ClientVisaApplications = ({
   const [applications, setApplications] = useState<VisaApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedApplicationId, setSelectedApplicationId] = useState<number | undefined>(initialSelectedId);
+  const [expandedApplicationId, setExpandedApplicationId] = useState<number | undefined>(initialSelectedId);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
@@ -229,20 +511,39 @@ export const ClientVisaApplications = ({
     };
   }, [clientId]);
 
-  // Update selected application when prop changes (from URL params)
+  // Update expanded application when prop changes (from URL params)
   useEffect(() => {
     if (initialSelectedId !== undefined) {
-      setSelectedApplicationId(initialSelectedId); }}, [initialSelectedId]);
+      setExpandedApplicationId(initialSelectedId);
+    }
+  }, [initialSelectedId]);
 
-  const handleCardClick = (applicationId: number) => {
-    setSelectedApplicationId(applicationId);
+  const handleCardExpand = (applicationId: number) => {
+    // Only one card can be expanded at a time
+    setExpandedApplicationId(applicationId);
     if (onCardClick) {
-      onCardClick(applicationId); }};
+      onCardClick(applicationId);
+    }
+  };
 
-  const handleCloseDetail = () => {
-    setSelectedApplicationId(undefined);
+  const handleCardCollapse = () => {
+    setExpandedApplicationId(undefined);
     if (onDetailClose) {
-      onDetailClose(); }};
+      onDetailClose();
+    }
+  };
+
+  const handleApplicationDelete = (applicationId: number) => {
+    // Remove from list and collapse if it was expanded
+    setApplications(applications.filter(app => app.id !== applicationId));
+    if (expandedApplicationId === applicationId) {
+      setExpandedApplicationId(undefined);
+      if (onDetailClose) {
+        onDetailClose();
+      }
+    }
+    handleApplicationUpdate();
+  };
 
   const handleApplicationUpdate = () => {
     // Refresh the applications list
@@ -352,21 +653,14 @@ export const ClientVisaApplications = ({
             <VisaApplicationCard 
               key={application.id} 
               application={application}
-              isSelected={selectedApplicationId === application.id}
-              onClick={() => handleCardClick(application.id)}
+              isExpanded={expandedApplicationId === application.id}
+              onExpand={() => handleCardExpand(application.id)}
+              onCollapse={handleCardCollapse}
+              onDelete={handleApplicationDelete}
+              onUpdate={handleApplicationUpdate}
             />
           ))}
         </>
-      )}
-
-      {/* Visa Application Detail Panel */}
-      {selectedApplicationId && (
-        <VisaApplicationDetail
-          visaApplicationId={selectedApplicationId}
-          initialApplication={applications.find((app) => app.id === selectedApplicationId)}
-          onClose={handleCloseDetail}
-          onUpdate={handleApplicationUpdate}
-        />
       )}
 
       {/* Create Visa Application Dialog */}

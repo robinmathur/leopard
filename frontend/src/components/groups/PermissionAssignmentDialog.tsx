@@ -50,7 +50,7 @@ export const PermissionAssignmentDialog = ({
     if (open && group) {
       fetchPermissions();
       // Pre-select existing permissions
-      setSelectedPermissionIds(new Set(group.permissions_list.map((p) => p.id)));
+      setSelectedPermissionIds(new Set((group.permissions_list || []).map((p) => p.id)));
     } else {
       setSelectedPermissionIds(new Set());
       setSearchTerm('');
@@ -96,10 +96,11 @@ export const PermissionAssignmentDialog = ({
   // Filter permissions by search term
   const filteredPermissions = permissions.filter((perm) => {
     const contentType = perm.content_type_display || perm.content_type || '';
+    const searchLower = searchTerm.toLowerCase();
     return (
-      perm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      perm.codename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contentType.toLowerCase().includes(searchTerm.toLowerCase())
+      perm.name.toLowerCase().includes(searchLower) ||
+      (perm.codename && perm.codename.toLowerCase().includes(searchLower)) ||
+      contentType.toLowerCase().includes(searchLower)
     );
   });
 
@@ -168,9 +169,7 @@ export const PermissionAssignmentDialog = ({
                         />
                         <ListItemText
                           primary={perm.name}
-                          secondary={perm.codename}
                           primaryTypographyProps={{ fontSize: '0.8125rem' }}
-                          secondaryTypographyProps={{ fontSize: '0.75rem' }}
                         />
                       </ListItemButton>
                     </ListItem>

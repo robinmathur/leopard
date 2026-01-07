@@ -1,8 +1,11 @@
 /**
  * PermissionAssignmentDialog Component
  * Dialog for assigning permissions to a user
+ * 
+ * Group permissions are shown as selected but disabled (read-only)
+ * User can only add/remove direct permissions
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -20,10 +23,15 @@ import {
   ListItemButton,
   Paper,
   Divider,
+  Chip,
+  Alert,
+  Tooltip,
 } from '@mui/material';
+import LockIcon from '@mui/icons-material/Lock';
 import { permissionApi } from '@/services/api/permissionApi';
+import { groupApi } from '@/services/api/groupApi';
 import { getContentTypeDisplayName } from '@/utils/contentType';
-import type { User, UserPermission } from '@/types/user';
+import type { User, UserPermission, Group } from '@/types/user';
 
 interface PermissionAssignmentDialogProps {
   open: boolean;
@@ -42,24 +50,55 @@ export const PermissionAssignmentDialog = ({
 }: PermissionAssignmentDialogProps) => {
   const [permissions, setPermissions] = useState<UserPermission[]>([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<Set<number>>(new Set());
+  const [groupPermissionIds, setGroupPermissionIds] = useState<Set<number>>(new Set());
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch permissions when dialog opens
+  // Fetch all permissions and user's group permissions when dialog opens
   useEffect(() => {
-    if (open) {
-      fetchPermissions();
+    if (open && user) {
+      fetchPermissionsAndGroupData();
     } else {
       setSelectedPermissionIds(new Set());
+      setGroupPermissionIds(new Set());
       setSearchTerm('');
     }
-  }, [open]);
+  }, [open, user]);
 
-  const fetchPermissions = async () => {
+  const fetchPermissionsAndGroupData = async () => {
+    if (!user) return;
+    
     setLoadingPermissions(true);
     try {
-      const response = await permissionApi.list({ page_size: 1000 });
-      setPermissions(response.results);
+      // Fetch all available permissions
+      const permResponse = await permissionApi.list({ page_size: 1000 });
+      setPermissions(permResponse.results);
+
+      // Fetch user's group(s) to get their permissions
+      const groupPermIds = new Set<number>();
+      
+      if (user.groups_list && user.groups_list.length > 0) {
+        // Fetch all groups to get their permissions
+        const groupsResponse = await groupApi.list({ page_size: 100 });
+        const userGroups = groupsResponse.results.filter(
+          (g: Group) => user.groups_list.includes(g.name)
+        );
+        
+        // Collect all permission IDs from user's groups
+        userGroups.forEach((group: Group) => {
+          if (group.permissions_list) {
+            group.permissions_list.forEach((perm) => {
+              groupPermIds.add(perm.id);
+            });
+          }
+        });
+      }
+      
+      setGroupPermissionIds(groupPermIds);
+      
+      // Pre-select both group permissions and user's direct permissions
+      const userDirectPermIds = user.user_permissions_list?.map((p) => p.id) || [];
+      setSelectedPermissionIds(new Set([...groupPermIds, ...userDirectPermIds]));
     } catch (error) {
       console.error('Failed to fetch permissions:', error);
     } finally {
@@ -68,6 +107,11 @@ export const PermissionAssignmentDialog = ({
   };
 
   const handleTogglePermission = (permissionId: number) => {
+    // Don't allow toggling group permissions
+    if (groupPermissionIds.has(permissionId)) {
+      return;
+    }
+    
     setSelectedPermissionIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(permissionId)) {
@@ -80,24 +124,42 @@ export const PermissionAssignmentDialog = ({
   };
 
   const handleSelectAll = () => {
-    if (selectedPermissionIds.size === filteredPermissions.length) {
-      setSelectedPermissionIds(new Set());
+    // Get IDs of non-group permissions only
+    const nonGroupPermIds = filteredPermissions
+      .filter((p) => !groupPermissionIds.has(p.id))
+      .map((p) => p.id);
+    
+    // Check if all non-group permissions are selected
+    const allNonGroupSelected = nonGroupPermIds.every((id) => selectedPermissionIds.has(id));
+    
+    if (allNonGroupSelected) {
+      // Deselect all non-group permissions
+      setSelectedPermissionIds(new Set(groupPermissionIds));
     } else {
-      setSelectedPermissionIds(new Set(filteredPermissions.map((p) => p.id)));
+      // Select all (group permissions + all non-group permissions)
+      setSelectedPermissionIds(new Set([
+        ...groupPermissionIds,
+        ...nonGroupPermIds,
+      ]));
     }
   };
 
   const handleConfirm = () => {
-    onConfirm(Array.from(selectedPermissionIds));
+    // Only send user-specific permissions (exclude group permissions)
+    const userPermissionIds = Array.from(selectedPermissionIds).filter(
+      (id) => !groupPermissionIds.has(id)
+    );
+    onConfirm(userPermissionIds);
   };
 
   // Filter permissions by search term
   const filteredPermissions = permissions.filter((perm) => {
     const contentType = perm.content_type_display || perm.content_type || '';
+    const searchLower = searchTerm.toLowerCase();
     return (
-      perm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      perm.codename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contentType.toLowerCase().includes(searchTerm.toLowerCase())
+      perm.name.toLowerCase().includes(searchLower) ||
+      (perm.codename && perm.codename.toLowerCase().includes(searchLower)) ||
+      contentType.toLowerCase().includes(searchLower)
     );
   });
 
@@ -111,12 +173,32 @@ export const PermissionAssignmentDialog = ({
     return acc;
   }, {} as Record<string, UserPermission[]>);
 
+  // Calculate counts
+  const userPermissionCount = useMemo(() => {
+    return Array.from(selectedPermissionIds).filter(
+      (id) => !groupPermissionIds.has(id)
+    ).length;
+  }, [selectedPermissionIds, groupPermissionIds]);
+
+  const nonGroupFilteredCount = filteredPermissions.filter(
+    (p) => !groupPermissionIds.has(p.id)
+  ).length;
+
   return (
     <Dialog open={open} onClose={loading ? undefined : onCancel} maxWidth="md" fullWidth>
       <DialogTitle>
         Assign Permissions to {user?.username}
       </DialogTitle>
       <DialogContent dividers>
+        {groupPermissionIds.size > 0 && (
+          <Alert severity="info" sx={{ mb: 2 }} icon={<LockIcon fontSize="small" />}>
+            <Typography variant="body2">
+              Permissions from assigned group(s) are shown as selected and locked.
+              You can only add or remove additional user-specific permissions.
+            </Typography>
+          </Alert>
+        )}
+        
         <Box sx={{ mb: 2 }}>
           <TextField
             fullWidth
@@ -127,11 +209,26 @@ export const PermissionAssignmentDialog = ({
             sx={{ mb: 2 }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              {selectedPermissionIds.size} of {filteredPermissions.length} selected
-            </Typography>
-            <Button size="small" onClick={handleSelectAll}>
-              {selectedPermissionIds.size === filteredPermissions.length ? 'Deselect All' : 'Select All'}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                {userPermissionCount} user-specific permissions
+              </Typography>
+              {groupPermissionIds.size > 0 && (
+                <Chip 
+                  label={`${groupPermissionIds.size} from Group`}
+                  size="small" 
+                  variant="outlined"
+                  icon={<LockIcon sx={{ fontSize: '0.875rem' }} />}
+                />
+              )}
+            </Box>
+            <Button size="small" onClick={handleSelectAll} disabled={nonGroupFilteredCount === 0}>
+              {nonGroupFilteredCount > 0 && 
+               filteredPermissions
+                 .filter((p) => !groupPermissionIds.has(p.id))
+                 .every((p) => selectedPermissionIds.has(p.id))
+                ? 'Deselect All'
+                : 'Select All'}
             </Button>
           </Box>
         </Box>
@@ -152,27 +249,46 @@ export const PermissionAssignmentDialog = ({
                   </Typography>
                 </Box>
                 <List dense>
-                  {perms.map((perm) => (
-                    <ListItem key={perm.id} disablePadding>
-                      <ListItemButton
-                        onClick={() => handleTogglePermission(perm.id)}
-                        disabled={loading}
-                        dense
-                      >
-                        <Checkbox
-                          checked={selectedPermissionIds.has(perm.id)}
-                          edge="start"
-                          size="small"
-                        />
-                        <ListItemText
-                          primary={perm.name}
-                          secondary={perm.codename}
-                          primaryTypographyProps={{ fontSize: '0.8125rem' }}
-                          secondaryTypographyProps={{ fontSize: '0.75rem' }}
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
+                  {perms.map((perm) => {
+                    const isGroupPermission = groupPermissionIds.has(perm.id);
+                    const isSelected = selectedPermissionIds.has(perm.id);
+                    
+                    return (
+                      <ListItem key={perm.id} disablePadding>
+                        <Tooltip
+                          title={isGroupPermission ? "This permission comes from the user's assigned group and cannot be removed" : ""}
+                          placement="left"
+                        >
+                          <ListItemButton
+                            onClick={() => handleTogglePermission(perm.id)}
+                            disabled={loading || isGroupPermission}
+                            dense
+                            sx={{
+                              bgcolor: isGroupPermission ? 'action.hover' : 'transparent',
+                            }}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              edge="start"
+                              size="small"
+                              disabled={isGroupPermission}
+                            />
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <span>{perm.name}</span>
+                                  {isGroupPermission && (
+                                    <LockIcon sx={{ fontSize: '0.875rem', color: 'text.secondary' }} />
+                                  )}
+                                </Box>
+                              }
+                              primaryTypographyProps={{ fontSize: '0.8125rem' }}
+                            />
+                          </ListItemButton>
+                        </Tooltip>
+                      </ListItem>
+                    );
+                  })}
                 </List>
                 <Divider />
               </Box>
@@ -187,14 +303,13 @@ export const PermissionAssignmentDialog = ({
         <Button
           onClick={handleConfirm}
           variant="contained"
-          disabled={loading || selectedPermissionIds.size === 0}
+          disabled={loading}
           size="small"
           startIcon={loading ? <CircularProgress size={16} /> : null}
         >
-          {loading ? 'Assigning...' : 'Assign Permissions'}
+          {loading ? 'Assigning...' : 'Save Permissions'}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
-

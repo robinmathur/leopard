@@ -36,6 +36,7 @@ import { InstituteLocations } from '@/components/institutes/InstituteLocations';
 import { InstituteCourses } from '@/components/institutes/InstituteCourses';
 import { InstituteIntakes } from '@/components/institutes/InstituteIntakes';
 import { InstituteRequirements } from '@/components/institutes/InstituteRequirements';
+import { formatVirtualId } from '@/utils/virtualId';
 
 /**
  * Tab value type
@@ -314,9 +315,14 @@ export const InstituteDetailPage = () => {
             Back to Institutes
           </Button>
           <Box>
-            <Typography variant="h4" fontWeight={600}>
-              {institute.name}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Typography variant="h4" fontWeight={600}>
+                {institute.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                ({formatVirtualId('institute', institute.id)})
+              </Typography>
+            </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {institute.short_name}
             </Typography>

@@ -48,6 +48,7 @@ import { ClientCollegeApplications } from '@/components/clients/ClientCollegeApp
 import { ClientTasks } from '@/components/clients/ClientTasks';
 import { ClientReminders } from '@/components/clients/ClientReminders';
 import { ClientForm } from '@/components/clients/ClientForm';
+import { formatVirtualId } from '@/utils/virtualId';
 import { DeleteConfirmDialog } from '@/components/clients/DeleteConfirmDialog';
 import { ClientSummaryPanel } from '@/components/clients/ClientSummaryPanel';
 import { clientApi } from '@/services/api/clientApi';
@@ -377,9 +378,14 @@ export const ClientDetailPage = () => {
           />
 
           <Box>
-            <Typography variant="h4" fontWeight={600}>
-              {fullName}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Typography variant="h4" fontWeight={600}>
+                {fullName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                ({formatVirtualId('client', client.id)})
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
               <Chip
                 label={STAGE_LABELS[client.stage]}

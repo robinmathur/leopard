@@ -259,8 +259,20 @@ class UserViewSet(ViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         except ValueError as e:
+            error_msg = str(e)
+            # Handle field-specific errors for better frontend display
+            if "Email" in error_msg and "already exists" in error_msg:
+                return Response(
+                    {'email': ['A user with this email already exists.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if "Username" in error_msg and "already exists" in error_msg:
+                return Response(
+                    {'username': ['A user with this username already exists.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             return Response(
-                {'detail': str(e)},
+                {'detail': error_msg},
                 status=status.HTTP_400_BAD_REQUEST
             )
     
@@ -309,14 +321,26 @@ class UserViewSet(ViewSet):
             return Response(output_serializer.data)
         
         except ValueError as e:
+            error_msg = str(e)
             # ValueError from service includes "not found" cases
-            if "does not exist" in str(e):
+            if "does not exist" in error_msg:
                 return Response(
-                    {'detail': str(e)},
+                    {'detail': error_msg},
                     status=status.HTTP_404_NOT_FOUND
                 )
+            # Handle field-specific errors for better frontend display
+            if "Email" in error_msg and "already exists" in error_msg:
+                return Response(
+                    {'email': ['A user with this email already exists.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if "Username" in error_msg and "already exists" in error_msg:
+                return Response(
+                    {'username': ['A user with this username already exists.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             return Response(
-                {'detail': str(e)},
+                {'detail': error_msg},
                 status=status.HTTP_400_BAD_REQUEST
             )
     

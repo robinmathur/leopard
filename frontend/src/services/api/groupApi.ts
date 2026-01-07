@@ -5,6 +5,7 @@
 import httpClient from './httpClient';
 import type {
   Group,
+  GroupOption,
   GroupCreateRequest,
   GroupUpdateRequest,
   PaginatedResponse,
@@ -61,6 +62,14 @@ export const groupApi = {
    */
   async assignPermissions(id: number, data: PermissionAssignmentRequest): Promise<Group> {
     const response = await httpClient.post<Group>(`/v1/groups/${id}/assign-permissions/`, data);
+    return response.data;
+  },
+
+  /**
+   * Get groups for dropdowns (lightweight - only id, name, display_name)
+   */
+  async options(): Promise<GroupOption[]> {
+    const response = await httpClient.get<GroupOption[]>('/v1/groups/options/');
     return response.data;
   },
 };

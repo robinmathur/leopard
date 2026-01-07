@@ -29,6 +29,7 @@ import type { ApiError } from '@/services/api/httpClient';
 import { Protect } from '@/components/protected/Protect';
 import { AgentOverview, AgentOverviewSkeleton } from '@/components/agents/AgentOverview';
 import { AGENT_TYPE_LABELS } from '@/types/agent';
+import { formatVirtualId } from '@/utils/virtualId';
 
 export const AgentDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -200,9 +201,14 @@ export const AgentDetailPage = () => {
             Back to Agents
           </Button>
           <Box>
-            <Typography variant="h4" fontWeight={600}>
-              {agent.agent_name}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Typography variant="h4" fontWeight={600}>
+                {agent.agent_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                ({formatVirtualId('agent', agent.id)})
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
               <Chip
                 label={agent.agent_type_display || AGENT_TYPE_LABELS[agent.agent_type]}

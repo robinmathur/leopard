@@ -108,3 +108,15 @@ class BranchUpdateSerializer(serializers.Serializer):
     postcode = serializers.CharField(max_length=20, required=False, allow_blank=True)
     country = serializers.CharField(max_length=2, required=False, allow_blank=True)
 
+
+class BranchOptionSerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for branch dropdowns/select lists.
+    Returns only id and name.
+    """
+    
+    class Meta:
+        model = Branch
+        fields = ['id', 'name']
+        read_only_fields = ['id', 'name']
+

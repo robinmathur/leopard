@@ -10,9 +10,10 @@ export interface GroupOption {
 
 /**
  * Group options matching backend constants
+ * @deprecated Use groups fetched from backend API instead
+ * This is kept for backward compatibility only
  */
 export const GROUP_OPTIONS: GroupOption[] = [
-  { value: 'SUPER_SUPER_ADMIN', label: 'Super Super Admin' },
   { value: 'SUPER_ADMIN', label: 'Super Admin' },
   { value: 'REGION_MANAGER', label: 'Region Manager' },
   { value: 'BRANCH_ADMIN', label: 'Branch Admin' },
