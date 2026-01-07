@@ -17,7 +17,6 @@ import {
 import PeopleIcon from '@mui/icons-material/People';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DescriptionIcon from '@mui/icons-material/Description';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
 import { Protect } from '@/components/protected/Protect';
@@ -25,6 +24,8 @@ import { Task, getTasks, TaskListParams, TaskStatus } from '@/services/api/taskA
 import { EntityTag } from '@/components/shared/TaskList/EntityTag';
 import { STATUS_COLORS } from '@/components/shared/TaskList/types';
 import { CalendarEventsWidget } from '@/components/dashboard/CalendarEventsWidget';
+import { clientApi } from '@/services/api/clientApi';
+import { listVisaApplications } from '@/services/api/visaApplicationApi';
 
 interface StatCardProps {
   title: string;
@@ -93,7 +94,9 @@ const TasksSection = () => {
       }
 
       const response = await getTasks(params);
-      setTasks(response.results);
+      // Filter out completed tasks for dashboard display
+      const filteredTasks = response.results.filter((task) => task.status !== 'COMPLETED');
+      setTasks(filteredTasks);
     } catch (err: any) {
       setError(err.message || 'Failed to load tasks');
     } finally {
@@ -207,6 +210,42 @@ const TasksSection = () => {
 };
 
 export const Dashboard = () => {
+  const [totalClients, setTotalClients] = useState<number | null>(null);
+  const [totalLeads, setTotalLeads] = useState<number | null>(null);
+  const [totalApplications, setTotalApplications] = useState<number | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      setLoadingStats(true);
+      try {
+        // Fetch client statistics (includes total clients and leads)
+        const stageCounts = await clientApi.getStageCounts();
+        setTotalClients(stageCounts.TOTAL);
+        setTotalLeads(stageCounts.LEAD);
+
+        // Fetch visa applications count
+        const applicationsResponse = await listVisaApplications({ page_size: 1 });
+        setTotalApplications(applicationsResponse.count);
+      } catch (error) {
+        console.error('Failed to fetch dashboard statistics:', error);
+        // Set to null on error to show loading state
+        setTotalClients(null);
+        setTotalLeads(null);
+        setTotalApplications(null);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchStatistics();
+  }, []);
+
+  const formatNumber = (num: number | null): string => {
+    if (num === null) return '...';
+    return num.toLocaleString();
+  };
+
   return (
     <Box>
       <Typography variant="h4" fontWeight={600} gutterBottom>
@@ -218,48 +257,37 @@ export const Dashboard = () => {
 
       <Grid container spacing={2}>
         {/* Statistics Cards */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Protect permission="view_client">
             <StatCard
               title="Total Clients"
-              value="1,245"
+              value={loadingStats ? '...' : formatNumber(totalClients)}
               icon={<PeopleIcon />}
               color="#1976d2"
             />
           </Protect>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Protect permission="view_client">
             <StatCard
               title="Active Leads"
-              value="387"
+              value={loadingStats ? '...' : formatNumber(totalLeads)}
               icon={<PersonAddIcon />}
               color="#2e7d32"
             />
           </Protect>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Protect permission="view_visaapplication">
             <StatCard
               title="Applications"
-              value="562"
+              value={loadingStats ? '...' : formatNumber(totalApplications)}
               icon={<DescriptionIcon />}
               color="#ed6c02"
             />
           </Protect>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          {/*<Protect permission="view_analytic">*/}
-            <StatCard
-              title="Conversion Rate"
-              value="68%"
-              icon={<TrendingUpIcon />}
-              color="#9c27b0"
-            />
-          {/*</Protect>*/}
         </Grid>
 
         {/* Tasks Section */}
