@@ -421,7 +421,7 @@ export const VisaTracker = () => {
 
   // Handlers
   const handleView = (application: VisaApplication) => {
-    navigate(`/clients/${application.client}?tab=visa-applications&visaApplicationId=${application.id}`, {
+    navigate(`/visa-applications/${application.id}`, {
       state: { from: '/visa-manager/tracker' }
     });
   };

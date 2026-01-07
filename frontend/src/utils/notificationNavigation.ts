@@ -56,24 +56,20 @@ export function getNotificationRoute(notification: Notification): NotificationNa
       break;
 
     case 'VISA_APPLICATION_ASSIGNED':
-      // Navigate to client detail page with visa-applications tab and visa application ID
-      const visaClientId = typeof meta_info.client_id === 'number' 
-        ? meta_info.client_id 
-        : null;
+      // Navigate to visa application detail page
       const visaApplicationId = (meta_info.entity_id && meta_info.entity_type === 'VisaApplication')
         ? meta_info.entity_id
         : (typeof meta_info.visa_application_id === 'number' ? meta_info.visa_application_id : null);
       
-      if (visaClientId && visaApplicationId) {
+      if (visaApplicationId) {
         return {
-          route: `/clients/${visaClientId}`,
-          params: {
-            tab: 'visa-applications',
-            visaApplicationId: String(visaApplicationId),
-          },
+          route: `/visa-applications/${visaApplicationId}`,
         };
       }
       // Fallback: try to navigate to client if we have client_id
+      const visaClientId = typeof meta_info.client_id === 'number' 
+        ? meta_info.client_id 
+        : null;
       if (visaClientId) {
         return {
           route: `/clients/${visaClientId}`,

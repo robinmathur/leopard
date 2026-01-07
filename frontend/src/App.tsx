@@ -21,6 +21,7 @@ import { ApplicationTracker } from './pages/ApplicationManager/ApplicationTracke
 import { ApplicationsList } from './pages/ApplicationManager/ApplicationsList';
 import { ApplicationTypePage } from './pages/ApplicationManager/ApplicationTypePage';
 import { CollegeApplicationDetailPage } from './pages/CollegeApplication/CollegeApplicationDetailPage';
+import { VisaApplicationDetailPage } from './pages/VisaApplication/VisaApplicationDetailPage';
 import { UsersPage } from './pages/Users/UsersPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { GroupsPage } from './pages/Groups/GroupsPage';
@@ -92,6 +93,9 @@ function App() {
             
             {/* College Application Detail Route */}
             <Route path="college-applications/:id" element={<CollegeApplicationDetailPage />} />
+            
+            {/* Visa Application Detail Route */}
+            <Route path="visa-applications/:id" element={<VisaApplicationDetailPage />} />
 
             <Route path="institute" element={<InstitutePage />} />
             <Route path="institute/:id" element={<InstituteDetailPage />} />

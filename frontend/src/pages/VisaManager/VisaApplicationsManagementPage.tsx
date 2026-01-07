@@ -350,9 +350,9 @@ export const VisaApplicationsManagementPage = () => {
 
   // View handler
   const handleView = (application: VisaApplication) => {
-    // Navigate to client detail page with visa applications tab and visa application ID
-    navigate(`/clients/${application.client}?tab=visa-applications&visaApplicationId=${application.id}`, {
-      state: { from: '/visa-manager/applications' }});
+    navigate(`/visa-applications/${application.id}`, {
+      state: { from: '/visa-manager/applications' }
+    });
   };
 
   const handleConfirmDelete = async () => {
