@@ -351,28 +351,10 @@ export const ApplicationTracker: React.FC = () => {
       sortable: false,
     },
     {
-      field: 'intake_date',
-      headerName: 'Intake Date',
-      width: 130,
-      sortable: false,
-      valueFormatter: (value) => new Date(value).toLocaleDateString(),
-    },
-    {
       field: 'location_display',
       headerName: 'Location',
       width: 150,
       sortable: false,
-    },
-    {
-      field: 'total_tuition_fee',
-      headerName: 'Tuition Fee',
-      width: 130,
-      sortable: false,
-      valueFormatter: (value) =>
-        new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-        }).format(parseFloat(value)),
     },
     {
       field: 'assigned_to_name',

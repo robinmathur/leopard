@@ -80,9 +80,6 @@ const LoadingSkeleton = () => (
         <TableCell><Skeleton variant="text" width={40} /></TableCell>
         <TableCell><Skeleton variant="text" width={120} /></TableCell>
         <TableCell><Skeleton variant="text" width={80} /></TableCell>
-        <TableCell><Skeleton variant="text" width={100} /></TableCell>
-        <TableCell><Skeleton variant="text" width={150} /></TableCell>
-        <TableCell><Skeleton variant="text" width={80} /></TableCell>
         <TableCell><Skeleton variant="text" width={80} /></TableCell>
         <TableCell><Skeleton variant="text" width={80} /></TableCell>
         <TableCell><Skeleton variant="text" width={80} /></TableCell>
@@ -125,9 +122,6 @@ export const ClientTable = ({
               <TableCell sx={{ fontWeight: 600, minWidth: 60 }}>ID</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 150 }}>Name</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>Added Date</TableCell>
-              <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>Phone No</TableCell>
-              <TableCell sx={{ fontWeight: 600, minWidth: 180 }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>DOB</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>Country</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>Referred By</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>Added By</TableCell>
@@ -141,7 +135,7 @@ export const ClientTable = ({
               <LoadingSkeleton />
             ) : clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} align="center">
+                <TableCell colSpan={9} align="center">
                   <Typography variant="body2" color="text.secondary" sx={{ py: 4 }}>
                     No clients found
                   </Typography>
@@ -178,26 +172,6 @@ export const ClientTable = ({
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
                       {formatDate(client.created_at)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {client.phone_number || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary" sx={{
-                      maxWidth: 180,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {client.email || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatDate(client.dob)}
                     </Typography>
                   </TableCell>
                   <TableCell>

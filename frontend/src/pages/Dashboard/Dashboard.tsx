@@ -22,7 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { Protect } from '@/components/protected/Protect';
 import { Task, getTasks, TaskListParams, TaskStatus } from '@/services/api/taskApi';
 import { EntityTag } from '@/components/shared/TaskList/EntityTag';
-import { STATUS_COLORS } from '@/components/shared/TaskList/types';
+import { STATUS_COLORS, PRIORITY_COLORS } from '@/components/shared/TaskList/types';
 import { CalendarEventsWidget } from '@/components/dashboard/CalendarEventsWidget';
 import { clientApi } from '@/services/api/clientApi';
 import { listVisaApplications } from '@/services/api/visaApplicationApi';
@@ -180,11 +180,19 @@ const TasksSection = () => {
                 <Typography variant="subtitle2" fontWeight={600} sx={{ flex: 1 }}>
                   {task.title}
                 </Typography>
-                <Chip
-                  label={task.status_display}
-                  size="small"
-                  color={STATUS_COLORS[task.status]}
-                  sx={{ ml: 1 }}/>
+                <Box sx={{ display: 'flex', gap: 0.5, ml: 1 }}>
+                  <Chip
+                    label={task.status_display}
+                    size="small"
+                    color={STATUS_COLORS[task.status]}
+                  />
+                  <Chip
+                    label={task.priority_display}
+                    size="small"
+                    color={PRIORITY_COLORS[task.priority]}
+                    variant="outlined"
+                  />
+                </Box>
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
                 <Typography variant="caption" color="text.secondary">

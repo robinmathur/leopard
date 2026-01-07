@@ -14,12 +14,8 @@ import {
   Select,
   MenuItem,
   Alert,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  ListItemIcon,
-  Divider,
+  ToggleButton,
+  ToggleButtonGroup,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -326,90 +322,83 @@ export const TasksPage = () => {
         </Alert>
       )}
 
-      {/* Main Layout: Left Sidebar + Task List */}
-      <Box sx={{ display: 'flex', gap: 2, height: 'calc(100vh - 200px)' }}>
-        {/* Left Sidebar - Filters (Fixed) */}
-        <Paper
-          sx={{
-            width: 260,
-            flexShrink: 0,
-            maxHeight: '100%',
-            overflowY: 'auto',
-            position: 'sticky',
-            top: 0,
-            alignSelf: 'flex-start',
-          }}
-        >
-          <Box sx={{ p: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: 'text.secondary' }}>
-              Filters
-            </Typography>
-          </Box>
-          <Divider />
-          <List disablePadding>
+      {/* Filter Bar - Horizontal */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Filter View Buttons */}
+          <ToggleButtonGroup
+            value={filterView}
+            exclusive
+            onChange={(_, newValue) => {
+              if (newValue !== null) {
+                handleFilterViewChange(newValue);
+              }
+            }}
+            size="small"
+            sx={{ flexShrink: 0 }}
+          >
             {filterOptions.map((option) => (
-              <ListItem key={option.value} disablePadding>
-                <ListItemButton
-                  selected={filterView === option.value}
-                  onClick={() => handleFilterViewChange(option.value as FilterView)}
-                >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
-                    {option.icon}
-                  </ListItemIcon>
-                  <ListItemText primary={option.label} />
-                </ListItemButton>
-              </ListItem>
+              <ToggleButton key={option.value} value={option.value}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {option.icon}
+                  {option.label}
+                </Box>
+              </ToggleButton>
             ))}
-          </List>
+          </ToggleButtonGroup>
 
-          <Divider sx={{ my: 2 }} />
+          {/* Status Filter */}
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => setStatusFilter(e.target.value as TaskStatus | 'all')}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="PENDING">Pending</MenuItem>
+              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
+              <MenuItem value="CANCELLED">Cancelled</MenuItem>
+              <MenuItem value="OVERDUE">Overdue</MenuItem>
+            </Select>
+          </FormControl>
 
-          {/* Additional Filters Section */}
-          <Box sx={{ px: 2, pb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary' }}>
-              Additional Filters
-            </Typography>
+          {/* Priority Filter */}
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Priority</InputLabel>
+            <Select
+              value={priorityFilter}
+              label="Priority"
+              onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | 'all')}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="LOW">Low</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="HIGH">High</MenuItem>
+              <MenuItem value="URGENT">Urgent</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Paper>
 
-            {/* Status Filter */}
-            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Status"
-                onChange={(e) => setStatusFilter(e.target.value as TaskStatus | 'all')}
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="PENDING">Pending</MenuItem>
-                <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
-                <MenuItem value="COMPLETED">Completed</MenuItem>
-                <MenuItem value="CANCELLED">Cancelled</MenuItem>
-                <MenuItem value="OVERDUE">Overdue</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Priority Filter */}
-            <FormControl size="small" fullWidth>
-              <InputLabel>Priority</InputLabel>
-              <Select
-                value={priorityFilter}
-                label="Priority"
-                onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | 'all')}
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="LOW">Low</MenuItem>
-                <MenuItem value="MEDIUM">Medium</MenuItem>
-                <MenuItem value="HIGH">High</MenuItem>
-                <MenuItem value="URGENT">Urgent</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Paper>
-
-        {/* Task List (Scrollable) */}
+      {/* Main Content Area - Split View */}
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          height: 'calc(100vh - 280px)',
+          flexDirection: { xs: 'column', md: 'row' },
+        }}
+      >
+        {/* Task List */}
         <Box
           sx={{
-            flex: 1,
-            maxHeight: '100%',
+            flex: detailPanelOpen
+              ? { xs: '0 0 auto', md: '0 0 55%' }
+              : { xs: '1 1 100%', md: '1 1 100%' },
+            transition: 'flex 0.3s ease-in-out',
+            maxHeight: { xs: detailPanelOpen ? '50%' : '100%', md: '100%' },
             overflowY: 'auto',
             '&::-webkit-scrollbar': {
               width: '8px',
@@ -453,18 +442,33 @@ export const TasksPage = () => {
             </Box>
           )}
         </Box>
+
+        {/* Detail Panel - Inline */}
+        {detailPanelOpen && (
+          <Box
+            sx={{
+              flex: { xs: '0 0 auto', md: '0 0 45%' },
+              transition: 'flex 0.3s ease-in-out',
+              maxHeight: { xs: '50%', md: '100%' },
+              overflow: 'hidden',
+              borderTop: { xs: 1, md: 0 },
+              borderLeft: { xs: 0, md: 1 },
+              borderColor: 'divider',
+            }}
+          >
+            <TaskDetailPanel
+              key={detailPanelKey}
+              open={detailPanelOpen}
+              taskId={selectedTaskId}
+              onClose={handleCloseDetailPanel}
+              onTaskUpdate={handleTaskUpdate}
+              onTaskDelete={handleTaskDelete}
+              onEdit={handleEditTask}
+            />
+          </Box>
+        )}
       </Box>
 
-      {/* Task Detail Panel */}
-      <TaskDetailPanel
-        key={detailPanelKey}
-        open={detailPanelOpen}
-        taskId={selectedTaskId}
-        onClose={handleCloseDetailPanel}
-        onTaskUpdate={handleTaskUpdate}
-        onTaskDelete={handleTaskDelete}
-        onEdit={handleEditTask}
-      />
 
       {/* Create Task Dialog */}
       <Dialog

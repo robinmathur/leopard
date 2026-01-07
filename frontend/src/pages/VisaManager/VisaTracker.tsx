@@ -208,20 +208,6 @@ const VisaApplicationTable = ({
       ),
     },
     {
-      field: 'immigration_fee',
-      headerName: 'Immigration Fee',
-      width: 140,
-      sortable: false,
-      valueFormatter: (value, row) => formatCurrency(value, row.immigration_fee_currency),
-    },
-    {
-      field: 'service_fee',
-      headerName: 'Service Fee',
-      width: 130,
-      sortable: false,
-      valueFormatter: (value, row) => formatCurrency(value, row.service_fee_currency),
-    },
-    {
       field: 'date_applied',
       headerName: 'Date Applied',
       width: 120,
