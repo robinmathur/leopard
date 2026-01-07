@@ -264,7 +264,7 @@ export const ApplicationTracker: React.FC = () => {
   };
 
   const handleView = (application: CollegeApplication) => {
-    navigate(`/clients/${application.client}?tab=applications&collegeApplicationId=${application.id}`, {
+    navigate(`/college-applications/${application.id}`, {
       state: { from: '/application-manager/tracker' }
     });
   };

@@ -20,6 +20,7 @@ import { ApplicationDashboard } from './pages/ApplicationManager/ApplicationDash
 import { ApplicationTracker } from './pages/ApplicationManager/ApplicationTracker';
 import { ApplicationsList } from './pages/ApplicationManager/ApplicationsList';
 import { ApplicationTypePage } from './pages/ApplicationManager/ApplicationTypePage';
+import { CollegeApplicationDetailPage } from './pages/CollegeApplication/CollegeApplicationDetailPage';
 import { UsersPage } from './pages/Users/UsersPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { GroupsPage } from './pages/Groups/GroupsPage';
@@ -88,6 +89,9 @@ function App() {
             <Route path="application-manager/tracker" element={<ApplicationTracker />} />
             <Route path="application-manager/applications" element={<ApplicationsList />} />
             <Route path="application-manager/types" element={<ApplicationTypePage />} />
+            
+            {/* College Application Detail Route */}
+            <Route path="college-applications/:id" element={<CollegeApplicationDetailPage />} />
 
             <Route path="institute" element={<InstitutePage />} />
             <Route path="institute/:id" element={<InstituteDetailPage />} />

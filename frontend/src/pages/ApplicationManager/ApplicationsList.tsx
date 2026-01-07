@@ -169,7 +169,7 @@ export const ApplicationsList: React.FC = () => {
 
   // Handlers
   const handleView = (application: CollegeApplication) => {
-    navigate(`/clients/${application.client}?tab=applications&collegeApplicationId=${application.id}`, {
+    navigate(`/college-applications/${application.id}`, {
       state: { from: '/application-manager/applications' }
     });
   };
