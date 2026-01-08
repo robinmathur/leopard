@@ -112,6 +112,23 @@ const TasksSection = () => {
     navigate('/tasks?create=true');
   };
 
+  /**
+   * Check if task is overdue (due date has passed and task is not completed)
+   */
+  const isTaskOverdue = (dueDate: string, status: string): boolean => {
+    try {
+      if (status === 'COMPLETED' || status === 'CANCELLED') return false;
+      const date = new Date(dueDate);
+      const now = new Date();
+      // Compare dates only (ignore time)
+      const dueDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return dueDateOnly < nowDateOnly;
+    } catch {
+      return false;
+    }
+  };
+
   const formatDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
@@ -165,43 +182,62 @@ const TasksSection = () => {
         </Typography>
       ) : (
         <Stack spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
-          {tasks.map((task) => (
-            <Paper
-              key={task.id}
-              variant="outlined"
-              sx={{
-                p: 1.5,
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                }, }}onClick={() => handleTaskClick(task)}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                <Typography variant="subtitle2" fontWeight={600} sx={{ flex: 1 }}>
-                  {task.title}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 0.5, ml: 1 }}>
-                  <Chip
-                    label={task.status_display}
-                    size="small"
-                    color={STATUS_COLORS[task.status]}
-                  />
-                  <Chip
-                    label={task.priority_display}
-                    size="small"
-                    color={PRIORITY_COLORS[task.priority]}
-                    variant="outlined"
-                  />
+          {tasks.map((task) => {
+            const isOverdue = isTaskOverdue(task.due_date, task.status);
+            return (
+              <Paper
+                key={task.id}
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  cursor: 'pointer',
+                  borderLeft: 3,
+                  borderLeftColor: isOverdue ? 'warning.main' : 'primary.main',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+                onClick={() => handleTaskClick(task)}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={600} sx={{ flex: 1 }}>
+                    {task.title}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5, ml: 1 }}>
+                    <Chip
+                      label={task.status_display}
+                      size="small"
+                      color={STATUS_COLORS[task.status]}
+                    />
+                    <Chip
+                      label={task.priority_display}
+                      size="small"
+                      color={PRIORITY_COLORS[task.priority]}
+                      variant="outlined"
+                    />
+                    {isOverdue && (
+                      <Chip 
+                        label="Overdue" 
+                        size="small" 
+                        color="warning" 
+                        sx={{ height: 20, fontSize: '0.7rem' }} 
+                      />
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Due: {formatDate(task.due_date)}
-                </Typography>
-                {task.linked_entity_type && <EntityTag task={task} />}
-              </Box>
-            </Paper>
-          ))}
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
+                  <Typography 
+                    variant="caption" 
+                    color={isOverdue ? 'warning.main' : 'text.secondary'}
+                    sx={{ fontWeight: isOverdue ? 600 : 400 }}
+                  >
+                    Due: {formatDate(task.due_date)}
+                  </Typography>
+                  {task.linked_entity_type && <EntityTag task={task} />}
+                </Box>
+              </Paper>
+            );
+          })}
           {tasks.length >= 5 && (
             <Button
               size="small"

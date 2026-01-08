@@ -109,6 +109,28 @@ export const TasksPage = () => {
     fetchTasks(1, true);
   }, [priorityFilter, statusFilter, taskTypeFilter]);
 
+  // Close detail panel if selected task is no longer in the filtered list
+  useEffect(() => {
+    if (selectedTaskId) {
+      if (tasks.length > 0) {
+        const taskExists = tasks.some((task) => task.id === selectedTaskId);
+        if (!taskExists) {
+          setDetailPanelOpen(false);
+          setSelectedTaskId(null);
+          searchParams.delete('taskId');
+          setSearchParams(searchParams, { replace: true });
+        }
+      } else if (tasks.length === 0 && !loading) {
+        // Close panel if task list is empty after loading
+        setDetailPanelOpen(false);
+        setSelectedTaskId(null);
+        searchParams.delete('taskId');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, selectedTaskId, loading]);
+
   const fetchTeamMembers = async () => {
     if (!currentUser) return;
 

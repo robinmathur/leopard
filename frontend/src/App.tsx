@@ -24,6 +24,7 @@ import { CollegeApplicationDetailPage } from './pages/CollegeApplication/College
 import { VisaApplicationDetailPage } from './pages/VisaApplication/VisaApplicationDetailPage';
 import { UsersPage } from './pages/Users/UsersPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
+import { ProfilePage } from './pages/Profile/ProfilePage';
 import { GroupsPage } from './pages/Groups/GroupsPage';
 import { BranchesPage } from './pages/Branches/BranchesPage';
 import { BranchDetailPage } from './pages/Branches/BranchDetailPage';
@@ -113,6 +114,9 @@ function App() {
             <Route path="user-management/users" element={<UsersPage />} />
             <Route path="user-management/users/:id" element={<UserDetailPage />} />
             <Route path="user-management/groups" element={<GroupsPage />} />
+            
+            {/* Profile Route */}
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* Catch-all redirect */}

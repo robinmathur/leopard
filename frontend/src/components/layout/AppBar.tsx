@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, Link as RouterLink } from 'react-router-dom';
+import { useLocation, Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
   Toolbar,
@@ -164,6 +164,7 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
   const { user, logout } = useAuthStore();
   const { notifications } = useNotificationStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
@@ -187,6 +188,11 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
   const handleLogout = () => {
     handleMenuClose();
     logout();
+  };
+
+  const handleProfileClick = () => {
+    handleMenuClose();
+    navigate('/profile');
   };
 
   return (
@@ -386,7 +392,7 @@ export const AppBar = ({ onMenuClick }: AppBarProps) => {
           </Typography>
         </Box>
         <Divider />
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={handleProfileClick}>
           <AccountCircleIcon fontSize="small" sx={{ mr: 1 }} />
           Profile
         </MenuItem>

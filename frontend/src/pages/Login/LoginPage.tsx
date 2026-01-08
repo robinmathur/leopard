@@ -8,17 +8,21 @@ import {
   Button,
   Typography,
   Alert,
-  Divider,
   CircularProgress,
 } from '@mui/material';
 import { useAuthStore } from '@/store/authStore';
-import { MOCK_USERS } from '@/auth/types';
+import { tenantApi } from '@/services/api/tenantApi';
+import type { ApiError } from '@/services/api/httpClient';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const { login, error, isLoading, isAuthenticated, initializeFromStorage } = useAuthStore();
-  const [username, setUsername] = useState('superadmin');
-  const [password, setPassword] = useState('password123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [tenantName, setTenantName] = useState<string | null>(null);
+  const [tenantError, setTenantError] = useState<string | null>(null);
+  const [isLoadingTenant, setIsLoadingTenant] = useState(true);
+  const [isTenantInvalid, setIsTenantInvalid] = useState(false);
 
   // Initialize auth state from storage on mount
   useEffect(() => {
@@ -32,15 +36,64 @@ export const LoginPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Fetch tenant information on mount
+  useEffect(() => {
+    const fetchTenantInfo = async () => {
+      try {
+        setIsLoadingTenant(true);
+        setTenantError(null);
+        setTenantName(null);
+        setIsTenantInvalid(false);
+        
+        const tenantInfo = await tenantApi.getTenantInfo();
+        
+        console.log('Tenant info received:', tenantInfo);
+        
+        if (tenantInfo && tenantInfo.tenant_name) {
+          setTenantName(tenantInfo.tenant_name);
+        } else {
+          console.warn('Tenant info missing or invalid:', tenantInfo);
+          setTenantError('Unable to verify tenant. Please check your URL.');
+          setIsTenantInvalid(false);
+        }
+      } catch (err: any) {
+        console.error('Error fetching tenant info:', err);
+        
+        // Check if it's an axios error
+        const status = err?.response?.status || err?.status;
+        const message = err?.message || err?.response?.data?.detail || 'Unknown error';
+        
+        if (status === 404) {
+          setTenantError('Invalid URL - This URL is not associated with any organization.');
+          setIsTenantInvalid(true);
+        } else if (status === 304 || message.includes('Cached response')) {
+          // 304 Not Modified or cache-related error
+          setTenantError('Unable to verify tenant. Please refresh the page or clear your browser cache.');
+          setIsTenantInvalid(false);
+        } else {
+          // For other errors (network, etc.), show warning but allow login attempt
+          setTenantError('Unable to verify tenant. Please check your URL.');
+          setIsTenantInvalid(false);
+        }
+      } finally {
+        setIsLoadingTenant(false);
+      }
+    };
+
+    fetchTenantInfo();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Prevent login if tenant is invalid (404)
+    if (isTenantInvalid) {
+      return;
+    }
     await login(username, password);
   };
 
-  const handleQuickLogin = (loginUsername: string) => {
-    setUsername(loginUsername);
-    setPassword('password123');
-  };
+  // Disable form when tenant is invalid (404) or while loading
+  const isFormDisabled = isLoading || isTenantInvalid || isLoadingTenant;
 
   return (
     <Box
@@ -58,11 +111,33 @@ export const LoginPage = () => {
           <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
             Immigration CRM
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Multi-Tenant SaaS Platform
           </Typography>
 
-          {error && (
+          {/* Tenant Name Display */}
+          {isLoadingTenant ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <CircularProgress size={16} />
+              <Typography variant="body2" color="text.secondary">
+                Loading...
+              </Typography>
+            </Box>
+          ) : tenantName ? (
+            <Typography variant="h6" fontWeight={600} color="primary" sx={{ mb: 3 }}>
+              {tenantName}
+            </Typography>
+          ) : null}
+
+          {/* Tenant Error Display */}
+          {tenantError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {tenantError}
+            </Alert>
+          )}
+
+          {/* Login Error Display */}
+          {error && !tenantError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
@@ -78,7 +153,7 @@ export const LoginPage = () => {
               size="small"
               sx={{ mb: 2 }}
               required
-              disabled={isLoading}
+              disabled={isFormDisabled}
               autoComplete="username"
             />
             <TextField
@@ -90,7 +165,7 @@ export const LoginPage = () => {
               size="small"
               sx={{ mb: 3 }}
               required
-              disabled={isLoading}
+              disabled={isFormDisabled}
               autoComplete="current-password"
             />
             <Button
@@ -98,36 +173,12 @@ export const LoginPage = () => {
               type="submit"
               variant="contained"
               size="medium"
-              disabled={isLoading}
+              disabled={isFormDisabled}
               startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : null}
             >
               {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
-
-          <Divider sx={{ my: 3 }} />
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Quick Login (Demo):
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {Object.entries(MOCK_USERS).map(([key, user]) => (
-              <Button
-                key={key}
-                variant="outlined"
-                size="small"
-                onClick={() => handleQuickLogin(user.username)}
-                disabled={isLoading}
-                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-              >
-                {user.firstName} {user.lastName} ({user.role.replace('_', ' ')})
-              </Button>
-            ))}
-          </Box>
-
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-            Password for all demo accounts: password123
-          </Typography>
         </CardContent>
       </Card>
     </Box>

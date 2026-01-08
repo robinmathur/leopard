@@ -132,12 +132,13 @@ class FourLevelSubdomainMiddleware(BaseTenantMainMiddleware):
 
         Public paths (no tenant required):
         - /health/ - Health check endpoint (for Docker and monitoring)
+        - /api/public/tenant-info/ - Public tenant info endpoint (for login page)
         - /public/ - Public tenant management pages
         - /static/ - Static files
         - /media/ - Media files
         """
         # Check if this is a public path that doesn't require tenant context
-        public_paths = ['/health/', '/static/', '/media/']
+        public_paths = ['/health/', '/api/public/tenant-info/', '/static/', '/media/']
 
         if any(request.path.startswith(path) for path in public_paths):
             # Use public schema for these requests

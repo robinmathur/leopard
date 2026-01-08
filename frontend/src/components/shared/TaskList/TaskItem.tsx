@@ -16,21 +16,34 @@ import { EntityTag } from './EntityTag';
 import { useAuthStore } from '@/store/authStore';
 
 /**
+ * Check if task is overdue (due date has passed and task is not completed)
+ */
+const isTaskOverdue = (dueDate: string, status: string): boolean => {
+  try {
+    if (status === 'COMPLETED' || status === 'CANCELLED') return false;
+    const date = new Date(dueDate);
+    const now = new Date();
+    // Compare dates only (ignore time)
+    const dueDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return dueDateOnly < nowDateOnly;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Format date for display
  */
 const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
-    const now = new Date();
-    const isOverdue = date < now;
-    
     const formatted = date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
     });
-    
-    return isOverdue && !dateString.includes('completed') ? `⚠️ ${formatted}` : formatted;
+    return formatted;
   } catch {
     return dateString;
   }
@@ -127,6 +140,8 @@ export const TaskItem = ({ task, onClick, onStatusChange, onEdit, onDelete, onQu
     }
   };
 
+  const isOverdue = isTaskOverdue(task.due_date, task.status);
+
   return (
     <Paper
       variant="outlined"
@@ -137,6 +152,8 @@ export const TaskItem = ({ task, onClick, onStatusChange, onEdit, onDelete, onQu
         backgroundColor: isSelected ? 'action.selected' : 'background.paper',
         borderColor: isSelected ? 'primary.main' : 'divider',
         borderWidth: isSelected ? 2 : 1,
+        borderLeft: 3,
+        borderLeftColor: isOverdue ? 'warning.main' : 'primary.main',
         '&:hover': onClick ? {
           backgroundColor: isSelected ? 'action.selected' : 'action.hover',
         } : {},
@@ -176,9 +193,24 @@ export const TaskItem = ({ task, onClick, onStatusChange, onEdit, onDelete, onQu
               variant="outlined"
             />
             <EntityTag task={task} />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+            <Typography 
+              variant="caption" 
+              color={isOverdue ? 'warning.main' : 'text.secondary'} 
+              sx={{ 
+                fontSize: '0.7rem',
+                fontWeight: isOverdue ? 600 : 400,
+              }}
+            >
               Due: {formatDate(task.due_date)}
             </Typography>
+            {isOverdue && (
+              <Chip 
+                label="Overdue" 
+                size="small" 
+                color="warning" 
+                sx={{ height: 20, fontSize: '0.7rem' }} 
+              />
+            )}
             {task.assigned_to_full_name && (
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                 • {task.assigned_to_full_name}
